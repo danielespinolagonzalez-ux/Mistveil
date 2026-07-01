@@ -58,6 +58,7 @@ assets/        # Arte/audio real (lo aporta Daniel; no generes binarios aquí)
 
 ## Ejecución y tests (headless)
 - Comprobación de que el proyecto carga: `godot --headless --quit` (desde la raíz).
+- Tras clonar (o si aparecen errores "Could not find type" con class_name): ejecutar `godot --headless --import` una vez para regenerar `.godot/` y el caché de clases globales.
 - Tests: escenas en `tests/` que ejecutan asserts y salen con `get_tree().quit(0)` (éxito) o `quit(1)` (fallo). Ejecutar: `godot --headless res://tests/test_smoke.tscn` desde la raíz del proyecto.
 - Cada sistema core (Data, Cadencia, generación, items, guardado) debe tener al menos un test de humo antes de dar su fase por cerrada.
 - Si `godot` no está en el PATH, pide a Daniel la ruta del ejecutable y anótala aquí.

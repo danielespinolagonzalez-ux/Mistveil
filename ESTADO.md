@@ -12,6 +12,7 @@
 | 2026-07-01 | 0.2: 6 autoloads creados y registrados en orden | EventBus arranca con señales previstas (data_reloaded, enemy_died, player_died, room_cleared) | Tarea 0.3 (DataDB) |
 | 2026-07-01 | 0.3: DataDB carga y valida todos los JSON (claves obligatorias, referencias cruzadas, plantillas de sala), F5 recarga en caliente | F5 vive en Input Map como `debug_reload_data`; datos en solo lectura recursiva; `get_balance("a.b")` con error claro si falta | Tarea 0.4 (player) |
 | 2026-07-01 | 0.4: Player CharacterBody2D con movimiento 8 dir. (move_toward con aceleración/fricción de balance), placeholder Polygon2D | Colisión circular pequeña a los pies; el visual (48 px) es más alto que la colisión, como pide el estilo top-down | Tarea 0.5 (disparo) |
+| 2026-07-01 | 0.5: disparo twin-stick (ratón o stick dcho. con auto-disparo), lágrimas con pooling que crece bajo demanda | Player emite `tear_fired` por EventBus; TearPool (sistema en Main) instancia/recicla — cero acoplamiento player↔pool | Tarea 0.6 (test de humo) |
 
 ## Deuda técnica / notas
 - (vacío)
