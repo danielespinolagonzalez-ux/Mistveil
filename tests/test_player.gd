@@ -72,6 +72,22 @@ func _ready() -> void:
 	_check("derrota: título desde textos_es.json",
 		(defeat.get_node("Overlay/Title") as Label).text == DataDB.get_text("ui.muerte"))
 
+	# HUD (tarea 1.5): corazones = hp y contador de oro vía señales.
+	var hud: CanvasLayer = (load("res://scenes/ui/hud.tscn") as PackedScene).instantiate()
+	add_child(hud)
+	await get_tree().process_frame
+	var hearts: HBoxContainer = hud.get_node("Margin/Rows/Hearts")
+	EventBus.player_health_changed.emit(4, 6)
+	_check("hud: 6 corazones con máximo 6", hearts.get_child_count() == 6)
+	var full_count: int = 0
+	for heart in hearts.get_children():
+		if (heart as ColorRect).color.r > 0.5:
+			full_count += 1
+	_check("hud: 4 corazones llenos con vida 4", full_count == 4)
+	RunState.add_gold(7)
+	_check("hud: contador de oro refleja RunState",
+		(hud.get_node("Margin/Rows/GoldRow/GoldLabel") as Label).text == "7")
+
 	if _failures == 0:
 		print("TEST PLAYER: OK")
 		get_tree().quit(0)

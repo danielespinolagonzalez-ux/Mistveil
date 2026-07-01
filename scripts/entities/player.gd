@@ -32,6 +32,9 @@ func _ready() -> void:
 	_health.current_hp = _health.max_hp
 	_hurtbox.hurt_by.connect(_on_hurt_by)
 	_health.died.connect(_on_died)
+	_health.health_changed.connect(_on_health_changed)
+	# Estado inicial para el HUD (la asignación directa de hp no emite señal).
+	EventBus.player_health_changed.emit(_health.current_hp, _health.max_hp)
 
 
 func _physics_process(delta: float) -> void:
@@ -90,6 +93,10 @@ func _on_hurt_by(hitbox: HitboxComponent) -> void:
 	if not _dead:
 		_hurtbox.invulnerable = true
 		_iframes_left_s = _hurt_iframes_s
+
+
+func _on_health_changed(current: int, max_hp: int) -> void:
+	EventBus.player_health_changed.emit(current, max_hp)
 
 
 func _on_died() -> void:

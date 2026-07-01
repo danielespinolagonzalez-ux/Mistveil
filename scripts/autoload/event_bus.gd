@@ -12,7 +12,12 @@ signal tear_fired(origin: Vector2, direction: Vector2, speed: float, range_px: f
 ## Un enemigo dispara; EnemyProjectilePool escucha y pone la bala en juego.
 signal enemy_projectile_fired(origin: Vector2, direction: Vector2, speed: float, range_px: float, damage: float)
 
-# (Se irán usando a partir de la Fase 1)
 signal enemy_died(enemy: Node)
 signal player_died
 signal room_cleared
+
+# --- HUD / estado visible ---
+## Vida del player para el HUD (re-emitida por el player desde su HealthComponent).
+signal player_health_changed(current: int, max_hp: int)
+## Oro de la run (lo emite RunState al cambiar).
+signal gold_changed(total: int)
