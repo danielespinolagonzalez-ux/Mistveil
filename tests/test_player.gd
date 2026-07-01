@@ -1,0 +1,86 @@
+extends Node
+## Test del player: daño por contacto, i-frames y muerte (tarea 1.3). Ejecutar:
+##   godot --headless res://tests/test_player.tscn
+## Usa await de frames de física (justificado: test de solapes y temporizadores).
+
+const PLAYER_SCENE: PackedScene = preload("res://scenes/player/player.tscn")
+const DEFEAT_SCENE: PackedScene = preload("res://scenes/ui/defeat_screen.tscn")
+
+const LAYER_ENEMY_ATTACK := 1 << 4
+const LAYER_PLAYER_HURT := 1 << 5
+
+var _failures: int = 0
+var _player_died_count: int = 0
+
+
+func _ready() -> void:
+	EventBus.player_died.connect(func() -> void: _player_died_count += 1)
+
+	var player: Player = PLAYER_SCENE.instantiate()
+	player.position = Vector2.ZERO
+	add_child(player)
+	var health: HealthComponent = player.get_node("HealthComponent")
+	var hurtbox: HurtboxComponent = player.get_node("HurtboxComponent")
+
+	_check("vida inicial = balance player.max_hp",
+		health.max_hp == int(DataDB.get_balance("player.max_hp")) and health.current_hp == health.max_hp)
+
+	# Golpe de contacto: hitbox del bando enemigo solapando al player.
+	var hitbox := HitboxComponent.new()
+	hitbox.damage = 1.0
+	hitbox.collision_layer = LAYER_ENEMY_ATTACK
+	hitbox.collision_mask = LAYER_PLAYER_HURT
+	var shape := CollisionShape2D.new()
+	var circle := CircleShape2D.new()
+	circle.radius = 30.0
+	shape.shape = circle
+	hitbox.add_child(shape)
+	add_child(hitbox)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+
+	_check("contacto: pierde 1 de vida", health.current_hp == health.max_hp - 1)
+	_check("contacto: activa i-frames", hurtbox.invulnerable)
+
+	# Durante los i-frames el solape continuo no vuelve a dañar.
+	for i in 10:
+		await get_tree().physics_frame
+	_check("i-frames: sin daño extra mientras duran", health.current_hp == health.max_hp - 1)
+
+	# Al agotarse (hurt_iframes_s) vuelve a ser vulnerable y visible.
+	hitbox.queue_free()
+	var iframes_s: float = float(DataDB.get_balance("player.hurt_iframes_s"))
+	var frames: int = int(ceil(iframes_s * 60.0)) + 10
+	for i in frames:
+		await get_tree().physics_frame
+	_check("i-frames: expiran y vuelve a ser vulnerable", not hurtbox.invulnerable)
+	_check("i-frames: el placeholder queda visible", (player.get_node("Placeholder") as Polygon2D).visible)
+
+	# Muerte → player_died y el player se oculta/desactiva.
+	health.take_damage(999)
+	_check("muerte: emite EventBus.player_died", _player_died_count == 1)
+	await get_tree().physics_frame
+	_check("muerte: el player se oculta", not player.visible)
+
+	# Pantalla de derrota: se muestra con textos resueltos al morir.
+	var defeat: CanvasLayer = DEFEAT_SCENE.instantiate()
+	add_child(defeat)
+	await get_tree().process_frame
+	_check("derrota: oculta por defecto", not defeat.visible)
+	EventBus.player_died.emit()
+	_check("derrota: visible tras player_died", defeat.visible)
+	_check("derrota: título desde textos_es.json",
+		(defeat.get_node("Overlay/Title") as Label).text == DataDB.get_text("ui.muerte"))
+
+	if _failures == 0:
+		print("TEST PLAYER: OK")
+		get_tree().quit(0)
+	else:
+		print("TEST PLAYER: %d fallo(s)" % _failures)
+		get_tree().quit(1)
+
+
+func _check(nombre: String, ok: bool) -> void:
+	print(("  [OK]   " if ok else "  [FALLO] ") + nombre)
+	if not ok:
+		_failures += 1

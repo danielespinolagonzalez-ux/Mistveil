@@ -16,7 +16,7 @@ const BALANCE_REQUIRED := {
 	"player": [
 		"max_hp", "move_speed", "acceleration", "friction",
 		"dash_speed", "dash_duration_s", "dash_cooldown_s", "dash_iframes_s",
-		"hurt_iframes_s", "tear_damage", "tear_rate_per_s", "tear_speed",
+		"hurt_iframes_s", "hurt_blink_hz", "tear_damage", "tear_rate_per_s", "tear_speed",
 		"tear_range_px", "melee_damage", "melee_range_px",
 	],
 	"cadencia": [

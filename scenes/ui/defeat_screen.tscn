@@ -1,0 +1,44 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/defeat_screen.gd" id="1_defeat"]
+
+[node name="DefeatScreen" type="CanvasLayer"]
+layer = 10
+script = ExtResource("1_defeat")
+
+[node name="Overlay" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0, 0, 0, 0.78)
+
+[node name="Title" type="Label" parent="Overlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_bottom = -40.0
+theme_override_font_sizes/font_size = 24
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Subtitle" type="Label" parent="Overlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 10.0
+theme_override_colors/font_color = Color(0.7, 0.7, 0.78, 1)
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Prompt" type="Label" parent="Overlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 120.0
+theme_override_colors/font_color = Color(0.5, 0.5, 0.58, 1)
+theme_override_font_sizes/font_size = 12
+horizontal_alignment = 1
+vertical_alignment = 1

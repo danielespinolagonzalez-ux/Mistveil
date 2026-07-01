@@ -14,7 +14,7 @@ Claude Code: trabaja las fases EN ORDEN. No avances de fase sin cumplir su **cri
 ## Fase 1 — Combate en tiempo real (base Isaac)
 - [x] 1.1 Componentes: `HealthComponent`, `HitboxComponent`, `HurtboxComponent` (señales, sin acoplamiento).
 - [x] 1.2 Enemigo `cera_andante` (perseguidor melé) instanciado desde `data/enemigos.json`.
-- [ ] 1.3 Daño por contacto al player, i-frames con parpadeo, muerte y pantalla de derrota mínima.
+- [x] 1.3 Daño por contacto al player, i-frames con parpadeo, muerte y pantalla de derrota mínima.
 - [ ] 1.4 Enemigos `tejedor_horas` (torreta que dispara) y `engranaje_errante` (volador errático).
 - [ ] 1.5 HUD: corazones de vida, contador de oro.
 - [ ] 1.6 Knockback y números de daño flotantes (feedback).

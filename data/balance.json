@@ -10,6 +10,7 @@
     "dash_cooldown_s": 0.9,
     "dash_iframes_s": 0.12,
     "hurt_iframes_s": 1.0,
+    "hurt_blink_hz": 8.0,
     "tear_damage": 3.5,
     "tear_rate_per_s": 2.4,
     "tear_speed": 420.0,

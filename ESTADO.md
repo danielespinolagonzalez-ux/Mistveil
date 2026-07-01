@@ -16,6 +16,7 @@
 | 2026-07-01 | 0.6: test_smoke.tscn (10 checks: DataDB, balance, textos, enemigos, main, player, pooling) — todo verde | El criterio de aceptación de la Fase 0 (fluidez, F5 en vivo) requiere prueba manual de Daniel en el editor | Daniel prueba la Fase 0; después, tarea 1.1 (componentes) |
 | 2026-07-01 | 1.1: HealthComponent, HitboxComponent y HurtboxComponent + capas de física con nombre + tests/test_components.tscn (11 checks) | Hitbox/Hurtbox son Area2D desacopladas: cada una emite su señal y el dueño conecta con su Health; capas 4-7 = ataque/hurt por bando | Tarea 1.2 (enemigo cera_andante) |
 | 2026-07-01 | 1.2: Enemy genérico data-driven (enemy.tscn + enemy.gd) con chase, muerte→enemy_died, color por elemento; Tear ahora ES un HitboxComponent con daño; cera_andante en Main | Una sola escena Enemy para todos los enemigos: el JSON decide stats y comportamiento; daño redondeado (entero más cercano, mín. 1) según combate.md | Tarea 1.3 (daño por contacto + i-frames + derrota) |
+| 2026-07-01 | 1.3: player con Health+Hurtbox, i-frames con parpadeo (hurt_blink_hz nuevo en balance), muerte→player_died→pantalla de derrota (reinicia con disparo); tests/test_player.tscn (10 checks) | Nuevos: balance player.hurt_blink_hz y texto ui.reiniciar; la pantalla de derrota vive en Main y solo escucha EventBus | Tarea 1.4 (tejedor_horas y engranaje_errante) |
 
 ## Deuda técnica / notas
 - (vacío)
