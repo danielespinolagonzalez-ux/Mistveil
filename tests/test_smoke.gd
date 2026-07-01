@@ -24,9 +24,9 @@ func _ready() -> void:
 		var pool: Node = main.get_node_or_null("TearPool")
 		_check("main.tscn contiene un TearPool", pool is TearPool)
 		if pool is TearPool:
-			EventBus.tear_fired.emit(Vector2.ZERO, Vector2.RIGHT, 100.0, 50.0)
+			EventBus.tear_fired.emit(Vector2.ZERO, Vector2.RIGHT, 100.0, 50.0, 1.0)
 			_check("pooling: disparar activa 1 lágrima", (pool as TearPool).total_count() == 1)
-			EventBus.tear_fired.emit(Vector2.ZERO, Vector2.RIGHT, 100.0, 50.0)
+			EventBus.tear_fired.emit(Vector2.ZERO, Vector2.RIGHT, 100.0, 50.0, 1.0)
 			_check("pooling: segundo disparo simultáneo = 2 lágrimas", (pool as TearPool).total_count() == 2)
 
 	if _failures == 0:

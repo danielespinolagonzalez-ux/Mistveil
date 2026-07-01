@@ -12,6 +12,7 @@ var _friction: float = 0.0
 var _tear_speed: float = 0.0
 var _tear_range_px: float = 0.0
 var _tear_rate_per_s: float = 0.0
+var _tear_damage: float = 0.0
 
 var _shoot_cooldown_s: float = 0.0
 
@@ -45,7 +46,7 @@ func _process_shooting(delta: float) -> void:
 	var aim: Vector2 = _aim_direction(stick_aim)
 	if aim == Vector2.ZERO:
 		return
-	EventBus.tear_fired.emit(global_position + aim * MUZZLE_OFFSET_PX, aim, _tear_speed, _tear_range_px)
+	EventBus.tear_fired.emit(global_position + aim * MUZZLE_OFFSET_PX, aim, _tear_speed, _tear_range_px, _tear_damage)
 	_shoot_cooldown_s = 1.0 / _tear_rate_per_s
 
 
@@ -63,3 +64,4 @@ func _refresh_balance() -> void:
 	_tear_speed = float(DataDB.get_balance("player.tear_speed"))
 	_tear_range_px = float(DataDB.get_balance("player.tear_range_px"))
 	_tear_rate_per_s = maxf(0.1, float(DataDB.get_balance("player.tear_rate_per_s")))
+	_tear_damage = float(DataDB.get_balance("player.tear_damage"))

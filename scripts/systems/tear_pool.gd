@@ -12,8 +12,8 @@ func _ready() -> void:
 	EventBus.tear_fired.connect(_on_tear_fired)
 
 
-func _on_tear_fired(origin: Vector2, direction: Vector2, speed: float, range_px: float) -> void:
-	_acquire().fire(origin, direction, speed, range_px)
+func _on_tear_fired(origin: Vector2, direction: Vector2, speed: float, range_px: float, damage: float) -> void:
+	_acquire().fire(origin, direction, speed, range_px, damage)
 
 
 func _acquire() -> Tear:
