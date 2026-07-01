@@ -7,7 +7,7 @@ Claude Code: trabaja las fases EN ORDEN. No avances de fase sin cumplir su **cri
 - [x] 0.3 `DataDB`: carga y valida todos los `data/*.json` con errores claros si falta una clave. Recarga en caliente con F5 (solo debug).
 - [x] 0.4 Player: movimiento 8 direcciones con aceleración/fricción (valores de `balance.json`), placeholder visual.
 - [x] 0.5 Disparo twin-stick: apuntar con ratón/stick derecho, proyectiles ("lágrimas de tinta") con object pooling, alcance y cadencia desde balance.
-- [ ] 0.6 `tests/test_smoke.tscn`: el proyecto carga, DataDB valida, el player existe.
+- [x] 0.6 `tests/test_smoke.tscn`: el proyecto carga, DataDB valida, el player existe.
 
 **Criterio de aceptación:** me muevo y disparo fluido a 60 fps en una sala vacía; cambiar `move_speed` en balance.json y pulsar F5 se nota al instante.
 
