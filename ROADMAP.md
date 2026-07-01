@@ -12,7 +12,7 @@ Claude Code: trabaja las fases EN ORDEN. No avances de fase sin cumplir su **cri
 **Criterio de aceptación:** me muevo y disparo fluido a 60 fps en una sala vacía; cambiar `move_speed` en balance.json y pulsar F5 se nota al instante.
 
 ## Fase 1 — Combate en tiempo real (base Isaac)
-- [ ] 1.1 Componentes: `HealthComponent`, `HitboxComponent`, `HurtboxComponent` (señales, sin acoplamiento).
+- [x] 1.1 Componentes: `HealthComponent`, `HitboxComponent`, `HurtboxComponent` (señales, sin acoplamiento).
 - [ ] 1.2 Enemigo `cera_andante` (perseguidor melé) instanciado desde `data/enemigos.json`.
 - [ ] 1.3 Daño por contacto al player, i-frames con parpadeo, muerte y pantalla de derrota mínima.
 - [ ] 1.4 Enemigos `tejedor_horas` (torreta que dispara) y `engranaje_errante` (volador errático).

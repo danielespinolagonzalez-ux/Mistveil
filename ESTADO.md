@@ -1,7 +1,7 @@
 # ESTADO del proyecto
 > Claude Code: actualiza este archivo al final de CADA sesión.
 
-**Fase actual:** 0 (Cimientos) — tareas 0.1–0.6 completas; falta que Daniel valide el criterio de aceptación jugando (fluidez a 60 fps y F5 con move_speed)
+**Fase actual:** 1 (Combate en tiempo real) — Daniel pidió continuar; el criterio de la Fase 0 sigue pendiente de su prueba manual (fluidez + F5)
 **Última sesión:** 2026-07-01
 
 ## Registro de sesiones
@@ -14,6 +14,7 @@
 | 2026-07-01 | 0.4: Player CharacterBody2D con movimiento 8 dir. (move_toward con aceleración/fricción de balance), placeholder Polygon2D | Colisión circular pequeña a los pies; el visual (48 px) es más alto que la colisión, como pide el estilo top-down | Tarea 0.5 (disparo) |
 | 2026-07-01 | 0.5: disparo twin-stick (ratón o stick dcho. con auto-disparo), lágrimas con pooling que crece bajo demanda | Player emite `tear_fired` por EventBus; TearPool (sistema en Main) instancia/recicla — cero acoplamiento player↔pool | Tarea 0.6 (test de humo) |
 | 2026-07-01 | 0.6: test_smoke.tscn (10 checks: DataDB, balance, textos, enemigos, main, player, pooling) — todo verde | El criterio de aceptación de la Fase 0 (fluidez, F5 en vivo) requiere prueba manual de Daniel en el editor | Daniel prueba la Fase 0; después, tarea 1.1 (componentes) |
+| 2026-07-01 | 1.1: HealthComponent, HitboxComponent y HurtboxComponent + capas de física con nombre + tests/test_components.tscn (11 checks) | Hitbox/Hurtbox son Area2D desacopladas: cada una emite su señal y el dueño conecta con su Health; capas 4-7 = ataque/hurt por bando | Tarea 1.2 (enemigo cera_andante) |
 
 ## Deuda técnica / notas
 - (vacío)
