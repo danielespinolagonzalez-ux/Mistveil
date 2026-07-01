@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "player": {
+    "max_hp": 6,
+    "move_speed": 220.0,
+    "acceleration": 1400.0,
+    "friction": 1600.0,
+    "dash_speed": 520.0,
+    "dash_duration_s": 0.18,
+    "dash_cooldown_s": 0.9,
+    "dash_iframes_s": 0.12,
+    "hurt_iframes_s": 1.0,
+    "tear_damage": 3.5,
+    "tear_rate_per_s": 2.4,
+    "tear_speed": 420.0,
+    "tear_range_px": 320.0,
+    "melee_damage": 5.0,
+    "melee_range_px": 40.0
+  },
+  "cadencia": {
+    "combo_hits_base": 3,
+    "window_perfect_ms": 120,
+    "window_good_ms": 230,
+    "window_decay_per_hit": 0.9,
+    "coyote_input_ms": 40,
+    "mult_perfect": 1.6,
+    "mult_good": 1.0,
+    "mult_fail": 0.4,
+    "finisher_mult": 1.5,
+    "finisher_knockback": 180.0,
+    "sp_perfect": 12,
+    "sp_good": 6,
+    "sp_counter_bonus": 8,
+    "counter_window_ms": 350,
+    "counter_damage": 1
+  },
+  "dragoon": {
+    "sp_max": 100,
+    "duration_s": 12.0,
+    "damage_mult": 1.6,
+    "defense_mult": 0.5,
+    "d_addition_hits": 4,
+    "d_addition_window_ms": 90,
+    "d_finisher_shockwave_radius": 96.0,
+    "post_transform_vulnerable_s": 1.0
+  },
+  "elementos": {
+    "opposite_mult": 1.5,
+    "same_mult": 0.5,
+    "neutral_mult": 1.0
+  },
+  "run": {
+    "floors_total": 3,
+    "rooms_min": 8,
+    "rooms_max": 14,
+    "grid_w": 9,
+    "grid_h": 8,
+    "dificultad_sala_base": 6,
+    "escalado_hp_por_piso": 0.35,
+    "escalado_dano_por_piso": 0.25,
+    "drop_corazon_pct": 18,
+    "drop_oro_pct": 40,
+    "oro_min": 1,
+    "oro_max": 4
+  },
+  "items_rareza_pct": { "comun": 60, "raro": 33, "legendario": 7 },
+  "meta": {
+    "memoria_por_jefe": 30,
+    "memoria_por_reto": 10,
+    "memoria_por_descubrimiento": 5
+  },
+  "arbol": {
+    "recuerdo_de_cuerda": 40,
+    "pulso_constante": 60,
+    "sello_de_marea": 80,
+    "estanteria_de_margo": 50,
+    "llave_del_sotano": 50,
+    "bolsillo_cosido": 25,
+    "diario_de_vesper": 20,
+    "cuarto_de_la_penumbra": 100
+  }
+}

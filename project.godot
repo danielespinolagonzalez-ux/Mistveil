@@ -1,0 +1,12 @@
+; Proyecto Godot 4.x — Mistveil
+; Godot completará este archivo al abrirlo. Tarea 0.1: fijar main_scene y ajustes de viewport.
+config_version=5
+
+[application]
+config/name="Mistveil"
+config/description="Action-roguelite 2D: Isaac x Dragoon x FFIX"
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/canvas_textures/default_texture_filter=0

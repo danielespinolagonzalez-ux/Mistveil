@@ -1,0 +1,10 @@
+{
+  "fuego":     { "nombre": "Fuego",       "opuesto": "agua",      "color": "#E4572E" },
+  "agua":      { "nombre": "Agua",        "opuesto": "fuego",     "color": "#4FC3F7" },
+  "viento":    { "nombre": "Viento",      "opuesto": "tierra",    "color": "#66BB6A" },
+  "tierra":    { "nombre": "Tierra",      "opuesto": "viento",    "color": "#8D6E63" },
+  "luz":       { "nombre": "Luz",         "opuesto": "oscuridad", "color": "#FFD54F" },
+  "oscuridad": { "nombre": "Oscuridad",   "opuesto": "luz",       "color": "#3949AB" },
+  "trueno":    { "nombre": "Trueno",      "opuesto": null,        "color": "#AB47BC" },
+  "neutro":    { "nombre": "No-Elemental","opuesto": null,        "color": "#9E9E9E" }
+}
