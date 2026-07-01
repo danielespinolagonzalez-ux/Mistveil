@@ -263,6 +263,12 @@ func _validate_cross_references() -> void:
 		var elemento := str(enemigos[id].get("elemento", ""))
 		if not elementos.has(elemento):
 			_fail(ENEMIGOS_PATH, "el enemigo '%s' referencia el elemento inexistente '%s'" % [id, elemento])
+	for id: String in enemigos:
+		if enemigos[id].has("proyectil"):
+			var proyectil: Dictionary = enemigos[id]["proyectil"]
+			for key: String in ["dano", "velocidad", "cadencia_s", "alcance_px"]:
+				if not proyectil.has(key):
+					_fail(ENEMIGOS_PATH, "al proyectil de '%s' le falta la clave '%s'" % [id, key])
 	for pool: String in pools_spawn:
 		for enemigo_id: Variant in pools_spawn[pool]:
 			if not enemigos.has(enemigo_id):

@@ -62,6 +62,48 @@ func _ready() -> void:
 	await get_tree().physics_frame
 	_check("al morir se libera de la escena", not is_instance_valid(enemy))
 
+	# Torreta (tejedor_horas): no se mueve y dispara hacia el player con su cadencia.
+	var shots: Array = []
+	EventBus.enemy_projectile_fired.connect(
+		func(origin: Vector2, dir: Vector2, speed: float, range_px: float, damage: float) -> void:
+			shots.append({"origin": origin, "dir": dir, "speed": speed, "range": range_px, "damage": damage}))
+	player_stub.position = Vector2(200, 0)
+	var turret: Enemy = ENEMY_SCENE.instantiate()
+	turret.enemy_id = "tejedor_horas"
+	turret.position = Vector2.ZERO
+	add_child(turret)
+	var turret_def: Dictionary = DataDB.enemigos["tejedor_horas"]
+	var cadence_frames: int = int(ceil(float(turret_def["proyectil"]["cadencia_s"]) * 60.0)) + 15
+	for i in cadence_frames:
+		await get_tree().physics_frame
+	_check("turret: dispara al menos una vez tras su cadencia", shots.size() >= 1)
+	if shots.size() >= 1:
+		_check("turret: apunta hacia el player", shots[0]["dir"].x > 0.9)
+		_check("turret: stats del proyectil desde el JSON",
+			shots[0]["speed"] == float(turret_def["proyectil"]["velocidad"])
+			and shots[0]["range"] == float(turret_def["proyectil"]["alcance_px"])
+			and shots[0]["damage"] == float(turret_def["proyectil"]["dano"]))
+	_check("turret: permanece anclada", turret.position == Vector2.ZERO)
+	turret.queue_free()
+
+	# Volador errático (engranaje_errante): se mueve solo, sin necesidad de player.
+	var wanderer: Enemy = ENEMY_SCENE.instantiate()
+	wanderer.enemy_id = "engranaje_errante"
+	wanderer.position = Vector2(320, 180)
+	add_child(wanderer)
+	var wander_start: Vector2 = wanderer.position
+	for i in 20:
+		await get_tree().physics_frame
+	_check("wander_bounce: se mueve errático", wanderer.position.distance_to(wander_start) > 10.0)
+	wanderer.queue_free()
+
+	# Pool de proyectiles enemigos: la señal activa una bala reutilizable.
+	var pool := EnemyProjectilePool.new()
+	add_child(pool)
+	EventBus.enemy_projectile_fired.emit(Vector2.ZERO, Vector2.RIGHT, 100.0, 50.0, 1.0)
+	_check("pool enemigo: disparar activa 1 proyectil", pool.total_count() == 1)
+	pool.queue_free()
+
 	# Id desconocido: error claro y se autodestruye sin romper la escena.
 	var bad: Enemy = ENEMY_SCENE.instantiate()
 	bad.enemy_id = "no_existe"

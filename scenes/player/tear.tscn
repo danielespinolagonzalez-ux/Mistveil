@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3]
 
-[ext_resource type="Script" path="res://scripts/entities/tear.gd" id="1_tear"]
+[ext_resource type="Script" path="res://scripts/entities/projectile.gd" id="1_tear"]
 
 [sub_resource type="CircleShape2D" id="shape_tear"]
 radius = 3.0

@@ -1,11 +1,11 @@
-class_name Tear
+class_name Projectile
 extends HitboxComponent
-## Lágrima de tinta — proyectil del player. Es un HitboxComponent móvil: los
-## hurtboxes enemigos la reconocen solos. Vive en un pool: no se libera, se
-## desactiva (por alcance o impacto) y TearPool la reutiliza.
+## Proyectil genérico (lágrimas del player, agujas enemigas…). Es un
+## HitboxComponent móvil: los hurtboxes del bando contrario lo reconocen solos.
+## Vive en un ProjectilePool: no se libera, se desactiva por alcance o impacto.
 
 ## Emitida al desactivarse para que el pool la recicle.
-signal expired(tear: Tear)
+signal expired(projectile: Projectile)
 
 var _direction: Vector2 = Vector2.ZERO
 var _speed: float = 0.0
@@ -19,7 +19,7 @@ func _ready() -> void:
 	_deactivate_silent()
 
 
-## Pone la lágrima en juego. Los stats llegan por parámetro (los posee el player).
+## Pone el proyectil en juego. Los stats llegan por parámetro (los posee quien dispara).
 func fire(origin: Vector2, direction: Vector2, speed: float, range_px: float, damage_value: float) -> void:
 	global_position = origin
 	_direction = direction.normalized()
@@ -42,7 +42,7 @@ func _physics_process(delta: float) -> void:
 
 
 func _on_hit_landed(_hurtbox: HurtboxComponent) -> void:
-	# La lágrima se disipa al impactar; el daño lo aplica el dueño del hurtbox.
+	# El proyectil se disipa al impactar; el daño lo aplica el dueño del hurtbox.
 	_deactivate()
 
 
