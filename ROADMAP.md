@@ -3,7 +3,7 @@ Claude Code: trabaja las fases EN ORDEN. No avances de fase sin cumplir su **cri
 
 ## Fase 0 — Cimientos
 - [x] 0.1 Configurar proyecto: `Main.tscn` como escena principal, viewport 640×360, stretch `canvas_items`/`keep`, pixel snap, Input Map (move_up/down/left/right, aim con ratón/stick, shoot, melee, parry, dragoon, dash, pause).
-- [ ] 0.2 Crear los 6 autoloads vacíos y registrarlos (ver CLAUDE.md).
+- [x] 0.2 Crear los 6 autoloads vacíos y registrarlos (ver CLAUDE.md).
 - [ ] 0.3 `DataDB`: carga y valida todos los `data/*.json` con errores claros si falta una clave. Recarga en caliente con F5 (solo debug).
 - [ ] 0.4 Player: movimiento 8 direcciones con aceleración/fricción (valores de `balance.json`), placeholder visual.
 - [ ] 0.5 Disparo twin-stick: apuntar con ratón/stick derecho, proyectiles ("lágrimas de tinta") con object pooling, alcance y cadencia desde balance.

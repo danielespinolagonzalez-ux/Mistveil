@@ -9,6 +9,15 @@ config/description="Action-roguelite 2D: Isaac x Dragoon x FFIX"
 run/main_scene="res://scenes/main/main.tscn"
 config/features=PackedStringArray("4.5")
 
+[autoload]
+
+EventBus="*res://scripts/autoload/event_bus.gd"
+DataDB="*res://scripts/autoload/data_db.gd"
+GameState="*res://scripts/autoload/game_state.gd"
+RunState="*res://scripts/autoload/run_state.gd"
+AudioManager="*res://scripts/autoload/audio_manager.gd"
+SaveManager="*res://scripts/autoload/save_manager.gd"
+
 [display]
 
 window/size/viewport_width=640
