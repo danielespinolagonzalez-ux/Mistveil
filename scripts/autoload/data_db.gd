@@ -30,6 +30,10 @@ const BALANCE_REQUIRED := {
 		"d_addition_hits", "d_addition_window_ms", "d_finisher_shockwave_radius",
 		"post_transform_vulnerable_s",
 	],
+	"feedback": [
+		"tear_knockback_px_s", "contact_knockback_px_s", "knockback_decay_px_s2",
+		"damage_number_duration_s", "damage_number_rise_px",
+	],
 	"elementos": ["opposite_mult", "same_mult", "neutral_mult"],
 	"run": [
 		"floors_total", "rooms_min", "rooms_max", "grid_w", "grid_h",

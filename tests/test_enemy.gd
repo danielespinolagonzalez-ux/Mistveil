@@ -65,7 +65,7 @@ func _ready() -> void:
 	# Torreta (tejedor_horas): no se mueve y dispara hacia el player con su cadencia.
 	var shots: Array = []
 	EventBus.enemy_projectile_fired.connect(
-		func(origin: Vector2, dir: Vector2, speed: float, range_px: float, damage: float) -> void:
+		func(origin: Vector2, dir: Vector2, speed: float, range_px: float, damage: float, _knockback: float) -> void:
 			shots.append({"origin": origin, "dir": dir, "speed": speed, "range": range_px, "damage": damage}))
 	player_stub.position = Vector2(200, 0)
 	var turret: Enemy = ENEMY_SCENE.instantiate()
@@ -100,9 +100,56 @@ func _ready() -> void:
 	# Pool de proyectiles enemigos: la señal activa una bala reutilizable.
 	var pool := EnemyProjectilePool.new()
 	add_child(pool)
-	EventBus.enemy_projectile_fired.emit(Vector2.ZERO, Vector2.RIGHT, 100.0, 50.0, 1.0)
+	EventBus.enemy_projectile_fired.emit(Vector2.ZERO, Vector2.RIGHT, 100.0, 50.0, 1.0, 0.0)
 	_check("pool enemigo: disparar activa 1 proyectil", pool.total_count() == 1)
 	pool.queue_free()
+
+	# Knockback (tarea 1.6): un golpe con empuje desde la izquierda lo desplaza a la derecha.
+	var damage_events: Array = []
+	EventBus.damage_dealt.connect(func(pos: Vector2, amount: int) -> void:
+		damage_events.append({"pos": pos, "amount": amount}))
+	player_stub.position = Vector2(2000, 2000)  # lejos: que el chase no domine el empuje
+	var victim: Enemy = ENEMY_SCENE.instantiate()
+	victim.enemy_id = "cera_andante"
+	victim.position = Vector2.ZERO
+	add_child(victim)
+	var kb_hitbox := HitboxComponent.new()
+	kb_hitbox.damage = 2.0
+	kb_hitbox.knockback_px_s = float(DataDB.get_balance("feedback.tear_knockback_px_s"))
+	kb_hitbox.collision_layer = LAYER_PLAYER_ATTACK
+	kb_hitbox.collision_mask = LAYER_ENEMY_HURT
+	var kb_shape := CollisionShape2D.new()
+	var kb_circle := CircleShape2D.new()
+	kb_circle.radius = 20.0
+	kb_shape.shape = kb_circle
+	kb_hitbox.add_child(kb_shape)
+	kb_hitbox.position = Vector2(-15, 0)
+	add_child(kb_hitbox)
+	for i in 8:
+		await get_tree().physics_frame
+	_check("knockback: el golpe lo empuja en dirección contraria", victim.position.x > 4.0)
+	_check("damage_dealt: se emite con la cantidad redondeada",
+		damage_events.size() >= 1 and damage_events[0]["amount"] == 2)
+	kb_hitbox.queue_free()
+	victim.queue_free()
+
+	# Números de daño: damage_dealt crea un Label flotante que luego se desvanece.
+	var numbers := DamageNumbers.new()
+	add_child(numbers)
+	EventBus.damage_dealt.emit(Vector2(50, 50), 4)
+	await get_tree().process_frame
+	var number_label: Label = null
+	for child in numbers.get_children():
+		if child is Label:
+			number_label = child
+	_check("números de daño: aparece un Label con la cifra",
+		number_label != null and number_label.text == "4")
+	# El tween es en tiempo real y headless los frames van más rápido de 60 fps:
+	# esperamos por reloj, no por frames.
+	await get_tree().create_timer(float(DataDB.get_balance("feedback.damage_number_duration_s")) + 0.3).timeout
+	await get_tree().process_frame
+	_check("números de daño: se desvanece y libera", numbers.get_child_count() == 0)
+	numbers.queue_free()
 
 	# Id desconocido: error claro y se autodestruye sin romper la escena.
 	var bad: Enemy = ENEMY_SCENE.instantiate()

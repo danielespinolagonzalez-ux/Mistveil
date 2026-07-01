@@ -45,6 +45,13 @@
     "d_finisher_shockwave_radius": 96.0,
     "post_transform_vulnerable_s": 1.0
   },
+  "feedback": {
+    "tear_knockback_px_s": 140.0,
+    "contact_knockback_px_s": 220.0,
+    "knockback_decay_px_s2": 900.0,
+    "damage_number_duration_s": 0.6,
+    "damage_number_rise_px": 18.0
+  },
   "elementos": {
     "opposite_mult": 1.5,
     "same_mult": 0.5,

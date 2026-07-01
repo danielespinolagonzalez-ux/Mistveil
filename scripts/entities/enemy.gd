@@ -17,6 +17,8 @@ var _fire_timer_s: float = 0.0
 var _wander_dir: Vector2 = Vector2.ZERO
 var _wander_timer_s: float = 0.0
 var _rng := RandomNumberGenerator.new()
+var _knockback_vel: Vector2 = Vector2.ZERO
+var _knockback_decay: float = 0.0
 
 @onready var _health: HealthComponent = $HealthComponent
 @onready var _hurtbox: HurtboxComponent = $HurtboxComponent
@@ -54,6 +56,9 @@ func _physics_process(delta: float) -> void:
 		_:
 			# Comportamientos aún no implementados (orbit_shoot, chase_explode…): quieto.
 			velocity = Vector2.ZERO
+	# El knockback se suma al movimiento del comportamiento y decae solo.
+	velocity += _knockback_vel
+	_knockback_vel = _knockback_vel.move_toward(Vector2.ZERO, _knockback_decay * delta)
 	move_and_slide()
 
 
@@ -85,7 +90,8 @@ func _turret(delta: float) -> void:
 		global_position, dir,
 		float(_projectile_def.get("velocidad", 0.0)),
 		float(_projectile_def.get("alcance_px", 0.0)),
-		float(_projectile_def.get("dano", 0.0)))
+		float(_projectile_def.get("dano", 0.0)),
+		0.0)  # Las agujas no empujan; el knockback al player es del contacto.
 
 
 ## Vuelo errático: dirección aleatoria, rebota en colisiones y bordes (engranaje_errante).
@@ -117,7 +123,11 @@ func _find_player() -> Node2D:
 
 func _on_hurt_by(hitbox: HitboxComponent) -> void:
 	# Redondeo de la fórmula de daño: entero más cercano, mínimo 1 (combate.md).
-	_health.take_damage(maxi(1, roundi(hitbox.damage)))
+	var amount: int = maxi(1, roundi(hitbox.damage))
+	_health.take_damage(amount)
+	EventBus.damage_dealt.emit(global_position, amount)
+	var push_dir: Vector2 = (global_position - hitbox.global_position).normalized()
+	_knockback_vel = push_dir * hitbox.knockback_px_s
 
 
 func _on_died() -> void:
@@ -134,6 +144,8 @@ func _refresh_balance() -> void:
 	_projectile_def = def.get("proyectil", {})
 	_flies = bool(def.get("vuela", false))
 	_hitbox.damage = float(def.get("dano_contacto", 0.0))
+	_hitbox.knockback_px_s = float(DataDB.get_balance("feedback.contact_knockback_px_s"))
+	_knockback_decay = float(DataDB.get_balance("feedback.knockback_decay_px_s2"))
 	# Placeholder teñido con el color del elemento (regla de legibilidad).
 	var elemento: Dictionary = DataDB.elementos.get(str(def.get("elemento", "neutro")), {})
 	_placeholder.color = Color(str(elemento.get("color", "#9E9E9E")))

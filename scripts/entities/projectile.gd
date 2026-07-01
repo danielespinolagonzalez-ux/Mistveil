@@ -20,12 +20,13 @@ func _ready() -> void:
 
 
 ## Pone el proyectil en juego. Los stats llegan por parámetro (los posee quien dispara).
-func fire(origin: Vector2, direction: Vector2, speed: float, range_px: float, damage_value: float) -> void:
+func fire(origin: Vector2, direction: Vector2, speed: float, range_px: float, damage_value: float, knockback: float = 0.0) -> void:
 	global_position = origin
 	_direction = direction.normalized()
 	_speed = speed
 	_range_px = range_px
 	damage = damage_value
+	knockback_px_s = knockback
 	_traveled = 0.0
 	visible = true
 	set_physics_process(true)

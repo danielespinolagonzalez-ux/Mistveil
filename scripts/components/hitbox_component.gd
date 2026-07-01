@@ -8,6 +8,9 @@ signal hit_landed(hurtbox: HurtboxComponent)
 ## Daño base en bruto; los multiplicadores (timing, elemento…) se aplican fuera.
 @export var damage: float = 1.0
 
+## Empuje que aplica este ataque al impactar (px/s); 0 = sin knockback.
+@export var knockback_px_s: float = 0.0
+
 
 func _ready() -> void:
 	area_entered.connect(_on_area_entered)

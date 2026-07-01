@@ -13,6 +13,7 @@ var _tear_speed: float = 0.0
 var _tear_range_px: float = 0.0
 var _tear_rate_per_s: float = 0.0
 var _tear_damage: float = 0.0
+var _tear_knockback: float = 0.0
 var _hurt_iframes_s: float = 0.0
 var _hurt_blink_hz: float = 1.0
 
@@ -64,7 +65,7 @@ func _process_shooting(delta: float) -> void:
 	var aim: Vector2 = _aim_direction(stick_aim)
 	if aim == Vector2.ZERO:
 		return
-	EventBus.tear_fired.emit(global_position + aim * MUZZLE_OFFSET_PX, aim, _tear_speed, _tear_range_px, _tear_damage)
+	EventBus.tear_fired.emit(global_position + aim * MUZZLE_OFFSET_PX, aim, _tear_speed, _tear_range_px, _tear_damage, _tear_knockback)
 	_shoot_cooldown_s = 1.0 / _tear_rate_per_s
 
 
@@ -93,6 +94,9 @@ func _on_hurt_by(hitbox: HitboxComponent) -> void:
 	if not _dead:
 		_hurtbox.invulnerable = true
 		_iframes_left_s = _hurt_iframes_s
+		# Empujón en la dirección contraria al golpe; la fricción lo frena sola.
+		var push_dir: Vector2 = (global_position - hitbox.global_position).normalized()
+		velocity += push_dir * hitbox.knockback_px_s
 
 
 func _on_health_changed(current: int, max_hp: int) -> void:
@@ -115,5 +119,6 @@ func _refresh_balance() -> void:
 	_tear_range_px = float(DataDB.get_balance("player.tear_range_px"))
 	_tear_rate_per_s = maxf(0.1, float(DataDB.get_balance("player.tear_rate_per_s")))
 	_tear_damage = float(DataDB.get_balance("player.tear_damage"))
+	_tear_knockback = float(DataDB.get_balance("feedback.tear_knockback_px_s"))
 	_hurt_iframes_s = float(DataDB.get_balance("player.hurt_iframes_s"))
 	_hurt_blink_hz = maxf(1.0, float(DataDB.get_balance("player.hurt_blink_hz")))

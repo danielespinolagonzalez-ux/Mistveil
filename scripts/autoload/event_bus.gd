@@ -8,9 +8,11 @@ signal data_reloaded
 
 # --- Combate ---
 ## El player dispara una lágrima; TearPool escucha y la pone en juego.
-signal tear_fired(origin: Vector2, direction: Vector2, speed: float, range_px: float, damage: float)
+signal tear_fired(origin: Vector2, direction: Vector2, speed: float, range_px: float, damage: float, knockback_px_s: float)
 ## Un enemigo dispara; EnemyProjectilePool escucha y pone la bala en juego.
-signal enemy_projectile_fired(origin: Vector2, direction: Vector2, speed: float, range_px: float, damage: float)
+signal enemy_projectile_fired(origin: Vector2, direction: Vector2, speed: float, range_px: float, damage: float, knockback_px_s: float)
+## Daño aplicado a un enemigo (para números flotantes y feedback).
+signal damage_dealt(world_pos: Vector2, amount: int)
 
 signal enemy_died(enemy: Node)
 signal player_died

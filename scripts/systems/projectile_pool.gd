@@ -9,8 +9,8 @@ extends Node2D
 var _free: Array[Projectile] = []
 
 
-func spawn(origin: Vector2, direction: Vector2, speed: float, range_px: float, damage: float) -> void:
-	_acquire().fire(origin, direction, speed, range_px, damage)
+func spawn(origin: Vector2, direction: Vector2, speed: float, range_px: float, damage: float, knockback_px_s: float = 0.0) -> void:
+	_acquire().fire(origin, direction, speed, range_px, damage, knockback_px_s)
 
 
 func _acquire() -> Projectile:

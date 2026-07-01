@@ -17,7 +17,7 @@ Claude Code: trabaja las fases EN ORDEN. No avances de fase sin cumplir su **cri
 - [x] 1.3 Daño por contacto al player, i-frames con parpadeo, muerte y pantalla de derrota mínima.
 - [x] 1.4 Enemigos `tejedor_horas` (torreta que dispara) y `engranaje_errante` (volador errático).
 - [x] 1.5 HUD: corazones de vida, contador de oro.
-- [ ] 1.6 Knockback y números de daño flotantes (feedback).
+- [x] 1.6 Knockback y números de daño flotantes (feedback).
 
 **Criterio:** limpiar una sala de prueba con 5 enemigos mixtos se siente justo y legible.
 

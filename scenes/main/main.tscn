@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="1_player"]
 [ext_resource type="Script" path="res://scripts/systems/tear_pool.gd" id="2_tear_pool"]
@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/defeat_screen.tscn" id="4_defeat"]
 [ext_resource type="Script" path="res://scripts/systems/enemy_projectile_pool.gd" id="5_enemy_pool"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="6_hud"]
+[ext_resource type="Script" path="res://scripts/systems/damage_numbers.gd" id="7_damage_numbers"]
 
 [node name="Main" type="Node2D"]
 
@@ -20,11 +21,17 @@ script = ExtResource("2_tear_pool")
 [node name="EnemyProjectilePool" type="Node2D" parent="."]
 script = ExtResource("5_enemy_pool")
 
+[node name="DamageNumbers" type="Node2D" parent="."]
+script = ExtResource("7_damage_numbers")
+
 [node name="Player" parent="." instance=ExtResource("1_player")]
 position = Vector2(320, 180)
 
 [node name="CeraAndante" parent="." instance=ExtResource("3_enemy")]
 position = Vector2(500, 120)
+
+[node name="CeraAndante2" parent="." instance=ExtResource("3_enemy")]
+position = Vector2(120, 280)
 
 [node name="TejedorHoras" parent="." instance=ExtResource("3_enemy")]
 position = Vector2(140, 90)
@@ -32,6 +39,10 @@ enemy_id = "tejedor_horas"
 
 [node name="EngranajeErrante" parent="." instance=ExtResource("3_enemy")]
 position = Vector2(480, 270)
+enemy_id = "engranaje_errante"
+
+[node name="EngranajeErrante2" parent="." instance=ExtResource("3_enemy")]
+position = Vector2(320, 70)
 enemy_id = "engranaje_errante"
 
 [node name="HUD" parent="." instance=ExtResource("6_hud")]
