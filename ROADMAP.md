@@ -38,7 +38,7 @@ Spec completa: `docs/sistemas/combate.md`. Es la prioridad de diseño del juego.
 - [x] 3.2 Cargar layout desde plantillas JSON (`data/salas/`), símbolos según spec de generación.
 - [x] 3.3 Puertas se sellan al entrar con enemigos; `room_cleared` las abre. Transición de cámara entre salas estilo Isaac.
 - [x] 3.4 Piso de prueba: 6 salas conectadas a mano (normal×4, tesoro, jefe-placeholder).
-- [ ] 3.5 Obstáculos: rocas (#), pozos (P, bloquean a terrestres), bloques de cera destructibles (O).
+- [x] 3.5 Obstáculos: rocas (#), pozos (P, bloquean a terrestres), bloques de cera destructibles (O).
 
 **Criterio:** recorrer el piso de 6 salas limpiándolas es ya "un juego".
 

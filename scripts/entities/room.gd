@@ -11,6 +11,7 @@ const TILE := 32
 const WALL_PX := 32
 
 const ENEMY_SCENE: PackedScene = preload("res://scenes/enemies/enemy.tscn")
+const WAX_SCENE: PackedScene = preload("res://scenes/rooms/wax_block.tscn")
 
 # Semánticas de la leyenda de plantillas (los VALORES de "leyenda" en data/salas).
 const SYM_FLOOR := "suelo"
@@ -291,36 +292,53 @@ func _parse_layout(template: Dictionary, legend: Dictionary) -> void:
 					_pickup_tiles.append(Vector2i(tx, ty))
 
 
+## Roca: bloquea TODO — cuerpos terrestres, voladores y proyectiles (capa obstacle).
 func _place_rock(tile: Vector2i) -> void:
-	var rock := Polygon2D.new()
-	rock.color = Color(0.42, 0.4, 0.45)
-	rock.polygon = PackedVector2Array([
+	var rock := StaticBody2D.new()
+	rock.collision_layer = 128
+	rock.collision_mask = 0
+	var shape := CollisionShape2D.new()
+	var rect := RectangleShape2D.new()
+	rect.size = Vector2(28, 28)
+	shape.shape = rect
+	rock.add_child(shape)
+	var visual := Polygon2D.new()
+	visual.color = Color(0.42, 0.4, 0.45)
+	visual.polygon = PackedVector2Array([
 		Vector2(-13, -8), Vector2(-4, -14), Vector2(9, -12), Vector2(14, -2),
 		Vector2(10, 11), Vector2(-3, 14), Vector2(-13, 7),
 	])
+	rock.add_child(visual)
 	rock.position = tile_center(tile.x, tile.y)
 	rock.add_to_group("rocks")
 	add_child(rock)
 
 
+## Pozo: bloquea solo a terrestres (capa pit); vuelo y proyectiles pasan por encima.
 func _place_pit(tile: Vector2i) -> void:
-	var pit := ColorRect.new()
-	pit.color = Color(0.03, 0.03, 0.06)
-	pit.position = tile_center(tile.x, tile.y) - Vector2(TILE, TILE) * 0.5
-	pit.size = Vector2(TILE, TILE)
-	pit.z_index = -8
+	var pit := StaticBody2D.new()
+	pit.collision_layer = 256
+	pit.collision_mask = 0
+	var shape := CollisionShape2D.new()
+	var rect := RectangleShape2D.new()
+	rect.size = Vector2(TILE, TILE)
+	shape.shape = rect
+	pit.add_child(shape)
+	var visual := ColorRect.new()
+	visual.color = Color(0.03, 0.03, 0.06)
+	visual.position = -Vector2(TILE, TILE) * 0.5
+	visual.size = Vector2(TILE, TILE)
+	visual.z_index = -8
+	pit.add_child(visual)
+	pit.position = tile_center(tile.x, tile.y)
 	pit.add_to_group("pits")
 	add_child(pit)
 
 
+## Bloque de cera destructible (escena propia con vida y hurtbox).
 func _place_wax(tile: Vector2i) -> void:
-	var wax := Polygon2D.new()
-	wax.color = Color(0.85, 0.8, 0.62)
-	wax.polygon = PackedVector2Array([
-		Vector2(-14, -12), Vector2(14, -14), Vector2(13, 13), Vector2(-12, 14),
-	])
+	var wax: WaxBlock = WAX_SCENE.instantiate()
 	wax.position = tile_center(tile.x, tile.y)
-	wax.add_to_group("wax_blocks")
 	add_child(wax)
 
 

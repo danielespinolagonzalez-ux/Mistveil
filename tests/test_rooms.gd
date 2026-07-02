@@ -14,6 +14,7 @@ func _ready() -> void:
 	await _test_room_template()
 	await _test_floor_transition()
 	await _test_main_floor()
+	await _test_obstacles()
 
 	if _failures == 0:
 		print("TEST ROOMS: OK")
@@ -194,6 +195,93 @@ func _test_main_floor() -> void:
 	_check("main: ninguna sala huérfana (todas con puerta)", all_connected)
 
 	main.queue_free()
+	await get_tree().physics_frame
+
+
+## Tarea 3.5: rocas bloquean todo, pozos solo a terrestres, cera destructible.
+func _test_obstacles() -> void:
+	# Capas físicas de los obstáculos generados desde plantilla.
+	var salas: Dictionary = DataDB.salas["piso1_plantillas"]
+	var room: Room = ROOM_SCENE.instantiate()
+	add_child(room)
+	var exits: Array[Vector2i] = [Vector2i.RIGHT]
+	var template: Dictionary = {}
+	for t: Dictionary in salas["plantillas"]:
+		if t["id"] == "p1_cruce_01":
+			template = t
+	room.setup(Vector2i.ZERO, Vector2i(13, 7), exits, template, salas["leyenda"])
+	await get_tree().physics_frame
+
+	var rock_ok := true
+	var pit_ok := true
+	for child in room.get_children():
+		if child.is_in_group("rocks") and (not child is StaticBody2D or (child as StaticBody2D).collision_layer != 128):
+			rock_ok = false
+		if child.is_in_group("pits") and (not child is StaticBody2D or (child as StaticBody2D).collision_layer != 256):
+			pit_ok = false
+	_check("obstáculos: rocas en capa obstacle", rock_ok and _count_in_group(room, "rocks") > 0)
+	_check("obstáculos: pozos en capa pit", pit_ok and _count_in_group(room, "pits") > 0)
+
+	# Máscaras: terrestre choca con pozos; volador no.
+	var walker: Enemy = (load("res://scenes/enemies/enemy.tscn") as PackedScene).instantiate()
+	walker.enemy_id = "cera_andante"
+	walker.position = Vector2(3000, 3000)
+	add_child(walker)
+	var flier: Enemy = (load("res://scenes/enemies/enemy.tscn") as PackedScene).instantiate()
+	flier.enemy_id = "engranaje_errante"
+	flier.position = Vector2(3100, 3000)
+	add_child(flier)
+	await get_tree().physics_frame
+	_check("máscaras: terrestre colisiona con pozos", walker.collision_mask & 256 == 256)
+	_check("máscaras: volador ignora pozos pero no rocas",
+		flier.collision_mask & 256 == 0 and flier.collision_mask & 128 == 128)
+	walker.queue_free()
+	flier.queue_free()
+
+	# Cera destructible: una lágrima la daña y se disipa al impactar.
+	var wax: WaxBlock = (load("res://scenes/rooms/wax_block.tscn") as PackedScene).instantiate()
+	wax.position = Vector2(3300, 3000)
+	add_child(wax)
+	await get_tree().physics_frame
+	var wax_health: HealthComponent = wax.get_node("HealthComponent")
+	_check("cera: vida desde balance salas.cera_hp",
+		wax_health.max_hp == int(DataDB.get_balance("salas.cera_hp")))
+	var tear: Projectile = (load("res://scenes/player/tear.tscn") as PackedScene).instantiate()
+	add_child(tear)
+	await get_tree().physics_frame
+	tear.fire(wax.position - Vector2(60, 0), Vector2.RIGHT, 300.0, 200.0, 2.0)
+	for i in 30:
+		await get_tree().physics_frame
+		if not tear.visible:
+			break
+	_check("cera: la lágrima impacta y daña", wax_health.current_hp == wax_health.max_hp - 2)
+	_check("cera: la lágrima se disipa al chocar", not tear.visible)
+	wax_health.take_damage(999)
+	await get_tree().physics_frame
+	_check("cera: al agotarse desaparece", not is_instance_valid(wax) or wax.is_queued_for_deletion())
+
+	# Proyectil bloqueado por roca: no la atraviesa aunque no haya hurtbox.
+	var rock := StaticBody2D.new()
+	rock.collision_layer = 128
+	var rock_shape := CollisionShape2D.new()
+	var rock_rect := RectangleShape2D.new()
+	rock_rect.size = Vector2(28, 28)
+	rock_shape.shape = rock_rect
+	rock.add_child(rock_shape)
+	rock.position = Vector2(3600, 3000)
+	add_child(rock)
+	await get_tree().physics_frame
+	tear.fire(rock.position - Vector2(80, 0), Vector2.RIGHT, 300.0, 400.0, 1.0)
+	for i in 40:
+		await get_tree().physics_frame
+		if not tear.visible:
+			break
+	_check("roca: bloquea proyectiles",
+		not tear.visible and tear.global_position.x < rock.position.x + 20.0)
+
+	tear.queue_free()
+	rock.queue_free()
+	room.queue_free()
 	await get_tree().physics_frame
 
 

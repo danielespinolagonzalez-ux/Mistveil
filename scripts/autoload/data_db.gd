@@ -262,6 +262,19 @@ func _validate_plantillas(contenido: Dictionary, path: String) -> void:
 			for ch: String in row_str:
 				if not leyenda.has(ch):
 					_fail(path, "plantilla '%s': símbolo '%s' no está en la leyenda" % [id, ch])
+		# Spec generación §5: las casillas frente a las 4 puertas posibles deben ser suelo.
+		var mid_x: int = floori(int(tamano[0]) / 2.0)
+		var mid_y: int = floori(int(tamano[1]) / 2.0)
+		var door_cells: Array[Vector2i] = [
+			Vector2i(mid_x, 0), Vector2i(mid_x, int(tamano[1]) - 1),
+			Vector2i(0, mid_y), Vector2i(int(tamano[0]) - 1, mid_y),
+		]
+		for cell: Vector2i in door_cells:
+			if cell.y >= layout.size() or cell.x >= str(layout[cell.y]).length():
+				continue
+			var symbol: String = str(layout[cell.y])[cell.x]
+			if str(leyenda.get(symbol, "")) != "suelo":
+				_fail(path, "plantilla '%s': la casilla frente a la puerta (%d,%d) debe ser suelo y es '%s'" % [id, cell.x, cell.y, symbol])
 
 
 ## Comprobaciones cruzadas entre archivos: referencias rotas se avisan al cargar.

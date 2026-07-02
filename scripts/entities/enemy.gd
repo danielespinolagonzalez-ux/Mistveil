@@ -143,6 +143,9 @@ func _refresh_balance() -> void:
 	_behavior = str(def.get("comportamiento", ""))
 	_projectile_def = def.get("proyectil", {})
 	_flies = bool(def.get("vuela", false))
+	# Terrestres chocan con rocas Y pozos; los voladores solo con muros y rocas
+	# (la roca "bloquea todo"; el pozo no bloquea el vuelo — spec generación).
+	collision_mask = (1 | 2 | 128) if _flies else (1 | 2 | 128 | 256)
 	_hitbox.damage = float(def.get("dano_contacto", 0.0))
 	# Sin daño de contacto (dummy, velón…) el hitbox se apaga del todo: el redondeo
 	# "mínimo 1" del receptor convertiría un 0 en golpe real.

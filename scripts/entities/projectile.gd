@@ -16,6 +16,8 @@ var _traveled: float = 0.0
 func _ready() -> void:
 	super._ready()
 	hit_landed.connect(_on_hit_landed)
+	# Muros y rocas bloquean proyectiles (los pozos no) — spec de generación.
+	body_entered.connect(_on_body_entered)
 	_deactivate_silent()
 
 
@@ -44,6 +46,10 @@ func _physics_process(delta: float) -> void:
 
 func _on_hit_landed(_hurtbox: HurtboxComponent) -> void:
 	# El proyectil se disipa al impactar; el daño lo aplica el dueño del hurtbox.
+	_deactivate()
+
+
+func _on_body_entered(_body: Node2D) -> void:
 	_deactivate()
 
 
