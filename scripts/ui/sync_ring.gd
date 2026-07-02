@@ -22,8 +22,13 @@ const COLOR_BASE := Color(0.95, 0.95, 0.9, 0.85)
 const COLOR_INNER := Color(0.8, 0.8, 0.75, 0.45)
 const COLOR_GOOD := Color(1.0, 0.98, 0.75, 0.95)
 const COLOR_PERFECT := Color(1.0, 1.0, 1.0, 1.0)
+# Contraataque (QTE de parry): anillo ROJO, inconfundible (regla de legibilidad).
+const COLOR_COUNTER := Color(0.9, 0.18, 0.18, 0.95)
+const COLOR_COUNTER_WINDOW := Color(1.0, 0.45, 0.3, 1.0)
 
 var active: bool = false
+## true = anillo rojo de contraataque (se resuelve con parry, no con melee).
+var counter_mode: bool = false
 
 var _target: Node2D = null
 var _contract_ms: float = 0.0
@@ -40,11 +45,13 @@ func _ready() -> void:
 
 
 ## Arranca la contracción sobre `target` con los tiempos dados (en ms).
-func start(target: Node2D, contract_ms: float, perfect_ms: float, good_ms: float) -> void:
+## Con counter=true el anillo es rojo y solo tiene ventana "buena" (counter_window).
+func start(target: Node2D, contract_ms: float, perfect_ms: float, good_ms: float, counter: bool = false) -> void:
 	_target = target
 	_contract_ms = contract_ms
 	_perfect_ms = perfect_ms
 	_good_ms = good_ms
+	counter_mode = counter
 	_elapsed_ms = 0.0
 	active = true
 	visible = true
@@ -103,14 +110,20 @@ func _draw() -> void:
 		return
 	# El color comunica la ventana abierta (sin coyote: el destello es honesto).
 	var quality: Quality = judge_now()
-	var color: Color = COLOR_BASE
+	var color: Color = COLOR_COUNTER if counter_mode else COLOR_BASE
 	var width: float = LINE_WIDTH_PX
-	match quality:
-		Quality.PERFECT:
-			color = COLOR_PERFECT
-			width = LINE_WIDTH_PX * 2.0
-		Quality.GOOD:
-			color = COLOR_GOOD
+	if counter_mode:
+		width = LINE_WIDTH_PX * 1.5
+		if quality != Quality.FAIL:
+			color = COLOR_COUNTER_WINDOW
+			width = LINE_WIDTH_PX * 2.5
+	else:
+		match quality:
+			Quality.PERFECT:
+				color = COLOR_PERFECT
+				width = LINE_WIDTH_PX * 2.0
+			Quality.GOOD:
+				color = COLOR_GOOD
 	var t: float = clampf(_elapsed_ms / _contract_ms, 0.0, 1.0)
 	var outer_radius: float = lerpf(RADIUS_OUTER_PX, RADIUS_INNER_PX, t)
 	draw_arc(Vector2.ZERO, RADIUS_INNER_PX, 0.0, TAU, ARC_POINTS, COLOR_INNER, 1.0)

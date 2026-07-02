@@ -24,6 +24,7 @@
 | 2026-07-02 | 2.2: SyncRing (dibujo por código, se contrae sobre el objetivo, judge_now con perfecta/buena/fallo + coyote, cierre y aviso al pasarse); integrado al iniciar melé con objetivo cercano; tests/test_cadencia.tscn (12 checks) | Anillo avanza con reloj de física (se congela en pausa); z_index absoluto 200 para dibujarse sobre balas; nuevas claves ring_contract_ms y target_range_px | Tarea 2.3 (cadena de 3 golpes) |
 | 2026-07-02 | 2.3: combo de 3 golpes (acertar encadena con ventanas decaídas, fallar/timeout = golpe débil y corte), multiplicadores y SP por calidad (RunState.sp + sp_changed), finisher con knockback en área; señal cadencia_hit_resolved | Decisión de diseño: solo el finisher empuja — el knockback intermedio alejaba al objetivo y rompía la cadena; golpe suelto sin objetivo mantiene windup y daño base | Subtarea 2.3b (dash + cancelación) |
 | 2026-07-02 | 2.3b: dash con impulso fijo, i-frames breves desde el primer instante, cooldown; cancela el combo conservando SP; 8 checks nuevos | Dirección del dash: input de movimiento, con fallback al aim | Tarea 2.4 (contraataque QTE) |
+| 2026-07-02 | 2.4: anillo ROJO de counter (counter_chance del JSON, nunca dos seguidos): parry en ventana niega + SP bonus y el combo sigue en el mismo golpe; melee/timeout = counter_damage + corte; señales counter_started/resolved | Éxito de parry re-presenta el MISMO golpe con anillo normal; melee durante counter cuenta como fallo (botón equivocado, como en Dragoon) | Tarea 2.5 (audio placeholder) |
 
 ## Deuda técnica / notas
 - (vacío)

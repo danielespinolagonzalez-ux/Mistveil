@@ -45,6 +45,9 @@ var _finisher_mult: float = 1.0
 var _finisher_knockback: float = 0.0
 var _sp_perfect: int = 0
 var _sp_good: int = 0
+var _counter_window_ms: float = 0.0
+var _counter_damage: int = 0
+var _sp_counter_bonus: int = 0
 
 # --- Estado ---
 var _dash_speed: float = 0.0
@@ -66,6 +69,9 @@ var _sync_ring: SyncRing = null
 var _combo_target: Node2D = null
 var _combo_hit_index: int = 0
 var _combo_cut: bool = false
+var _counter_active: bool = false
+var _last_hit_was_counter: bool = false
+var _rng := RandomNumberGenerator.new()
 
 @onready var _health: HealthComponent = $HealthComponent
 @onready var _hurtbox: HurtboxComponent = $HurtboxComponent
@@ -75,6 +81,7 @@ var _combo_cut: bool = false
 
 
 func _ready() -> void:
+	_rng.randomize()
 	_refresh_balance()
 	EventBus.data_reloaded.connect(_refresh_balance)
 	_health.max_hp = int(DataDB.get_balance("player.max_hp"))
@@ -149,6 +156,7 @@ func _cancel_combo() -> void:
 	_sync_ring.stop()
 	_set_melee_hitbox_enabled(false)
 	_combo_target = null
+	_counter_active = false
 	_melee_phase = MeleePhase.NONE
 
 
@@ -178,7 +186,13 @@ func _process_melee(delta: float) -> void:
 			if _melee_timer_s <= 0.0:
 				_strike(_melee_damage, _melee_knockback)
 		MeleePhase.RING_WAIT:
-			if Input.is_action_just_pressed("melee"):
+			if _counter_active:
+				# QTE: parry dentro de la ventana; melee es el botón EQUIVOCADO.
+				if Input.is_action_just_pressed("parry"):
+					_resolve_counter(_sync_ring.judge_now(_coyote_input_ms) != SyncRing.Quality.FAIL)
+				elif Input.is_action_just_pressed("melee"):
+					_resolve_counter(false)
+			elif Input.is_action_just_pressed("melee"):
 				_resolve_hit(_sync_ring.judge_now(_coyote_input_ms))
 		MeleePhase.STRIKE:
 			_melee_timer_s -= delta
@@ -207,10 +221,54 @@ func _begin_melee() -> void:
 
 
 func _start_ring_for_current_hit() -> void:
+	# ¿Interrumpe el enemigo? (counter_chance del JSON; nunca dos seguidos).
+	if not _last_hit_was_counter and _rng.randf() < _target_counter_chance():
+		_start_counter_ring()
+		return
+	_last_hit_was_counter = false
 	# Las ventanas se estrechan un poco en cada golpe del combo (window_decay).
 	var decay: float = pow(_window_decay_per_hit, _combo_hit_index - 1)
 	_sync_ring.start(_combo_target, _ring_contract_ms, _window_perfect_ms * decay, _window_good_ms * decay)
 	_melee_phase = MeleePhase.RING_WAIT
+
+
+func _target_counter_chance() -> float:
+	var enemy := _combo_target as Enemy
+	if enemy == null:
+		return 0.0
+	return float(DataDB.enemigos.get(enemy.enemy_id, {}).get("counter_chance", 0.0))
+
+
+## Anillo ROJO: el enemigo contraataca y hay que responder con parry.
+func _start_counter_ring() -> void:
+	_counter_active = true
+	_last_hit_was_counter = true
+	EventBus.cadencia_counter_started.emit()
+	_sync_ring.start(_combo_target, _ring_contract_ms, 0.0, _counter_window_ms, true)
+	_melee_phase = MeleePhase.RING_WAIT
+
+
+func _resolve_counter(success: bool) -> void:
+	_counter_active = false
+	_sync_ring.stop()
+	EventBus.cadencia_counter_resolved.emit(success)
+	if success and is_instance_valid(_combo_target):
+		# Parry: niega el golpe, bonus de SP y el combo continúa en el mismo golpe.
+		RunState.add_sp(_sp_counter_bonus)
+		_start_ring_for_current_hit()
+		return
+	if success:
+		# Parry correcto pero el objetivo ya no existe: cerrar limpio.
+		RunState.add_sp(_sp_counter_bonus)
+	else:
+		# Golpe encajado: daño directo del contraataque + i-frames, combo cortado.
+		_health.take_damage(_counter_damage)
+		if not _dead:
+			_hurtbox.invulnerable = true
+			_iframes_left_s = _hurt_iframes_s
+	_combo_target = null
+	_melee_phase = MeleePhase.RECOVERY
+	_melee_timer_s = _melee_recovery_s
 
 
 ## Resuelve el golpe actual del combo con la calidad dada (pulsación o timeout).
@@ -268,7 +326,11 @@ func _after_strike() -> void:
 
 func _on_ring_window_closed() -> void:
 	# No pulsar a tiempo (o perder el objetivo) durante la espera = fallo.
-	if _melee_phase == MeleePhase.RING_WAIT:
+	if _melee_phase != MeleePhase.RING_WAIT:
+		return
+	if _counter_active:
+		_resolve_counter(false)
+	else:
 		_resolve_hit(SyncRing.Quality.FAIL)
 
 
@@ -380,5 +442,8 @@ func _refresh_balance() -> void:
 	_finisher_knockback = float(DataDB.get_balance("cadencia.finisher_knockback"))
 	_sp_perfect = int(DataDB.get_balance("cadencia.sp_perfect"))
 	_sp_good = int(DataDB.get_balance("cadencia.sp_good"))
+	_counter_window_ms = float(DataDB.get_balance("cadencia.counter_window_ms"))
+	_counter_damage = int(DataDB.get_balance("cadencia.counter_damage"))
+	_sp_counter_bonus = int(DataDB.get_balance("cadencia.sp_counter_bonus"))
 	_melee_hitbox.damage = _melee_damage
 	_melee_hitbox.knockback_px_s = _melee_knockback

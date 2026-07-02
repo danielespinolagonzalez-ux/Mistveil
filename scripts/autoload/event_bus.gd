@@ -15,6 +15,10 @@ signal enemy_projectile_fired(origin: Vector2, direction: Vector2, speed: float,
 signal damage_dealt(world_pos: Vector2, amount: int)
 ## Golpe de Cadencia resuelto (quality: SyncRing.Quality). Para audio/UI/items.
 signal cadencia_hit_resolved(quality: int, hit_index: int, is_finisher: bool)
+## Un enemigo interrumpe el combo: anillo rojo, hay que pulsar parry (audio: campana).
+signal cadencia_counter_started
+## El QTE de contraataque terminó (parry a tiempo o golpe encajado).
+signal cadencia_counter_resolved(success: bool)
 
 signal enemy_died(enemy: Node)
 signal player_died

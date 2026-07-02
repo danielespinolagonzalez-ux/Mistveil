@@ -24,6 +24,7 @@ func _ready() -> void:
 	await _test_combo_chain()
 	await _test_combo_fail_cuts()
 	await _test_dash_cancels_combo()
+	await _test_counter_qte()
 
 	if _failures == 0:
 		print("TEST CADENCIA: OK")
@@ -132,17 +133,34 @@ func _test_combo_chain() -> void:
 
 	var contract_ms: float = float(DataDB.get_balance("cadencia.ring_contract_ms"))
 	var sp_perfect: int = int(DataDB.get_balance("cadencia.sp_perfect"))
+	var sp_counter: int = int(DataDB.get_balance("cadencia.sp_counter_bonus"))
 	var combo_hits: int = int(DataDB.get_balance("cadencia.combo_hits_base"))
 
 	await _tap_melee()  # inicia el combo (anillo 1)
 	_check("combo: anillo 1 en marcha", player._sync_ring.active)
 
-	for hit in combo_hits:
+	# El campanero puede intercalar counters (45%): si el anillo es rojo se hace
+	# parry (el combo continúa en el mismo golpe); si es blanco, perfecta.
+	var parries: int = 0
+	var safety: int = combo_hits * 4
+	while _hits.size() < combo_hits and safety > 0 and is_instance_valid(enemy):
+		safety -= 1
+		# Esperar a que haya anillo en marcha.
+		for i in 40:
+			if player._sync_ring.active:
+				break
+			await get_tree().physics_frame
+		if not player._sync_ring.active:
+			break
 		# La detección del input llega 1-2 frames tras action_press: pulsamos un
-		# pelín antes de la alineación para caer dentro de la perfecta.
+		# pelín antes de la alineación para caer dentro de la ventana.
 		await _advance_to_ms(player._sync_ring, contract_ms - 30.0)
-		await _tap_melee()  # pulsación en la alineación = perfecta
-		# Esperar a que el golpe termine y (si toca) arranque el siguiente anillo.
+		if player._counter_active:
+			parries += 1
+			await _tap_parry()
+		else:
+			await _tap_melee()
+		# Dejar que el golpe/QTE termine.
 		for i in 30:
 			await get_tree().physics_frame
 			if player._sync_ring.active or player._melee_phase == Player.MeleePhase.RECOVERY \
@@ -158,7 +176,8 @@ func _test_combo_chain() -> void:
 		_check("combo: todos los golpes perfectos", all_perfect)
 		_check("combo: el último es finisher y los demás no",
 			_hits[combo_hits - 1]["finisher"] and not _hits[0]["finisher"])
-	_check("combo: SP ganado por calidad", RunState.sp == sp_perfect * combo_hits)
+	_check("combo: SP por calidad (+ bonus de parries si hubo)",
+		RunState.sp == sp_perfect * combo_hits + sp_counter * parries)
 	# Daño: 2 golpes ×1.6 (8) + finisher ×1.6×1.5 (12) = 28 ≥ 22 → muere.
 	_check("combo: el campanero cae con el finisher", not is_instance_valid(enemy) or enemy_health.is_dead)
 	player.queue_free()
@@ -173,8 +192,9 @@ func _test_combo_fail_cuts() -> void:
 	var player: Player = PLAYER_SCENE.instantiate()
 	player.position = Vector2(900, 900)
 	add_child(player)
+	# cera_andante: counter_chance 0 → sin anillos rojos, test determinista.
 	var enemy: Enemy = ENEMY_SCENE.instantiate()
-	enemy.enemy_id = "campanero"
+	enemy.enemy_id = "cera_andante"
 	enemy.position = player.position + Vector2(30, 0)
 	add_child(enemy)
 	var enemy_health: HealthComponent = enemy.get_node("HealthComponent")
@@ -205,8 +225,9 @@ func _test_dash_cancels_combo() -> void:
 	var player: Player = PLAYER_SCENE.instantiate()
 	player.position = Vector2(1200, 1200)
 	add_child(player)
+	# cera_andante: sin counters → la secuencia perfecta+dash es determinista.
 	var enemy: Enemy = ENEMY_SCENE.instantiate()
-	enemy.enemy_id = "campanero"
+	enemy.enemy_id = "cera_andante"
 	enemy.position = player.position + Vector2(30, 0)
 	add_child(enemy)
 	await get_tree().physics_frame
@@ -237,12 +258,84 @@ func _test_dash_cancels_combo() -> void:
 	enemy.queue_free()
 
 
+## QTE de contraataque (tarea 2.4): parry niega, botón equivocado/timeout castiga.
+func _test_counter_qte() -> void:
+	_hits.clear()
+	RunState.reset()
+	var counter_events: Array[Dictionary] = []
+	EventBus.cadencia_counter_started.connect(func() -> void: counter_events.append({"started": true}))
+	EventBus.cadencia_counter_resolved.connect(func(success: bool) -> void: counter_events.append({"success": success}))
+
+	var player: Player = PLAYER_SCENE.instantiate()
+	player.position = Vector2(1500, 1500)
+	add_child(player)
+	var player_health: HealthComponent = player.get_node("HealthComponent")
+	var enemy: Enemy = ENEMY_SCENE.instantiate()
+	enemy.enemy_id = "campanero"
+	enemy.position = player.position + Vector2(30, 0)
+	add_child(enemy)
+	await get_tree().physics_frame
+
+	var contract_ms: float = float(DataDB.get_balance("cadencia.ring_contract_ms"))
+	var sp_counter: int = int(DataDB.get_balance("cadencia.sp_counter_bonus"))
+	var counter_damage: int = int(DataDB.get_balance("cadencia.counter_damage"))
+
+	# Counter forzado (sin depender del azar del 45%).
+	await _tap_melee()
+	player._sync_ring.stop()
+	player._start_counter_ring()
+	_check("counter: anillo rojo activo", player._counter_active and player._sync_ring.counter_mode)
+	_check("counter: avisa por EventBus", counter_events.size() >= 1 and counter_events[0].has("started"))
+
+	# Éxito: parry dentro de la ventana → SP bonus y el combo continúa (anillo normal).
+	await _advance_to_ms(player._sync_ring, contract_ms - 30.0)
+	await _tap_parry()
+	_check("counter: parry a tiempo niega y da SP", RunState.sp == sp_counter)
+	_check("counter: el combo continúa con anillo normal",
+		player._sync_ring.active and not player._sync_ring.counter_mode and not player._counter_active)
+
+	# Botón equivocado: melee durante el counter = golpe encajado y corte.
+	player._sync_ring.stop()
+	player._start_counter_ring()
+	var hp_before: int = player_health.current_hp
+	await _tap_melee()
+	_check("counter: melee (botón equivocado) castiga con counter_damage",
+		player_health.current_hp == hp_before - counter_damage)
+	_check("counter: combo cortado tras fallo", not player._sync_ring.active and not player._counter_active)
+
+	# Timeout: no pulsar nada también castiga.
+	for i in 60:
+		await get_tree().physics_frame
+		if player._melee_phase == Player.MeleePhase.NONE:
+			break
+	await _tap_melee()  # nuevo combo (el anillo puede salir rojo por azar: da igual)
+	player._sync_ring.stop()
+	player._start_counter_ring()
+	hp_before = player_health.current_hp
+	for i in 90:
+		await get_tree().physics_frame
+		if not player._sync_ring.active:
+			break
+	await get_tree().physics_frame
+	_check("counter: timeout también castiga", player_health.current_hp == hp_before - counter_damage)
+
+	player.queue_free()
+	enemy.queue_free()
+
+
 func _tap_melee() -> void:
 	# Dos frames pulsado: is_action_just_pressed se ve en el frame siguiente al press.
 	Input.action_press("melee")
 	await get_tree().physics_frame
 	await get_tree().physics_frame
 	Input.action_release("melee")
+
+
+func _tap_parry() -> void:
+	Input.action_press("parry")
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	Input.action_release("parry")
 
 
 ## Avanza frames de física hasta que el anillo alcance (o pase) los ms pedidos.

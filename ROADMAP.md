@@ -27,7 +27,7 @@ Spec completa: `docs/sistemas/combate.md`. Es la prioridad de diseño del juego.
 - [x] 2.2 Anillo de sincronía: UI sobre el objetivo que se contrae; ventanas *perfecta/buena/fallo* desde balance.
 - [x] 2.3 Cadena de 3 golpes: acertar encadena, fallar corta. Multiplicadores de daño y ganancia de SP por calidad.
   - [x] 2.3b (subtarea descubierta) Dash de la Capa 1 (i-frames breves, cooldown desde balance) y cancelación de combo con dash conservando el SP ganado.
-- [ ] 2.4 Contraataque QTE: enemigos con `counter_chance` vuelven el anillo ROJO → pulsar `parry` en ventana o recibir daño y perder combo. Enemigo `campanero` lo introduce.
+- [x] 2.4 Contraataque QTE: enemigos con `counter_chance` vuelven el anillo ROJO → pulsar `parry` en ventana o recibir daño y perder combo. Enemigo `campanero` lo introduce.
 - [ ] 2.5 Feedback audio placeholder: *ding* agudo (perfecta), tono medio (buena), *thunk* grave (fallo), campana (counter). Generar beeps por código (AudioStreamGenerator) hasta tener SFX reales.
 - [ ] 2.6 Todo parámetro de Cadencia ajustable en caliente (F5). Escena `tests/cadencia_playground.tscn` con un dummy para tuning.
 
