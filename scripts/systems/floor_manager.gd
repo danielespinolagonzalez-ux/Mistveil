@@ -87,7 +87,9 @@ func _on_door_crossed(room_grid: Vector2i, direction: Vector2i) -> void:
 	var target: Vector2i = room_grid + direction
 	if not rooms.has(target):
 		return
-	# Deferido: llega desde un callback de física (trigger de puerta).
+	# El flag se activa YA: dos cruces en el mismo frame no deben encolar dos
+	# transiciones diferidas. Deferido: llega desde un callback de física.
+	transitioning = true
 	_transition_to.call_deferred(target, direction)
 
 
