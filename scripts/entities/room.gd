@@ -102,6 +102,11 @@ func door_count() -> int:
 	return _doors.size()
 
 
+## Tinte del suelo para distinguir tipos de sala (tesoro, jefe…).
+func set_floor_tint(color: Color) -> void:
+	(get_node("Floor") as ColorRect).color = color
+
+
 func is_door_open(dir: Vector2i) -> bool:
 	return _doors.has(dir) and _doors[dir]["open"]
 

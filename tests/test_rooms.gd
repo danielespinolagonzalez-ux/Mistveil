@@ -8,8 +8,11 @@ var _failures: int = 0
 
 
 func _ready() -> void:
+	# ALWAYS: la transición de sala pausa el árbol y el test debe seguir corriendo.
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	await _test_room_base()
 	await _test_room_template()
+	await _test_floor_transition()
 
 	if _failures == 0:
 		print("TEST ROOMS: OK")
@@ -109,6 +112,62 @@ func _test_room_template() -> void:
 	_check("limpiar la sala emite room_cleared", cleared_rooms.size() == 1 and cleared_rooms[0] == room)
 	_check("limpiar la sala abre las puertas", room.is_door_open(Vector2i.RIGHT))
 	room.queue_free()
+	await get_tree().physics_frame
+
+
+## Tarea 3.3: transición de cámara entre salas al cruzar una puerta.
+func _test_floor_transition() -> void:
+	var camera := Camera2D.new()
+	add_child(camera)
+	var manager := FloorManager.new()
+	manager.camera = camera
+	add_child(manager)
+	var player: Player = (load("res://scenes/player/player.tscn") as PackedScene).instantiate()
+	add_child(player)
+
+	var entered: Array[Vector2i] = []
+	EventBus.room_entered.connect(func(grid: Vector2i) -> void: entered.append(grid))
+
+	var floor_def: Dictionary = {
+		Vector2i.ZERO: { "tipo": "normal" },
+		Vector2i(1, 0): { "tipo": "normal", "plantilla": "p1_pilares_01" },
+	}
+	manager.build_floor(floor_def, Vector2i.ZERO)
+	await get_tree().physics_frame
+
+	_check("piso: 2 salas construidas", manager.rooms.size() == 2)
+	var start_room: Room = manager.rooms[Vector2i.ZERO]
+	_check("piso: la sala inicial (sin plantilla) queda limpia", start_room.cleared)
+	_check("piso: cámara centrada en la sala inicial",
+		camera.global_position == start_room.center_global())
+	_check("piso: player en el centro de la inicial",
+		player.global_position == start_room.center_global())
+	_check("piso: room_entered de la inicial",
+		entered.size() == 1 and entered[0] == Vector2i.ZERO)
+
+	# Cruce simulado de la puerta este.
+	EventBus.door_crossed.emit(Vector2i.ZERO, Vector2i.RIGHT)
+	var timeout := get_tree().create_timer(3.0)
+	while manager.transitioning or manager.current_grid != Vector2i(1, 0):
+		if timeout.time_left <= 0.0:
+			break
+		await get_tree().process_frame
+	var target_room: Room = manager.rooms[Vector2i(1, 0)]
+
+	_check("transición: la sala actual es la nueva", manager.current_grid == Vector2i(1, 0))
+	_check("transición: el árbol queda despausado", not get_tree().paused)
+	_check("transición: cámara centrada en la sala nueva",
+		camera.global_position.distance_to(target_room.center_global()) < 2.0)
+	_check("transición: player entra por la puerta oeste",
+		player.global_position.distance_to(target_room.entry_position(Vector2i.LEFT)) < 2.0)
+	_check("transición: la sala nueva se activa y sella (tiene enemigos)",
+		target_room.activated and not target_room.is_door_open(Vector2i.LEFT))
+	_check("transición: room_entered emitido para la nueva",
+		entered.size() == 2 and entered[1] == Vector2i(1, 0))
+
+	manager.queue_free()
+	player.queue_free()
+	camera.queue_free()
 	await get_tree().physics_frame
 
 
