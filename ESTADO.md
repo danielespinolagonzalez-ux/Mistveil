@@ -23,6 +23,7 @@
 | 2026-07-02 | 2.1: melé básico con hitbox frontal orientado al aim, fases WINDUP/ACTIVE/RECOVERY con tiempos en balance (melee_windup_s/active/recovery_s) y knockback propio | El arco se fija al pulsar (no sigue al ratón durante el golpe); clic derecho o X del mando | Tarea 2.2 (anillo de sincronía) |
 | 2026-07-02 | 2.2: SyncRing (dibujo por código, se contrae sobre el objetivo, judge_now con perfecta/buena/fallo + coyote, cierre y aviso al pasarse); integrado al iniciar melé con objetivo cercano; tests/test_cadencia.tscn (12 checks) | Anillo avanza con reloj de física (se congela en pausa); z_index absoluto 200 para dibujarse sobre balas; nuevas claves ring_contract_ms y target_range_px | Tarea 2.3 (cadena de 3 golpes) |
 | 2026-07-02 | 2.3: combo de 3 golpes (acertar encadena con ventanas decaídas, fallar/timeout = golpe débil y corte), multiplicadores y SP por calidad (RunState.sp + sp_changed), finisher con knockback en área; señal cadencia_hit_resolved | Decisión de diseño: solo el finisher empuja — el knockback intermedio alejaba al objetivo y rompía la cadena; golpe suelto sin objetivo mantiene windup y daño base | Subtarea 2.3b (dash + cancelación) |
+| 2026-07-02 | 2.3b: dash con impulso fijo, i-frames breves desde el primer instante, cooldown; cancela el combo conservando SP; 8 checks nuevos | Dirección del dash: input de movimiento, con fallback al aim | Tarea 2.4 (contraataque QTE) |
 
 ## Deuda técnica / notas
 - (vacío)

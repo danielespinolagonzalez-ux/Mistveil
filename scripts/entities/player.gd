@@ -47,8 +47,18 @@ var _sp_perfect: int = 0
 var _sp_good: int = 0
 
 # --- Estado ---
+var _dash_speed: float = 0.0
+var _dash_duration_s: float = 0.0
+var _dash_cooldown_s: float = 0.0
+var _dash_iframes_s: float = 0.0
+
 var _shoot_cooldown_s: float = 0.0
 var _iframes_left_s: float = 0.0
+var _dash_iframes_left_s: float = 0.0
+var _dashing: bool = false
+var _dash_dir: Vector2 = Vector2.ZERO
+var _dash_timer_s: float = 0.0
+var _dash_cooldown_left_s: float = 0.0
 var _dead: bool = false
 var _melee_phase: MeleePhase = MeleePhase.NONE
 var _melee_timer_s: float = 0.0
@@ -84,18 +94,62 @@ func _physics_process(delta: float) -> void:
 	if _dead:
 		return
 	_process_iframes(delta)
+	_process_dash(delta)
 	_process_movement(delta)
 	_process_melee(delta)
 	_process_shooting(delta)
 
 
 func _process_movement(delta: float) -> void:
+	if _dashing:
+		# Durante el dash la velocidad es fija; no responde a input.
+		velocity = _dash_dir * _dash_speed
+		move_and_slide()
+		return
 	var input_dir: Vector2 = Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	if input_dir != Vector2.ZERO:
 		velocity = velocity.move_toward(input_dir * _move_speed, _acceleration * delta)
 	else:
 		velocity = velocity.move_toward(Vector2.ZERO, _friction * delta)
 	move_and_slide()
+
+
+## Dash corto con i-frames breves (spec Capa 1). Cancela el combo conservando SP.
+func _process_dash(delta: float) -> void:
+	_dash_cooldown_left_s = maxf(0.0, _dash_cooldown_left_s - delta)
+	if _dashing:
+		_dash_timer_s -= delta
+		if _dash_timer_s <= 0.0:
+			_dashing = false
+		return
+	if Input.is_action_just_pressed("dash") and _dash_cooldown_left_s == 0.0:
+		_start_dash()
+
+
+func _start_dash() -> void:
+	var dir: Vector2 = Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	if dir == Vector2.ZERO:
+		dir = _aim_direction(Input.get_vector("aim_left", "aim_right", "aim_up", "aim_down"))
+	if dir == Vector2.ZERO:
+		return
+	_dashing = true
+	_dash_dir = dir.normalized()
+	_dash_timer_s = _dash_duration_s
+	_dash_cooldown_left_s = _dash_cooldown_s
+	_dash_iframes_left_s = _dash_iframes_s
+	# Invulnerable desde el instante del dash (no esperar al siguiente frame).
+	_hurtbox.invulnerable = true
+	# Cancelar el combo con dash pierde la cadena pero CONSERVA el SP ganado (spec).
+	_cancel_combo()
+
+
+func _cancel_combo() -> void:
+	if _melee_phase == MeleePhase.NONE:
+		return
+	_sync_ring.stop()
+	_set_melee_hitbox_enabled(false)
+	_combo_target = null
+	_melee_phase = MeleePhase.NONE
 
 
 func _process_shooting(delta: float) -> void:
@@ -248,16 +302,16 @@ func _find_melee_target() -> Node2D:
 
 # --- Vida / daño ---
 
-## Cuenta atrás de invulnerabilidad tras un golpe, con parpadeo del placeholder.
+## Invulnerabilidad: i-frames de daño (con parpadeo) e i-frames breves del dash.
 func _process_iframes(delta: float) -> void:
-	if _iframes_left_s <= 0.0:
-		return
-	_iframes_left_s -= delta
-	if _iframes_left_s <= 0.0:
-		_placeholder.visible = true
-		_hurtbox.invulnerable = false
-	else:
+	var had_hurt_iframes: bool = _iframes_left_s > 0.0
+	_iframes_left_s = maxf(0.0, _iframes_left_s - delta)
+	_dash_iframes_left_s = maxf(0.0, _dash_iframes_left_s - delta)
+	_hurtbox.invulnerable = _iframes_left_s > 0.0 or _dash_iframes_left_s > 0.0
+	if _iframes_left_s > 0.0:
 		_placeholder.visible = int(_iframes_left_s * _hurt_blink_hz * 2.0) % 2 == 0
+	elif had_hurt_iframes:
+		_placeholder.visible = true
 
 
 ## El stick derecho tiene prioridad; si está en reposo se apunta al ratón.
@@ -301,6 +355,10 @@ func _refresh_balance() -> void:
 	_tear_damage = float(DataDB.get_balance("player.tear_damage"))
 	_tear_knockback = float(DataDB.get_balance("feedback.tear_knockback_px_s"))
 	_hurt_iframes_s = float(DataDB.get_balance("player.hurt_iframes_s"))
+	_dash_speed = float(DataDB.get_balance("player.dash_speed"))
+	_dash_duration_s = float(DataDB.get_balance("player.dash_duration_s"))
+	_dash_cooldown_s = float(DataDB.get_balance("player.dash_cooldown_s"))
+	_dash_iframes_s = float(DataDB.get_balance("player.dash_iframes_s"))
 	_hurt_blink_hz = maxf(1.0, float(DataDB.get_balance("player.hurt_blink_hz")))
 	_melee_damage = float(DataDB.get_balance("player.melee_damage"))
 	_melee_range_px = float(DataDB.get_balance("player.melee_range_px"))

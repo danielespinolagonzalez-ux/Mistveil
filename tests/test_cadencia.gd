@@ -23,6 +23,7 @@ func _ready() -> void:
 	await _test_player_integration()
 	await _test_combo_chain()
 	await _test_combo_fail_cuts()
+	await _test_dash_cancels_combo()
 
 	if _failures == 0:
 		print("TEST CADENCIA: OK")
@@ -193,6 +194,45 @@ func _test_combo_fail_cuts() -> void:
 	_check("fallo: golpe débil aplicado", enemy_health.current_hp == enemy_health.max_hp - 2)
 	_check("fallo: el combo queda cortado (sin anillo nuevo)",
 		not player._sync_ring.active and _hits.size() == 1)
+	player.queue_free()
+	enemy.queue_free()
+
+
+## Dash a mitad de combo: pierde la cadena pero conserva el SP (subtarea 2.3b).
+func _test_dash_cancels_combo() -> void:
+	_hits.clear()
+	RunState.reset()
+	var player: Player = PLAYER_SCENE.instantiate()
+	player.position = Vector2(1200, 1200)
+	add_child(player)
+	var enemy: Enemy = ENEMY_SCENE.instantiate()
+	enemy.enemy_id = "campanero"
+	enemy.position = player.position + Vector2(30, 0)
+	add_child(enemy)
+	await get_tree().physics_frame
+
+	var contract_ms: float = float(DataDB.get_balance("cadencia.ring_contract_ms"))
+	var sp_perfect: int = int(DataDB.get_balance("cadencia.sp_perfect"))
+
+	await _tap_melee()  # anillo 1
+	await _advance_to_ms(player._sync_ring, contract_ms - 30.0)
+	await _tap_melee()  # perfecta → SP ganado, encadena anillo 2
+	for i in 30:
+		await get_tree().physics_frame
+		if player._sync_ring.active:
+			break
+	_check("dash-cancel: anillo 2 en marcha antes del dash", player._sync_ring.active)
+
+	Input.action_press("move_up")
+	Input.action_press("dash")
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	Input.action_release("dash")
+	Input.action_release("move_up")
+	_check("dash-cancel: el anillo se apaga", not player._sync_ring.active)
+	_check("dash-cancel: combo cortado (fase NONE)", player._melee_phase == Player.MeleePhase.NONE)
+	_check("dash-cancel: el SP ganado se conserva", RunState.sp == sp_perfect)
+	_check("dash-cancel: solo se resolvió 1 golpe", _hits.size() == 1)
 	player.queue_free()
 	enemy.queue_free()
 

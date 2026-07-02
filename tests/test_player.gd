@@ -106,6 +106,29 @@ func _ready() -> void:
 	fighter.queue_free()
 	dummy.queue_free()
 
+	# Dash (subtarea 2.3b): impulso fijo, i-frames breves y cooldown.
+	var dasher: Player = PLAYER_SCENE.instantiate()
+	dasher.position = Vector2(400, 0)
+	add_child(dasher)
+	var dasher_hurtbox: HurtboxComponent = dasher.get_node("HurtboxComponent")
+	await get_tree().physics_frame
+	var dash_start_x: float = dasher.position.x
+	Input.action_press("move_left")
+	Input.action_press("dash")
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	Input.action_release("dash")
+	_check("dash: i-frames breves activos", dasher_hurtbox.invulnerable)
+	var dash_frames: int = int(ceil(float(DataDB.get_balance("player.dash_duration_s")) * 60.0)) + 5
+	for i in dash_frames:
+		await get_tree().physics_frame
+	Input.action_release("move_left")
+	# 520 px/s × 0.18 s ≈ 94 px de recorrido.
+	_check("dash: recorre distancia de dash", dash_start_x - dasher.position.x > 60.0)
+	_check("dash: en cooldown al terminar", dasher._dash_cooldown_left_s > 0.0)
+	_check("dash: los i-frames breves expiran", not dasher_hurtbox.invulnerable)
+	dasher.queue_free()
+
 	# HUD (tarea 1.5): corazones = hp y contador de oro vía señales.
 	var hud: CanvasLayer = (load("res://scenes/ui/hud.tscn") as PackedScene).instantiate()
 	add_child(hud)
