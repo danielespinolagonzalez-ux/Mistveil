@@ -28,12 +28,17 @@ var _melee_range_px: float = 0.0
 var _melee_windup_s: float = 0.0
 var _melee_active_s: float = 0.0
 var _melee_recovery_s: float = 0.0
+var _ring_contract_ms: float = 0.0
+var _window_perfect_ms: float = 0.0
+var _window_good_ms: float = 0.0
+var _target_range_px: float = 0.0
 
 var _shoot_cooldown_s: float = 0.0
 var _iframes_left_s: float = 0.0
 var _dead: bool = false
 var _melee_phase: MeleePhase = MeleePhase.NONE
 var _melee_timer_s: float = 0.0
+var _sync_ring: SyncRing = null
 
 @onready var _health: HealthComponent = $HealthComponent
 @onready var _hurtbox: HurtboxComponent = $HurtboxComponent
@@ -52,6 +57,9 @@ func _ready() -> void:
 	_health.health_changed.connect(_on_health_changed)
 	# Estado inicial para el HUD (la asignación directa de hp no emite señal).
 	EventBus.player_health_changed.emit(_health.current_hp, _health.max_hp)
+	# Anillo de sincronía de la Cadencia (se posiciona solo sobre el objetivo).
+	_sync_ring = SyncRing.new()
+	add_child(_sync_ring)
 
 
 func _physics_process(delta: float) -> void:
@@ -120,6 +128,26 @@ func _start_melee() -> void:
 		aim = Vector2.RIGHT
 	_melee_hitbox.position = aim * _melee_range_px * MELEE_OFFSET_FACTOR
 	_melee_hitbox.rotation = aim.angle()
+	# Con objetivo cerca aparece el anillo de sincronía sobre él (tarea 2.2;
+	# el encadenado de golpes según la calidad llega en la 2.3).
+	var target: Node2D = _find_melee_target()
+	if target != null:
+		_sync_ring.start(target, _ring_contract_ms, _window_perfect_ms, _window_good_ms)
+
+
+## Enemigo más cercano dentro del radio de fijado de la Cadencia (o null).
+func _find_melee_target() -> Node2D:
+	var best: Node2D = null
+	var best_distance: float = _target_range_px
+	for enemy: Node in get_tree().get_nodes_in_group("enemies"):
+		var enemy_2d := enemy as Node2D
+		if enemy_2d == null:
+			continue
+		var distance: float = (enemy_2d.global_position - global_position).length()
+		if distance <= best_distance:
+			best = enemy_2d
+			best_distance = distance
+	return best
 
 
 func _set_melee_hitbox_enabled(enabled: bool) -> void:
@@ -187,5 +215,9 @@ func _refresh_balance() -> void:
 	_melee_recovery_s = float(DataDB.get_balance("player.melee_recovery_s"))
 	_melee_hitbox.damage = _melee_damage
 	_melee_hitbox.knockback_px_s = float(DataDB.get_balance("feedback.melee_knockback_px_s"))
+	_ring_contract_ms = float(DataDB.get_balance("cadencia.ring_contract_ms"))
+	_window_perfect_ms = float(DataDB.get_balance("cadencia.window_perfect_ms"))
+	_window_good_ms = float(DataDB.get_balance("cadencia.window_good_ms"))
+	_target_range_px = float(DataDB.get_balance("cadencia.target_range_px"))
 	_hurt_iframes_s = float(DataDB.get_balance("player.hurt_iframes_s"))
 	_hurt_blink_hz = maxf(1.0, float(DataDB.get_balance("player.hurt_blink_hz")))

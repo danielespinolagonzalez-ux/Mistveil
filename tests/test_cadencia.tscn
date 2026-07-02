@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://tests/test_cadencia.gd" id="1_cadencia_test"]
+
+[node name="TestCadencia" type="Node"]
+script = ExtResource("1_cadencia_test")

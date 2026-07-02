@@ -24,7 +24,7 @@ Claude Code: trabaja las fases EN ORDEN. No avances de fase sin cumplir su **cri
 ## Fase 2 — Cadencia (el sistema-firma: validar PRONTO)
 Spec completa: `docs/sistemas/combate.md`. Es la prioridad de diseño del juego.
 - [x] 2.1 Ataque melé básico con hitbox frontal.
-- [ ] 2.2 Anillo de sincronía: UI sobre el objetivo que se contrae; ventanas *perfecta/buena/fallo* desde balance.
+- [x] 2.2 Anillo de sincronía: UI sobre el objetivo que se contrae; ventanas *perfecta/buena/fallo* desde balance.
 - [ ] 2.3 Cadena de 3 golpes: acertar encadena, fallar corta. Multiplicadores de daño y ganancia de SP por calidad.
 - [ ] 2.4 Contraataque QTE: enemigos con `counter_chance` vuelven el anillo ROJO → pulsar `parry` en ventana o recibir daño y perder combo. Enemigo `campanero` lo introduce.
 - [ ] 2.5 Feedback audio placeholder: *ding* agudo (perfecta), tono medio (buena), *thunk* grave (fallo), campana (counter). Generar beeps por código (AudioStreamGenerator) hasta tener SFX reales.

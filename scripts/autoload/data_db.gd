@@ -21,7 +21,8 @@ const BALANCE_REQUIRED := {
 		"melee_windup_s", "melee_active_s", "melee_recovery_s",
 	],
 	"cadencia": [
-		"combo_hits_base", "window_perfect_ms", "window_good_ms", "window_decay_per_hit",
+		"combo_hits_base", "ring_contract_ms", "target_range_px",
+		"window_perfect_ms", "window_good_ms", "window_decay_per_hit",
 		"coyote_input_ms", "mult_perfect", "mult_good", "mult_fail",
 		"finisher_mult", "finisher_knockback", "sp_perfect", "sp_good",
 		"sp_counter_bonus", "counter_window_ms", "counter_damage",

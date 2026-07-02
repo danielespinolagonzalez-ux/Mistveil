@@ -23,6 +23,8 @@
   },
   "cadencia": {
     "combo_hits_base": 3,
+    "ring_contract_ms": 650,
+    "target_range_px": 56.0,
     "window_perfect_ms": 120,
     "window_good_ms": 230,
     "window_decay_per_hit": 0.9,

@@ -21,6 +21,7 @@
 | 2026-07-01 | 1.5: HUD con corazones (1 hp = 1 corazón, coherente con el item cuerda_extra) y contador de oro; RunState.gold con add_gold/reset; señales player_health_changed y gold_changed | Corazones/moneda como ColorRect placeholder; sprites pedidos en ASSETS_PENDIENTES.md | Tarea 1.6 (knockback + números de daño) |
 | 2026-07-01 | 1.6: knockback (sección feedback nueva en balance; empuje como propiedad del hitbox, decae solo) y números de daño flotantes (sistema que escucha damage_dealt); Main con 5 enemigos mixtos | Balas enemigas no empujan (solo el contacto); tests por tiempo real y no por frames (headless corre >60 fps) | Daniel prueba Fases 0-1; después Fase 2 (Cadencia) |
 | 2026-07-02 | 2.1: melé básico con hitbox frontal orientado al aim, fases WINDUP/ACTIVE/RECOVERY con tiempos en balance (melee_windup_s/active/recovery_s) y knockback propio | El arco se fija al pulsar (no sigue al ratón durante el golpe); clic derecho o X del mando | Tarea 2.2 (anillo de sincronía) |
+| 2026-07-02 | 2.2: SyncRing (dibujo por código, se contrae sobre el objetivo, judge_now con perfecta/buena/fallo + coyote, cierre y aviso al pasarse); integrado al iniciar melé con objetivo cercano; tests/test_cadencia.tscn (12 checks) | Anillo avanza con reloj de física (se congela en pausa); z_index absoluto 200 para dibujarse sobre balas; nuevas claves ring_contract_ms y target_range_px | Tarea 2.3 (cadena de 3 golpes) |
 
 ## Deuda técnica / notas
 - (vacío)
