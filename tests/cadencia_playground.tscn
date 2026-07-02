@@ -1,10 +1,11 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://tests/cadencia_playground.gd" id="1_playground"]
 [ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="2_player"]
 [ext_resource type="Script" path="res://scripts/systems/tear_pool.gd" id="3_tear_pool"]
 [ext_resource type="Script" path="res://scripts/systems/damage_numbers.gd" id="4_damage_numbers"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="5_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/touch_controls.tscn" id="6_touch"]
 
 [node name="CadenciaPlayground" type="Node2D"]
 script = ExtResource("1_playground")
@@ -24,6 +25,8 @@ script = ExtResource("4_damage_numbers")
 position = Vector2(280, 180)
 
 [node name="HUD" parent="." instance=ExtResource("5_hud")]
+
+[node name="TouchControls" parent="." instance=ExtResource("6_touch")]
 
 [node name="Panel" type="CanvasLayer" parent="."]
 layer = 6

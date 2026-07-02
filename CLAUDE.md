@@ -63,6 +63,7 @@ assets/        # Arte/audio real (lo aporta Daniel; no generes binarios aquí)
 - Cada sistema core (Data, Cadencia, generación, items, guardado) debe tener al menos un test de humo antes de dar su fase por cerrada.
 - Si `godot` no está en el PATH, pide a Daniel la ruta del ejecutable y anótala aquí.
 - **Entorno remoto (Claude Code web)**: Godot **4.5 estable** instalado en `/usr/local/bin/godot` (descargado de downloads.godotengine.org). El contenedor es efímero: si `godot --headless --version` falla, reinstalar igual. En la máquina local de Daniel la ruta puede ser otra.
+- **Build web**: plantillas en `~/.local/share/godot/export_templates/4.5.stable/` (del `export_templates.tpz` oficial, solo hacen falta las `web_nothreads_*`). `export_presets.cfg` está gitignorado: preset "Web" con `variant/thread_support=false` (funciona sin cabeceras COOP/COEP) y `vram_texture_compression/for_mobile=false` (con true y sin ETC2/ASTC activado el export falla con error VACÍO — trampa conocida). Exportar: `godot --headless --export-release "Web" export/web/index.html`.
 
 ## Prohibido
 - Llamadas directas entre managers/sistemas (usa EventBus).

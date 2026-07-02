@@ -18,5 +18,8 @@
   "debug.playground.buena": "Buena",
   "debug.playground.fallo": "Fallo",
   "debug.playground.parry_ok": "¡Parry!",
-  "debug.playground.parry_fallo": "Counter encajado"
+  "debug.playground.parry_fallo": "Counter encajado",
+  "touch.melee": "MELÉ",
+  "touch.parry": "PARRY",
+  "touch.dash": "DASH"
 }

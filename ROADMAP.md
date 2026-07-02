@@ -105,6 +105,7 @@ Spec: `docs/narrativa/historia_personajes.md`.
 - [ ] 10.3 Accesibilidad: escala global de ventanas de Cadencia (100–200%) en opciones, remapeo de teclas, pantalla de pausa.
 - [ ] 10.4 Juice: screenshake sutil, hit-stop en golpes perfectos, partículas por elemento.
 - [ ] 10.5 Export presets Windows + Linux; probar builds.
+  - [x] 10.5b (adelantada a Fase 2 a petición de Daniel) Export Web (sin threads) + controles táctiles virtuales para probar en móvil/navegador.
 - [ ] 10.6 Checklist itch.io: página, capturas, y **marcar la divulgación de IA generativa** (gráficos/audio si aplica).
 
 **Criterio:** build descargable que un desconocido puede jugar sin instrucciones.

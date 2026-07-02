@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="1_player"]
 [ext_resource type="Script" path="res://scripts/systems/tear_pool.gd" id="2_tear_pool"]
@@ -7,6 +7,7 @@
 [ext_resource type="Script" path="res://scripts/systems/enemy_projectile_pool.gd" id="5_enemy_pool"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="6_hud"]
 [ext_resource type="Script" path="res://scripts/systems/damage_numbers.gd" id="7_damage_numbers"]
+[ext_resource type="PackedScene" path="res://scenes/ui/touch_controls.tscn" id="8_touch"]
 
 [node name="Main" type="Node2D"]
 
@@ -48,3 +49,5 @@ enemy_id = "engranaje_errante"
 [node name="HUD" parent="." instance=ExtResource("6_hud")]
 
 [node name="DefeatScreen" parent="." instance=ExtResource("4_defeat")]
+
+[node name="TouchControls" parent="." instance=ExtResource("8_touch")]
