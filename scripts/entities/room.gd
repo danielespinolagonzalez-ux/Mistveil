@@ -10,6 +10,20 @@ extends Node2D
 const TILE := 32
 const WALL_PX := 32
 
+const ENEMY_SCENE: PackedScene = preload("res://scenes/enemies/enemy.tscn")
+
+# Semánticas de la leyenda de plantillas (los VALORES de "leyenda" en data/salas).
+const SYM_FLOOR := "suelo"
+const SYM_ROCK := "roca"
+const SYM_PIT := "pozo"
+const SYM_WAX := "cera destructible"
+const SYM_SPAWN := "spawn enemigo"
+const SYM_SPAWN_OPTIONAL := "spawn opcional 50%"
+const SYM_PICKUP := "posible pickup"
+
+## Probabilidad del spawn opcional 'e' (fijada por la propia leyenda: "50%").
+const OPTIONAL_SPAWN_CHANCE := 0.5
+
 # Colores placeholder (visual, no balance).
 const COLOR_FLOOR := Color(0.11, 0.12, 0.17)
 const COLOR_WALL := Color(0.2, 0.21, 0.29)
@@ -24,19 +38,31 @@ var size_tiles: Vector2i = Vector2i(13, 7)
 var activated: bool = false
 var cleared: bool = false
 
+## Pool de spawn del piso (clave de pools_spawn en enemigos.json).
+var spawn_pool: String = "piso1"
+
 var _doors: Dictionary = {}  # Vector2i (dir) → { blocker, trigger, visual, open }
 var _alive_enemies: int = 0
+var _spawn_tiles: Array[Vector2i] = []
+var _pickup_tiles: Array[Vector2i] = []
+var _rng := RandomNumberGenerator.new()
 
 
-## Construye suelo, muros y puertas. `exits` son las direcciones con sala vecina.
-func setup(p_grid_pos: Vector2i, p_size_tiles: Vector2i, exits: Array[Vector2i]) -> void:
+## Construye suelo, muros, puertas y (si hay plantilla) su layout interior.
+## `exits` son las direcciones con sala vecina; `template` la entrada de data/salas
+## y `legend` la leyenda de símbolos del archivo de plantillas.
+func setup(p_grid_pos: Vector2i, p_size_tiles: Vector2i, exits: Array[Vector2i],
+		template: Dictionary = {}, legend: Dictionary = {}) -> void:
 	grid_pos = p_grid_pos
 	size_tiles = p_size_tiles
+	_rng.randomize()
 	_build_floor()
 	for dir: Vector2i in DOOR_DIRS:
 		if exits.has(dir):
 			_build_door(dir)
 	_build_walls(exits)
+	if not template.is_empty():
+		_parse_layout(template, legend)
 	EventBus.enemy_died.connect(_on_enemy_died)
 
 
@@ -227,11 +253,78 @@ func _on_door_trigger(body: Node2D, dir: Vector2i) -> void:
 		EventBus.door_crossed.emit(grid_pos, dir)
 
 
+# --- Layout de plantilla (tarea 3.2; la física de obstáculos llega en la 3.5) ---
+
+func _parse_layout(template: Dictionary, legend: Dictionary) -> void:
+	var layout: Array = template.get("layout", [])
+	for ty in layout.size():
+		var row: String = str(layout[ty])
+		for tx in row.length():
+			match str(legend.get(row[tx], SYM_FLOOR)):
+				SYM_ROCK:
+					_place_rock(Vector2i(tx, ty))
+				SYM_PIT:
+					_place_pit(Vector2i(tx, ty))
+				SYM_WAX:
+					_place_wax(Vector2i(tx, ty))
+				SYM_SPAWN:
+					_spawn_tiles.append(Vector2i(tx, ty))
+				SYM_SPAWN_OPTIONAL:
+					if _rng.randf() < OPTIONAL_SPAWN_CHANCE:
+						_spawn_tiles.append(Vector2i(tx, ty))
+				SYM_PICKUP:
+					# Los pickups llegan con los drops de la Fase 5; guardamos la casilla.
+					_pickup_tiles.append(Vector2i(tx, ty))
+
+
+func _place_rock(tile: Vector2i) -> void:
+	var rock := Polygon2D.new()
+	rock.color = Color(0.42, 0.4, 0.45)
+	rock.polygon = PackedVector2Array([
+		Vector2(-13, -8), Vector2(-4, -14), Vector2(9, -12), Vector2(14, -2),
+		Vector2(10, 11), Vector2(-3, 14), Vector2(-13, 7),
+	])
+	rock.position = tile_center(tile.x, tile.y)
+	rock.add_to_group("rocks")
+	add_child(rock)
+
+
+func _place_pit(tile: Vector2i) -> void:
+	var pit := ColorRect.new()
+	pit.color = Color(0.03, 0.03, 0.06)
+	pit.position = tile_center(tile.x, tile.y) - Vector2(TILE, TILE) * 0.5
+	pit.size = Vector2(TILE, TILE)
+	pit.z_index = -8
+	pit.add_to_group("pits")
+	add_child(pit)
+
+
+func _place_wax(tile: Vector2i) -> void:
+	var wax := Polygon2D.new()
+	wax.color = Color(0.85, 0.8, 0.62)
+	wax.polygon = PackedVector2Array([
+		Vector2(-14, -12), Vector2(14, -14), Vector2(13, 13), Vector2(-12, 14),
+	])
+	wax.position = tile_center(tile.x, tile.y)
+	wax.add_to_group("wax_blocks")
+	add_child(wax)
+
+
 # --- Enemigos y limpieza ---
 
-## Instancia los enemigos de la plantilla (se implementa con la tarea 3.2).
+## Instancia los enemigos de las casillas de spawn desde el pool del piso.
 func _spawn_enemies() -> int:
-	return 0
+	var pool: Array = DataDB.pools_spawn.get(spawn_pool, [])
+	if pool.is_empty():
+		return 0
+	var count: int = 0
+	for tile: Vector2i in _spawn_tiles:
+		var enemy: Enemy = ENEMY_SCENE.instantiate()
+		enemy.enemy_id = str(pool[_rng.randi_range(0, pool.size() - 1)])
+		enemy.position = tile_center(tile.x, tile.y)
+		add_child(enemy)
+		count += 1
+	return count
 
 
 func _on_enemy_died(enemy: Node) -> void:
