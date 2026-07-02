@@ -63,6 +63,10 @@
     "same_mult": 0.5,
     "neutral_mult": 1.0
   },
+  "salas": {
+    "transicion_camara_s": 0.35,
+    "cera_hp": 6
+  },
   "run": {
     "floors_total": 3,
     "rooms_min": 8,

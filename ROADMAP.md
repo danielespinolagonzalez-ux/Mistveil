@@ -34,7 +34,7 @@ Spec completa: `docs/sistemas/combate.md`. Es la prioridad de diseño del juego.
 **Criterio (UMBRAL DE DECISIÓN):** ejecutar Additions mientras esquivas balas debe ser divertido y legible. Si tras iterar no lo es, PARAR y proponer a Daniel simplificaciones (menos golpes, ventanas mayores) antes de continuar.
 
 ## Fase 3 — Salas y piso estático
-- [ ] 3.1 `Room.tscn` base: rejilla 13×7 tiles, muros, hasta 4 puertas.
+- [x] 3.1 `Room.tscn` base: rejilla 13×7 tiles, muros, hasta 4 puertas.
 - [ ] 3.2 Cargar layout desde plantillas JSON (`data/salas/`), símbolos según spec de generación.
 - [ ] 3.3 Puertas se sellan al entrar con enemigos; `room_cleared` las abre. Transición de cámara entre salas estilo Isaac.
 - [ ] 3.4 Piso de prueba: 6 salas conectadas a mano (normal×4, tesoro, jefe-placeholder).

@@ -22,7 +22,14 @@ signal cadencia_counter_resolved(success: bool)
 
 signal enemy_died(enemy: Node)
 signal player_died
-signal room_cleared
+
+# --- Salas / piso ---
+## La sala activa quedó limpia (abre puertas, dispara drops en fases futuras).
+signal room_cleared(room: Node)
+## El player cruzó una puerta abierta de la sala `room_grid` hacia `direction`.
+signal door_crossed(room_grid: Vector2i, direction: Vector2i)
+## Se activó (entró por primera vez) la sala en esa celda del piso.
+signal room_entered(room_grid: Vector2i)
 
 # --- HUD / estado visible ---
 ## Vida del player para el HUD (re-emitida por el player desde su HealthComponent).

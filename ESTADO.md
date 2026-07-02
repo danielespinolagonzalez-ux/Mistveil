@@ -1,7 +1,7 @@
 # ESTADO del proyecto
 > Claude Code: actualiza este archivo al final de CADA sesión.
 
-**Fase actual:** 2 (Cadencia) — tareas 2.1–2.6 completas. **UMBRAL DE DECISIÓN**: Daniel debe jugar el playground y decidir si la Cadencia es divertida y legible antes de pasar a Fase 3 (criterios de Fases 0-1 también pendientes de su prueba)
+**Fase actual:** 3 (Salas y piso estático) — Daniel probó la build web y validó las Fases 0–2 ("está perfecto"): umbral de decisión de la Cadencia SUPERADO
 **Última sesión:** 2026-07-01
 
 ## Registro de sesiones
