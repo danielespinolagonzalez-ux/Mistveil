@@ -25,6 +25,7 @@
 | 2026-07-02 | 2.3: combo de 3 golpes (acertar encadena con ventanas decaídas, fallar/timeout = golpe débil y corte), multiplicadores y SP por calidad (RunState.sp + sp_changed), finisher con knockback en área; señal cadencia_hit_resolved | Decisión de diseño: solo el finisher empuja — el knockback intermedio alejaba al objetivo y rompía la cadena; golpe suelto sin objetivo mantiene windup y daño base | Subtarea 2.3b (dash + cancelación) |
 | 2026-07-02 | 2.3b: dash con impulso fijo, i-frames breves desde el primer instante, cooldown; cancela el combo conservando SP; 8 checks nuevos | Dirección del dash: input de movimiento, con fallback al aim | Tarea 2.4 (contraataque QTE) |
 | 2026-07-02 | 2.4: anillo ROJO de counter (counter_chance del JSON, nunca dos seguidos): parry en ventana niega + SP bonus y el combo sigue en el mismo golpe; melee/timeout = counter_damage + corte; señales counter_started/resolved | Éxito de parry re-presenta el MISMO golpe con anillo normal; melee durante counter cuenta como fallo (botón equivocado, como en Dragoon) | Tarea 2.5 (audio placeholder) |
+| 2026-07-02 | 2.5: AudioManager con 4 beeps sintetizados en memoria (ding agudo, tono medio, thunk grave, campana), 6 voces, disparados por señales de Cadencia; si aparecen los .ogg reales en assets/audio/sfx/ se cargan solos | Sinteticé AudioStreamWAV en vez de AudioStreamGenerator: mismo espíritu (beeps por código), sin coste por frame ni gestión de buffers | Tarea 2.6 (ajuste en caliente + playground) |
 
 ## Deuda técnica / notas
 - (vacío)

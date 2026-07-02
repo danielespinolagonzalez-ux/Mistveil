@@ -25,6 +25,7 @@ func _ready() -> void:
 	await _test_combo_fail_cuts()
 	await _test_dash_cancels_combo()
 	await _test_counter_qte()
+	await _test_audio_placeholders()
 
 	if _failures == 0:
 		print("TEST CADENCIA: OK")
@@ -321,6 +322,20 @@ func _test_counter_qte() -> void:
 
 	player.queue_free()
 	enemy.queue_free()
+
+
+## Audio placeholder (tarea 2.5): 4 beeps sintetizados y disparo por señales.
+func _test_audio_placeholders() -> void:
+	for id: String in ["cadencia_perfecta", "cadencia_buena", "cadencia_fallo", "cadencia_counter"]:
+		_check("audio: sfx '%s' disponible" % id, AudioManager.has_sfx(id))
+	# La señal de golpe perfecto pone una voz a sonar.
+	EventBus.cadencia_hit_resolved.emit(SyncRing.Quality.PERFECT, 1, false)
+	await get_tree().process_frame
+	var any_playing: bool = false
+	for child in AudioManager.get_children():
+		if child is AudioStreamPlayer and (child as AudioStreamPlayer).playing:
+			any_playing = true
+	_check("audio: un golpe perfecto dispara una voz", any_playing)
 
 
 func _tap_melee() -> void:

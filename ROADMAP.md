@@ -28,7 +28,7 @@ Spec completa: `docs/sistemas/combate.md`. Es la prioridad de diseño del juego.
 - [x] 2.3 Cadena de 3 golpes: acertar encadena, fallar corta. Multiplicadores de daño y ganancia de SP por calidad.
   - [x] 2.3b (subtarea descubierta) Dash de la Capa 1 (i-frames breves, cooldown desde balance) y cancelación de combo con dash conservando el SP ganado.
 - [x] 2.4 Contraataque QTE: enemigos con `counter_chance` vuelven el anillo ROJO → pulsar `parry` en ventana o recibir daño y perder combo. Enemigo `campanero` lo introduce.
-- [ ] 2.5 Feedback audio placeholder: *ding* agudo (perfecta), tono medio (buena), *thunk* grave (fallo), campana (counter). Generar beeps por código (AudioStreamGenerator) hasta tener SFX reales.
+- [x] 2.5 Feedback audio placeholder: *ding* agudo (perfecta), tono medio (buena), *thunk* grave (fallo), campana (counter). Generar beeps por código (AudioStreamGenerator) hasta tener SFX reales.
 - [ ] 2.6 Todo parámetro de Cadencia ajustable en caliente (F5). Escena `tests/cadencia_playground.tscn` con un dummy para tuning.
 
 **Criterio (UMBRAL DE DECISIÓN):** ejecutar Additions mientras esquivas balas debe ser divertido y legible. Si tras iterar no lo es, PARAR y proponer a Daniel simplificaciones (menos golpes, ventanas mayores) antes de continuar.
