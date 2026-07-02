@@ -144,6 +144,11 @@ func _refresh_balance() -> void:
 	_projectile_def = def.get("proyectil", {})
 	_flies = bool(def.get("vuela", false))
 	_hitbox.damage = float(def.get("dano_contacto", 0.0))
+	# Sin daño de contacto (dummy, velón…) el hitbox se apaga del todo: el redondeo
+	# "mínimo 1" del receptor convertiría un 0 en golpe real.
+	var harmless: bool = _hitbox.damage <= 0.0
+	_hitbox.set_deferred("monitoring", not harmless)
+	_hitbox.set_deferred("monitorable", not harmless)
 	_hitbox.knockback_px_s = float(DataDB.get_balance("feedback.contact_knockback_px_s"))
 	_knockback_decay = float(DataDB.get_balance("feedback.knockback_decay_px_s2"))
 	# Placeholder teñido con el color del elemento (regla de legibilidad).

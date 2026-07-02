@@ -1,7 +1,7 @@
 # ESTADO del proyecto
 > Claude Code: actualiza este archivo al final de CADA sesión.
 
-**Fase actual:** 2 (Cadencia) — Daniel pidió continuar; criterios de Fases 0-1 pendientes de su prueba manual
+**Fase actual:** 2 (Cadencia) — tareas 2.1–2.6 completas. **UMBRAL DE DECISIÓN**: Daniel debe jugar el playground y decidir si la Cadencia es divertida y legible antes de pasar a Fase 3 (criterios de Fases 0-1 también pendientes de su prueba)
 **Última sesión:** 2026-07-01
 
 ## Registro de sesiones
@@ -26,6 +26,7 @@
 | 2026-07-02 | 2.3b: dash con impulso fijo, i-frames breves desde el primer instante, cooldown; cancela el combo conservando SP; 8 checks nuevos | Dirección del dash: input de movimiento, con fallback al aim | Tarea 2.4 (contraataque QTE) |
 | 2026-07-02 | 2.4: anillo ROJO de counter (counter_chance del JSON, nunca dos seguidos): parry en ventana niega + SP bonus y el combo sigue en el mismo golpe; melee/timeout = counter_damage + corte; señales counter_started/resolved | Éxito de parry re-presenta el MISMO golpe con anillo normal; melee durante counter cuenta como fallo (botón equivocado, como en Dragoon) | Tarea 2.5 (audio placeholder) |
 | 2026-07-02 | 2.5: AudioManager con 4 beeps sintetizados en memoria (ding agudo, tono medio, thunk grave, campana), 6 voces, disparados por señales de Cadencia; si aparecen los .ogg reales en assets/audio/sfx/ se cargan solos | Sinteticé AudioStreamWAV en vez de AudioStreamGenerator: mismo espíritu (beeps por código), sin coste por frame ni gestión de buffers | Tarea 2.6 (ajuste en caliente + playground) |
+| 2026-07-02 | 2.6: verificado el releído en caliente de todos los parámetros de Cadencia; cadencia_playground.tscn con dummy_entrenamiento (999 hp, quieto, counter 35%, reaparece), panel de SP/calidad e instrucciones; hitbox de contacto apagado si dano_contacto=0 | Dummy nuevo en enemigos.json; textos del playground en textos_es.json | **Daniel juega el playground y decide sobre la Cadencia (umbral de decisión de Fase 2)** |
 
 ## Deuda técnica / notas
 - (vacío)

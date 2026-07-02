@@ -26,6 +26,7 @@ func _ready() -> void:
 	await _test_dash_cancels_combo()
 	await _test_counter_qte()
 	await _test_audio_placeholders()
+	await _test_hot_reload_and_playground()
 
 	if _failures == 0:
 		print("TEST CADENCIA: OK")
@@ -336,6 +337,33 @@ func _test_audio_placeholders() -> void:
 		if child is AudioStreamPlayer and (child as AudioStreamPlayer).playing:
 			any_playing = true
 	_check("audio: un golpe perfecto dispara una voz", any_playing)
+
+
+## Recarga en caliente (tarea 2.6): data_reloaded fuerza releer todos los parámetros.
+func _test_hot_reload_and_playground() -> void:
+	var player: Player = PLAYER_SCENE.instantiate()
+	player.position = Vector2(1800, 1800)
+	add_child(player)
+	await get_tree().physics_frame
+	player._window_perfect_ms = 9999.0
+	player._mult_perfect = -1.0
+	EventBus.data_reloaded.emit()
+	_check("F5: los parámetros de Cadencia se releen al recargar",
+		player._window_perfect_ms == float(DataDB.get_balance("cadencia.window_perfect_ms"))
+		and player._mult_perfect == float(DataDB.get_balance("cadencia.mult_perfect")))
+	player.queue_free()
+
+	# El playground carga con su dummy de entrenamiento.
+	var playground: Node2D = (load("res://tests/cadencia_playground.tscn") as PackedScene).instantiate()
+	add_child(playground)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	var dummy_found: bool = false
+	for child in playground.get_children():
+		if child is Enemy and (child as Enemy).enemy_id == "dummy_entrenamiento":
+			dummy_found = true
+	_check("playground: carga con dummy de entrenamiento", dummy_found)
+	playground.queue_free()
 
 
 func _tap_melee() -> void:
