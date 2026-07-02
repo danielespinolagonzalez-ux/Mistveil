@@ -41,6 +41,15 @@ var cleared: bool = false
 ## Pool de spawn del piso (clave de pools_spawn en enemigos.json).
 var spawn_pool: String = "piso1"
 
+## Spawns forzados (ids concretos) en vez de plantilla: sala de jefe-placeholder, etc.
+var forced_spawns: Array[String] = []
+
+## Offsets de colocación (en tiles desde el centro) para los spawns forzados.
+const FORCED_SPAWN_OFFSETS: Array[Vector2i] = [
+	Vector2i(-2, 0), Vector2i(2, 0), Vector2i(0, -1), Vector2i(0, 1),
+	Vector2i(-2, -2), Vector2i(2, 2),
+]
+
 var _doors: Dictionary = {}  # Vector2i (dir) → { blocker, trigger, visual, open }
 var _alive_enemies: int = 0
 var _spawn_tiles: Array[Vector2i] = []
@@ -317,19 +326,30 @@ func _place_wax(tile: Vector2i) -> void:
 
 # --- Enemigos y limpieza ---
 
-## Instancia los enemigos de las casillas de spawn desde el pool del piso.
+## Instancia los enemigos: spawns forzados (jefe-placeholder) o casillas de plantilla.
 func _spawn_enemies() -> int:
+	var count: int = 0
+	if not forced_spawns.is_empty():
+		var mid: Vector2i = size_tiles / 2
+		for i in forced_spawns.size():
+			var offset: Vector2i = FORCED_SPAWN_OFFSETS[i % FORCED_SPAWN_OFFSETS.size()]
+			count += 1
+			_spawn_enemy(forced_spawns[i], mid + offset)
+		return count
 	var pool: Array = DataDB.pools_spawn.get(spawn_pool, [])
 	if pool.is_empty():
 		return 0
-	var count: int = 0
 	for tile: Vector2i in _spawn_tiles:
-		var enemy: Enemy = ENEMY_SCENE.instantiate()
-		enemy.enemy_id = str(pool[_rng.randi_range(0, pool.size() - 1)])
-		enemy.position = tile_center(tile.x, tile.y)
-		add_child(enemy)
+		_spawn_enemy(str(pool[_rng.randi_range(0, pool.size() - 1)]), tile)
 		count += 1
 	return count
+
+
+func _spawn_enemy(id: String, tile: Vector2i) -> void:
+	var enemy: Enemy = ENEMY_SCENE.instantiate()
+	enemy.enemy_id = id
+	enemy.position = tile_center(tile.x, tile.y)
+	add_child(enemy)
 
 
 func _on_enemy_died(enemy: Node) -> void:

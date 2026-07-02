@@ -48,6 +48,10 @@ func build_floor(floor_def: Dictionary, start: Vector2i) -> void:
 		var room: Room = ROOM_SCENE.instantiate()
 		room.position = Vector2(grid_pos.x * stride.x, grid_pos.y * stride.y)
 		add_child(room)
+		var forced: Array[String] = []
+		for id: Variant in def.get("enemigos", []):
+			forced.append(str(id))
+		room.forced_spawns = forced
 		room.setup(grid_pos, _size_tiles, exits, template, legend)
 		match str(def.get("tipo", "normal")):
 			"tesoro":

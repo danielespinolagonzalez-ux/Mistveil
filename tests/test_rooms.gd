@@ -13,6 +13,7 @@ func _ready() -> void:
 	await _test_room_base()
 	await _test_room_template()
 	await _test_floor_transition()
+	await _test_main_floor()
 
 	if _failures == 0:
 		print("TEST ROOMS: OK")
@@ -168,6 +169,31 @@ func _test_floor_transition() -> void:
 	manager.queue_free()
 	player.queue_free()
 	camera.queue_free()
+	await get_tree().physics_frame
+
+
+## Tarea 3.4: el piso de prueba de Main tiene sus 6 salas conectadas.
+func _test_main_floor() -> void:
+	var main: Node = (load("res://scenes/main/main.tscn") as PackedScene).instantiate()
+	add_child(main)
+	await get_tree().physics_frame
+	var manager: FloorManager = main.get_node("FloorManager")
+
+	_check("main: piso de prueba con 6 salas", manager.rooms.size() == 6)
+	_check("main: la sala inicial está limpia y activa",
+		(manager.rooms[Vector2i.ZERO] as Room).cleared)
+	var boss_room: Room = manager.rooms[Vector2i(3, 0)]
+	_check("main: sala de jefe con 2 campaneros forzados",
+		boss_room.forced_spawns.size() == 2 and boss_room.forced_spawns[0] == "campanero")
+	_check("main: jefe sin activar hasta entrar", not boss_room.activated)
+	# Conectividad simple: toda sala tiene al menos una puerta.
+	var all_connected: bool = true
+	for grid: Vector2i in manager.rooms:
+		if (manager.rooms[grid] as Room).door_count() == 0:
+			all_connected = false
+	_check("main: ninguna sala huérfana (todas con puerta)", all_connected)
+
+	main.queue_free()
 	await get_tree().physics_frame
 
 
