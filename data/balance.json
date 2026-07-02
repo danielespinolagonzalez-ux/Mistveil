@@ -65,7 +65,8 @@
   },
   "salas": {
     "transicion_camara_s": 0.35,
-    "cera_hp": 6
+    "cera_hp": 6,
+    "spawn_opcional_pct": 50
   },
   "run": {
     "floors_total": 3,

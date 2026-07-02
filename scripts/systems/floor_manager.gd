@@ -46,8 +46,12 @@ func build_floor(floor_def: Dictionary, start: Vector2i) -> void:
 				exits.append(dir)
 		var template: Dictionary = _find_template(templates_data, str(def.get("plantilla", "")))
 		var room: Room = ROOM_SCENE.instantiate()
+		# Las salas deben CONGELARSE con la pausa de transición: sin esto heredarían
+		# el PROCESS_MODE_ALWAYS del FloorManager y los enemigos seguirían moviéndose.
+		room.process_mode = Node.PROCESS_MODE_PAUSABLE
 		room.position = Vector2(grid_pos.x * stride.x, grid_pos.y * stride.y)
 		add_child(room)
+		room.difficulty_budget = int(DataDB.get_balance("run.dificultad_sala_base"))
 		var forced: Array[String] = []
 		for id: Variant in def.get("enemigos", []):
 			forced.append(str(id))
@@ -97,12 +101,15 @@ func _on_door_crossed(room_grid: Vector2i, direction: Vector2i) -> void:
 ## desliza la cámara hasta la sala destino; al llegar, activa la sala.
 func _transition_to(target: Vector2i, direction: Vector2i) -> void:
 	transitioning = true
+	# La duración se lee ANTES de pausar: si balance está roto (F5 a mitad de
+	# edición) no podemos dejarnos el árbol pausado para siempre.
+	var duration_raw: Variant = DataDB.get_balance("salas.transicion_camara_s")
+	var duration: float = float(duration_raw) if duration_raw != null else 0.0
 	get_tree().paused = true
 	var room: Room = rooms[target]
 	var player: Node2D = get_tree().get_first_node_in_group("player") as Node2D
 	if player != null:
 		player.global_position = room.entry_position(-direction)
-	var duration: float = float(DataDB.get_balance("salas.transicion_camara_s"))
 	if camera != null:
 		var tween: Tween = create_tween()
 		tween.tween_property(camera, "global_position", room.center_global(), duration) \

@@ -100,15 +100,10 @@ func _wander_bounce(delta: float) -> void:
 	if _wander_timer_s <= 0.0:
 		_pick_wander_direction()
 	velocity = _wander_dir * _speed
-	# Rebote contra lo que choque (muros en Fase 3); mientras, también contra el viewport.
+	# Rebota contra lo que choque: muros de la sala, rocas y puertas selladas.
 	var collision: KinematicCollision2D = get_last_slide_collision()
 	if collision != null:
 		_wander_dir = _wander_dir.bounce(collision.get_normal()).normalized()
-	var bounds: Vector2 = get_viewport_rect().size
-	if (global_position.x < 0.0 and _wander_dir.x < 0.0) or (global_position.x > bounds.x and _wander_dir.x > 0.0):
-		_wander_dir.x = -_wander_dir.x
-	if (global_position.y < 0.0 and _wander_dir.y < 0.0) or (global_position.y > bounds.y and _wander_dir.y > 0.0):
-		_wander_dir.y = -_wander_dir.y
 
 
 func _pick_wander_direction() -> void:

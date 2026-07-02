@@ -22,9 +22,6 @@ const SYM_SPAWN := "spawn enemigo"
 const SYM_SPAWN_OPTIONAL := "spawn opcional 50%"
 const SYM_PICKUP := "posible pickup"
 
-## Probabilidad del spawn opcional 'e' (fijada por la propia leyenda: "50%").
-const OPTIONAL_SPAWN_CHANCE := 0.5
-
 # Colores placeholder (visual, no balance).
 const COLOR_FLOOR := Color(0.11, 0.12, 0.17)
 const COLOR_WALL := Color(0.2, 0.21, 0.29)
@@ -44,6 +41,11 @@ var spawn_pool: String = "piso1"
 
 ## Spawns forzados (ids concretos) en vez de plantilla: sala de jefe-placeholder, etc.
 var forced_spawns: Array[String] = []
+
+## Presupuesto de dificultad de la sala (spec generación §2): la suma de
+## coste_dificultad de los enemigos spawneados no puede superarlo. Lo fija
+## FloorManager desde balance (dificultad_sala_base × nº de piso en Fase 4).
+var difficulty_budget: int = 0
 
 ## Offsets de colocación (en tiles desde el centro) para los spawns forzados.
 const FORCED_SPAWN_OFFSETS: Array[Vector2i] = [
@@ -285,7 +287,7 @@ func _parse_layout(template: Dictionary, legend: Dictionary) -> void:
 				SYM_SPAWN:
 					_spawn_tiles.append(Vector2i(tx, ty))
 				SYM_SPAWN_OPTIONAL:
-					if _rng.randf() < OPTIONAL_SPAWN_CHANCE:
+					if _rng.randf() < float(DataDB.get_balance("salas.spawn_opcional_pct")) / 100.0:
 						_spawn_tiles.append(Vector2i(tx, ty))
 				SYM_PICKUP:
 					# Los pickups llegan con los drops de la Fase 5; guardamos la casilla.
@@ -344,30 +346,46 @@ func _place_wax(tile: Vector2i) -> void:
 
 # --- Enemigos y limpieza ---
 
-## Instancia los enemigos: spawns forzados (jefe-placeholder) o casillas de plantilla.
+## Instancia los enemigos: spawns forzados (jefe-placeholder) o casillas de plantilla
+## respetando el presupuesto de dificultad (spec §2).
 func _spawn_enemies() -> int:
 	var count: int = 0
 	if not forced_spawns.is_empty():
+		# Los forzados (jefe-placeholder) ignoran el presupuesto a propósito.
 		var mid: Vector2i = size_tiles / 2
 		for i in forced_spawns.size():
 			var offset: Vector2i = FORCED_SPAWN_OFFSETS[i % FORCED_SPAWN_OFFSETS.size()]
-			count += 1
-			_spawn_enemy(forced_spawns[i], mid + offset)
+			count += _spawn_enemy(forced_spawns[i], mid + offset)
 		return count
 	var pool: Array = DataDB.pools_spawn.get(spawn_pool, [])
 	if pool.is_empty():
 		return 0
+	var budget: int = difficulty_budget
 	for tile: Vector2i in _spawn_tiles:
-		_spawn_enemy(str(pool[_rng.randi_range(0, pool.size() - 1)]), tile)
-		count += 1
+		# Solo candidatos que caben en el presupuesto restante.
+		var candidates: Array[String] = []
+		for id: Variant in pool:
+			if int(DataDB.enemigos.get(id, {}).get("coste_dificultad", 1)) <= budget:
+				candidates.append(str(id))
+		if candidates.is_empty():
+			break
+		var chosen: String = candidates[_rng.randi_range(0, candidates.size() - 1)]
+		budget -= int(DataDB.enemigos[chosen].get("coste_dificultad", 1))
+		count += _spawn_enemy(chosen, tile)
 	return count
 
 
-func _spawn_enemy(id: String, tile: Vector2i) -> void:
+## Devuelve 1 si el enemigo se creó de verdad (id válido); 0 si no. Contar un id
+## inválido dejaría la sala sellada para siempre (muere sin emitir enemy_died).
+func _spawn_enemy(id: String, tile: Vector2i) -> int:
+	if not DataDB.enemigos.has(id):
+		push_error("Room: spawn con id desconocido '%s'" % id)
+		return 0
 	var enemy: Enemy = ENEMY_SCENE.instantiate()
 	enemy.enemy_id = id
 	enemy.position = tile_center(tile.x, tile.y)
 	add_child(enemy)
+	return 1
 
 
 func _on_enemy_died(enemy: Node) -> void:

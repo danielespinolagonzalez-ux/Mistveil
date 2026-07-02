@@ -32,8 +32,11 @@ func fire(origin: Vector2, direction: Vector2, speed: float, range_px: float, da
 	_traveled = 0.0
 	visible = true
 	set_physics_process(true)
-	monitoring = true
-	monitorable = true
+	# set_deferred: si el pool reutiliza el proyectil en el mismo frame en que
+	# expiró, el "false" diferido de _deactivate_silent llegaría DESPUÉS de un
+	# "true" inmediato y lo dejaría fantasma. Diferido tras diferido gana el true.
+	set_deferred("monitoring", true)
+	set_deferred("monitorable", true)
 
 
 func _physics_process(delta: float) -> void:

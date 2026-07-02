@@ -75,6 +75,7 @@ func _test_room_template() -> void:
 
 	var room: Room = ROOM_SCENE.instantiate()
 	add_child(room)
+	room.difficulty_budget = int(DataDB.get_balance("run.dificultad_sala_base"))
 	var exits: Array[Vector2i] = [Vector2i.RIGHT]
 	room.setup(Vector2i.ZERO, Vector2i(13, 7), exits, template, legend)
 	await get_tree().physics_frame
@@ -101,10 +102,15 @@ func _test_room_template() -> void:
 	for child in room.get_children():
 		if child is Enemy:
 			enemies.append(child)
-	_check("spawns: enemigos entre E y E+e",
-		enemies.size() >= counts["E"] and enemies.size() <= counts["E"] + counts["e"])
+	_check("spawns: al menos 1 y como mucho E+e enemigos",
+		enemies.size() >= 1 and enemies.size() <= counts["E"] + counts["e"])
 	_check("spawns: ids válidos del pool piso1",
 		enemies.all(func(e: Enemy) -> bool: return DataDB.pools_spawn["piso1"].has(e.enemy_id)))
+	var total_cost: int = 0
+	for enemy: Enemy in enemies:
+		total_cost += int(DataDB.enemigos[enemy.enemy_id]["coste_dificultad"])
+	_check("spawns: coste total dentro del presupuesto de dificultad (spec §2)",
+		total_cost <= room.difficulty_budget)
 	_check("activar con enemigos sella las puertas", not room.is_door_open(Vector2i.RIGHT))
 
 	# Matar a todos → room_cleared y puertas abiertas.

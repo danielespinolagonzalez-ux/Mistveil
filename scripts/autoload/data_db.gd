@@ -37,7 +37,7 @@ const BALANCE_REQUIRED := {
 		"knockback_decay_px_s2", "damage_number_duration_s", "damage_number_rise_px",
 	],
 	"elementos": ["opposite_mult", "same_mult", "neutral_mult"],
-	"salas": ["transicion_camara_s", "cera_hp"],
+	"salas": ["transicion_camara_s", "cera_hp", "spawn_opcional_pct"],
 	"run": [
 		"floors_total", "rooms_min", "rooms_max", "grid_w", "grid_h",
 		"dificultad_sala_base", "escalado_hp_por_piso", "escalado_dano_por_piso",
