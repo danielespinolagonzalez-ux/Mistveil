@@ -18,6 +18,7 @@ const BALANCE_REQUIRED := {
 		"dash_speed", "dash_duration_s", "dash_cooldown_s", "dash_iframes_s",
 		"hurt_iframes_s", "hurt_blink_hz", "tear_damage", "tear_rate_per_s", "tear_speed",
 		"tear_range_px", "melee_damage", "melee_range_px",
+		"melee_windup_s", "melee_active_s", "melee_recovery_s",
 	],
 	"cadencia": [
 		"combo_hits_base", "window_perfect_ms", "window_good_ms", "window_decay_per_hit",
@@ -31,8 +32,8 @@ const BALANCE_REQUIRED := {
 		"post_transform_vulnerable_s",
 	],
 	"feedback": [
-		"tear_knockback_px_s", "contact_knockback_px_s", "knockback_decay_px_s2",
-		"damage_number_duration_s", "damage_number_rise_px",
+		"tear_knockback_px_s", "melee_knockback_px_s", "contact_knockback_px_s",
+		"knockback_decay_px_s2", "damage_number_duration_s", "damage_number_rise_px",
 	],
 	"elementos": ["opposite_mult", "same_mult", "neutral_mult"],
 	"run": [

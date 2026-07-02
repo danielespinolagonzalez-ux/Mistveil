@@ -16,7 +16,10 @@
     "tear_speed": 420.0,
     "tear_range_px": 320.0,
     "melee_damage": 5.0,
-    "melee_range_px": 40.0
+    "melee_range_px": 40.0,
+    "melee_windup_s": 0.12,
+    "melee_active_s": 0.1,
+    "melee_recovery_s": 0.16
   },
   "cadencia": {
     "combo_hits_base": 3,
@@ -47,6 +50,7 @@
   },
   "feedback": {
     "tear_knockback_px_s": 140.0,
+    "melee_knockback_px_s": 200.0,
     "contact_knockback_px_s": 220.0,
     "knockback_decay_px_s2": 900.0,
     "damage_number_duration_s": 0.6,

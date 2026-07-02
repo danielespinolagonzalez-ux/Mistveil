@@ -1,7 +1,7 @@
 # ESTADO del proyecto
 > Claude Code: actualiza este archivo al final de CADA sesión.
 
-**Fase actual:** 1 (Combate) — tareas 1.1–1.6 completas; criterios de Fase 0 y Fase 1 (sala con 5 enemigos "justa y legible") pendientes de la prueba manual de Daniel
+**Fase actual:** 2 (Cadencia) — Daniel pidió continuar; criterios de Fases 0-1 pendientes de su prueba manual
 **Última sesión:** 2026-07-01
 
 ## Registro de sesiones
@@ -20,6 +20,7 @@
 | 2026-07-01 | 1.4: comportamientos turret y wander_bounce; Tear generalizada a Projectile + ProjectilePool base (lágrimas y balas enemigas comparten código); alcance_px añadido a proyectiles del JSON y validado | Un solo Projectile para ambos bandos (cambian capas de colisión); el engranaje rebota contra colisiones y bordes del viewport hasta que existan muros (Fase 3) | Tarea 1.5 (HUD) |
 | 2026-07-01 | 1.5: HUD con corazones (1 hp = 1 corazón, coherente con el item cuerda_extra) y contador de oro; RunState.gold con add_gold/reset; señales player_health_changed y gold_changed | Corazones/moneda como ColorRect placeholder; sprites pedidos en ASSETS_PENDIENTES.md | Tarea 1.6 (knockback + números de daño) |
 | 2026-07-01 | 1.6: knockback (sección feedback nueva en balance; empuje como propiedad del hitbox, decae solo) y números de daño flotantes (sistema que escucha damage_dealt); Main con 5 enemigos mixtos | Balas enemigas no empujan (solo el contacto); tests por tiempo real y no por frames (headless corre >60 fps) | Daniel prueba Fases 0-1; después Fase 2 (Cadencia) |
+| 2026-07-02 | 2.1: melé básico con hitbox frontal orientado al aim, fases WINDUP/ACTIVE/RECOVERY con tiempos en balance (melee_windup_s/active/recovery_s) y knockback propio | El arco se fija al pulsar (no sigue al ratón durante el golpe); clic derecho o X del mando | Tarea 2.2 (anillo de sincronía) |
 
 ## Deuda técnica / notas
 - (vacío)

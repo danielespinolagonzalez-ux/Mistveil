@@ -6,6 +6,12 @@ extends CharacterBody2D
 ## Distancia del centro al punto de salida del proyectil (ligada al tamaño del placeholder).
 const MUZZLE_OFFSET_PX := 10.0
 
+## Geometría del arco de melé relativa a melee_range_px (el alcance vive en balance).
+const MELEE_OFFSET_FACTOR := 0.6
+
+## Fases del ataque melé (spec combate.md: WINDUP → ventana ACTIVA → recuperación).
+enum MeleePhase { NONE, WINDUP, ACTIVE, RECOVERY }
+
 var _move_speed: float = 0.0
 var _acceleration: float = 0.0
 var _friction: float = 0.0
@@ -17,13 +23,23 @@ var _tear_knockback: float = 0.0
 var _hurt_iframes_s: float = 0.0
 var _hurt_blink_hz: float = 1.0
 
+var _melee_damage: float = 0.0
+var _melee_range_px: float = 0.0
+var _melee_windup_s: float = 0.0
+var _melee_active_s: float = 0.0
+var _melee_recovery_s: float = 0.0
+
 var _shoot_cooldown_s: float = 0.0
 var _iframes_left_s: float = 0.0
 var _dead: bool = false
+var _melee_phase: MeleePhase = MeleePhase.NONE
+var _melee_timer_s: float = 0.0
 
 @onready var _health: HealthComponent = $HealthComponent
 @onready var _hurtbox: HurtboxComponent = $HurtboxComponent
 @onready var _placeholder: Polygon2D = $Placeholder
+@onready var _melee_hitbox: HitboxComponent = $MeleeHitbox
+@onready var _melee_swing: Polygon2D = $MeleeHitbox/Swing
 
 
 func _ready() -> void:
@@ -43,6 +59,7 @@ func _physics_process(delta: float) -> void:
 		return
 	_process_iframes(delta)
 	_process_movement(delta)
+	_process_melee(delta)
 	_process_shooting(delta)
 
 
@@ -67,6 +84,49 @@ func _process_shooting(delta: float) -> void:
 		return
 	EventBus.tear_fired.emit(global_position + aim * MUZZLE_OFFSET_PX, aim, _tear_speed, _tear_range_px, _tear_damage, _tear_knockback)
 	_shoot_cooldown_s = 1.0 / _tear_rate_per_s
+
+
+## Máquina de estados del melé básico (tarea 2.1). El anillo de sincronía y la
+## cadena de golpes de la Cadencia se montan encima en las tareas 2.2-2.3.
+func _process_melee(delta: float) -> void:
+	match _melee_phase:
+		MeleePhase.NONE:
+			if Input.is_action_just_pressed("melee"):
+				_start_melee()
+		MeleePhase.WINDUP:
+			_melee_timer_s -= delta
+			if _melee_timer_s <= 0.0:
+				_melee_phase = MeleePhase.ACTIVE
+				_melee_timer_s = _melee_active_s
+				_set_melee_hitbox_enabled(true)
+		MeleePhase.ACTIVE:
+			_melee_timer_s -= delta
+			if _melee_timer_s <= 0.0:
+				_melee_phase = MeleePhase.RECOVERY
+				_melee_timer_s = _melee_recovery_s
+				_set_melee_hitbox_enabled(false)
+		MeleePhase.RECOVERY:
+			_melee_timer_s -= delta
+			if _melee_timer_s <= 0.0:
+				_melee_phase = MeleePhase.NONE
+
+
+func _start_melee() -> void:
+	_melee_phase = MeleePhase.WINDUP
+	_melee_timer_s = _melee_windup_s
+	# El arco queda fijado hacia donde se apuntaba al iniciar el golpe.
+	var aim: Vector2 = _aim_direction(Input.get_vector("aim_left", "aim_right", "aim_up", "aim_down"))
+	if aim == Vector2.ZERO:
+		aim = Vector2.RIGHT
+	_melee_hitbox.position = aim * _melee_range_px * MELEE_OFFSET_FACTOR
+	_melee_hitbox.rotation = aim.angle()
+
+
+func _set_melee_hitbox_enabled(enabled: bool) -> void:
+	# set_deferred: los cambios de área en pleno paso de física deben aplazarse.
+	_melee_hitbox.set_deferred("monitoring", enabled)
+	_melee_hitbox.set_deferred("monitorable", enabled)
+	_melee_swing.visible = enabled
 
 
 ## Cuenta atrás de invulnerabilidad tras un golpe, con parpadeo del placeholder.
@@ -120,5 +180,12 @@ func _refresh_balance() -> void:
 	_tear_rate_per_s = maxf(0.1, float(DataDB.get_balance("player.tear_rate_per_s")))
 	_tear_damage = float(DataDB.get_balance("player.tear_damage"))
 	_tear_knockback = float(DataDB.get_balance("feedback.tear_knockback_px_s"))
+	_melee_damage = float(DataDB.get_balance("player.melee_damage"))
+	_melee_range_px = float(DataDB.get_balance("player.melee_range_px"))
+	_melee_windup_s = float(DataDB.get_balance("player.melee_windup_s"))
+	_melee_active_s = float(DataDB.get_balance("player.melee_active_s"))
+	_melee_recovery_s = float(DataDB.get_balance("player.melee_recovery_s"))
+	_melee_hitbox.damage = _melee_damage
+	_melee_hitbox.knockback_px_s = float(DataDB.get_balance("feedback.melee_knockback_px_s"))
 	_hurt_iframes_s = float(DataDB.get_balance("player.hurt_iframes_s"))
 	_hurt_blink_hz = maxf(1.0, float(DataDB.get_balance("player.hurt_blink_hz")))

@@ -72,6 +72,40 @@ func _ready() -> void:
 	_check("derrota: título desde textos_es.json",
 		(defeat.get_node("Overlay/Title") as Label).text == DataDB.get_text("ui.muerte"))
 
+	# Melé básico (tarea 2.1): pulsar melee golpea con hitbox frontal hacia el aim.
+	var fighter: Player = PLAYER_SCENE.instantiate()
+	fighter.position = Vector2(0, 200)
+	add_child(fighter)
+	var melee_hits: Array[HitboxComponent] = []
+	var dummy := HurtboxComponent.new()
+	dummy.collision_layer = 1 << 6
+	dummy.collision_mask = 1 << 3
+	var dummy_shape := CollisionShape2D.new()
+	var dummy_circle := CircleShape2D.new()
+	dummy_circle.radius = 10.0
+	dummy_shape.shape = dummy_circle
+	dummy.add_child(dummy_shape)
+	dummy.position = fighter.position + Vector2(float(DataDB.get_balance("player.melee_range_px")) * 0.6, 0)
+	dummy.hurt_by.connect(func(hitbox: HitboxComponent) -> void: melee_hits.append(hitbox))
+	add_child(dummy)
+	await get_tree().physics_frame
+	Input.action_press("aim_right")  # fija el aim a la derecha (prioridad de stick)
+	Input.action_press("melee")
+	await get_tree().physics_frame
+	Input.action_release("melee")
+	# Cubrir windup + ventana activa (timers por delta fija de física).
+	var melee_frames: int = int(ceil((float(DataDB.get_balance("player.melee_windup_s"))
+		+ float(DataDB.get_balance("player.melee_active_s"))) * 60.0)) + 10
+	for i in melee_frames:
+		await get_tree().physics_frame
+	Input.action_release("aim_right")
+	_check("melé: el golpe frontal alcanza al dummy", melee_hits.size() >= 1)
+	if melee_hits.size() >= 1:
+		_check("melé: daño desde balance player.melee_damage",
+			melee_hits[0].damage == float(DataDB.get_balance("player.melee_damage")))
+	fighter.queue_free()
+	dummy.queue_free()
+
 	# HUD (tarea 1.5): corazones = hp y contador de oro vía señales.
 	var hud: CanvasLayer = (load("res://scenes/ui/hud.tscn") as PackedScene).instantiate()
 	add_child(hud)
