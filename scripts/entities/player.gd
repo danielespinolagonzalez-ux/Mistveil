@@ -89,8 +89,9 @@ func _ready() -> void:
 	_hurtbox.hurt_by.connect(_on_hurt_by)
 	_health.died.connect(_on_died)
 	_health.health_changed.connect(_on_health_changed)
-	# Estado inicial para el HUD (la asignación directa de hp no emite señal).
-	EventBus.player_health_changed.emit(_health.current_hp, _health.max_hp)
+	# Estado inicial para el HUD, diferido: el HUD puede hacer _ready DESPUÉS
+	# que el player y perderse una emisión inmediata (la asignación de hp no emite).
+	EventBus.player_health_changed.emit.call_deferred(_health.current_hp, _health.max_hp)
 	# Anillo de sincronía de la Cadencia (se posiciona solo sobre el objetivo).
 	_sync_ring = SyncRing.new()
 	add_child(_sync_ring)
