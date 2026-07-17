@@ -270,6 +270,17 @@ cadR._landHit('perfect', cadRP, [objR]);
 assert('un perfecto recorta el cooldown del dash',
   cadRP.dashCd < 0.5 && Math.abs(cadRP.dashCd - (0.5 - DataDB.balance.cadencia.perfect_dash_refund_s)) < 0.001);
 
+// Balance — primeros pisos suaves: presupuesto de sala crece con el piso pero
+// arranca bajo (intención "que cueste menos progresar al principio").
+{
+  const R = DataDB.balance.run;
+  const budget = piso => R.dificultad_sala_base + (piso - 1) * (R.dificultad_por_piso ?? 2);
+  assert('piso 1 tiene el presupuesto de enemigos más bajo', budget(1) < budget(3));
+  assert('piso 1 arranca gentil (presupuesto ≤ 5)', budget(1) <= 5);
+  assert('la vida enemiga escala más suave al principio', R.escalado_hp_por_piso <= 0.32);
+  assert('el primer nivel de la Esfera llega antes (≤ 70 XP)', DataDB.balance.xp.nivel_base <= 70);
+}
+
 // G4 — i-frames en el lunge: conectar un golpe hace a Pip brevemente intocable
 const cadI = new Cadencia(); cadI.getSolids = () => [];
 const cadIP = new Player(100, 100);

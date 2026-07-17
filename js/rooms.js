@@ -340,8 +340,8 @@ export class Room {
     const pool = (DataDB.enemigos.pools_spawn['bioma_' + (this.bioma?.id ?? '')] ?? DataDB.enemigos.pools_spawn['piso1'])
       .map(id => DataDB.enemigo(id))
       .filter(Boolean);
-    // Maldita: presupuesto doble. Escalado por piso según spec §4.
-    let budget = R.dificultad_sala_base * (this.type === 'maldita' ? 2 : 1) + (this.piso - 1) * 2;
+    // Maldita: presupuesto doble. Escalado por piso según spec §4 (incremento tunable).
+    let budget = R.dificultad_sala_base * (this.type === 'maldita' ? 2 : 1) + (this.piso - 1) * (R.dificultad_por_piso ?? 2);
     const hpMult = 1 + (this.piso - 1) * R.escalado_hp_por_piso;
     const danoMult = 1 + (this.piso - 1) * (R.escalado_dano_por_piso ?? 0);
     const inv = this.bioma?.invertida; // Relojería Invertida: telegrafía doble, zarpazo feroz
