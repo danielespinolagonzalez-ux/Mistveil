@@ -360,6 +360,7 @@ export class Enemy {
     this.kbx = 0; this.kby = 0;
     this.spin = Math.random() * Math.PI * 2;
     this.countering = false;   // true mientras su anillo de Cadencia es ROJO
+    this.slowT = 0;            // ralentizado (ola del Sello de Marea)
     this.priming = 0;          // velon_inestable: cuenta atrás de explosión
     this.burn = null;          // DoT de fuego {t, tick}
     this.atk = { state: 'idle', t: 0, dir: [1, 0] }; // ataque telegrafiado (melee)
@@ -618,6 +619,11 @@ export class Enemy {
       default: this.vx = this.vy = 0;
     }
 
+    // Lento (ola de Marea): el mundo le pesa un rato
+    if (this.slowT > 0) {
+      this.slowT -= dt;
+      this.vx *= 0.55; this.vy *= 0.55;
+    }
     this.x += (this.vx + this.kbx) * dt;
     this.y += (this.vy + this.kby) * dt;
     this.kbx *= Math.pow(0.0001, dt); this.kby *= Math.pow(0.0001, dt);

@@ -8,6 +8,8 @@ export const GameState = {
   esfera: ['eje'],                       // nodos activados de la Esfera del Reloj
   usoHechizos: {}, usoCompases: {},      // "todo sube de nivel": contadores de uso
   cuerdaTensa: false,           // modo reto (requiere cuarto_de_la_penumbra)
+  sellosObtenidos: [],          // sellos elementales conseguidos (botín de jefes)
+  selloEquipado: null,          // sello elemental activo (persiste entre runs)
   flags: {},                    // narrativa/pueblo (hermanos_memoria, ate_idx...)
   stats: { runs: 0, muertes: 0, victorias: 0 },
   opciones: { escala_ventanas: 1.0, vol_musica: 1.0, vol_sfx: 1.0, esquema_control: 'raton' },
@@ -15,7 +17,7 @@ export const GameState = {
 };
 
 export const RunState = {
-  piso: 1, oro: 0, sp: 0, items: [], semilla: 0, activoSalas: 0,
+  piso: 1, oro: 0, sp: 0, items: [], semilla: 0, activoSalas: 0, selloSpAcum: 0,
   hechizo: 'estallido_de_tinta',           // Arte de Tinta equipada (Q)
   tomos: ['estallido_de_tinta'],           // hechizos conocidos
   compas: 'tic_tac',                       // ritmo de Cadencia elegido (C)
@@ -37,6 +39,7 @@ export const RunState = {
     this.contrato = null;      // contrato del Gremio (tablón del pueblo)
     this.apuesta = null;       // Reloj de Apuestas
     this.activoSalas = 0;      // salas limpiadas desde el último uso del objeto activo
+    this.selloSpAcum = 0;      // SP de perfectos acumulado para el rasgo de Marea
     this.arteGratis = false;   // sinergia de Campana
     this.compasRobado = null;  // El Primer Relojero
   }
@@ -52,7 +55,8 @@ export const SaveManager = {
         cuerdaTensa: GameState.cuerdaTensa, stats: GameState.stats, flags: GameState.flags,
         xp: GameState.xp, nivel: GameState.nivel, engranajes: GameState.engranajes,
         ligaRango: GameState.ligaRango ?? 0,
-        esfera: GameState.esfera, usoHechizos: GameState.usoHechizos, usoCompases: GameState.usoCompases
+        esfera: GameState.esfera, usoHechizos: GameState.usoHechizos, usoCompases: GameState.usoCompases,
+        sellosObtenidos: GameState.sellosObtenidos, selloEquipado: GameState.selloEquipado
       }));
     } catch (e) { console.warn('SaveManager: no se pudo guardar', e); }
   },
@@ -73,6 +77,8 @@ export const SaveManager = {
       GameState.esfera = (Array.isArray(d.esfera) && d.esfera.length) ? d.esfera : ['eje'];
       GameState.usoHechizos = d.usoHechizos ?? {};
       GameState.usoCompases = d.usoCompases ?? {};
+      GameState.sellosObtenidos = d.sellosObtenidos ?? [];
+      GameState.selloEquipado = d.selloEquipado ?? null;
       Object.assign(GameState.stats, d.stats ?? {});
       Object.assign(GameState.opciones, d.opciones ?? {});
       return true;

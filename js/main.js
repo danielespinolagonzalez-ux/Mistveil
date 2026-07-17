@@ -19,6 +19,7 @@ import { cast, elementMult } from './spells.js';
 import { FX } from './fx.js';
 import { PLAZA, NPCS, visita, resetVisita, drawNPC, drawCoro, drawPuebloBackdrop, drawPlazaGround } from './pueblo.js';
 import { syncFamiliares, updateFamiliares, drawFamiliar } from './familiares.js';
+import { selloDef, selloEquipado, obtenerSello, rasgoCuraPorSp, rasgoDashBurn, finisherElemental } from './sellos.js';
 
 const PORTRAIT = !!window.MISTVEIL_PORTRAIT;
 const MOBILE = !!window.MISTVEIL_MOBILE;
@@ -743,6 +744,11 @@ EventBus.on('room_cleared', (room) => {
     if (tomoNuevo) spawnPickup('tomo:' + tomoNuevo.id, cx - 34, cy - 20);
     const it = rollItem('jefe');
     if (it) spawnPickup('item:' + it.id, cx + 34, cy - 20);
+    // Sello elemental del jefe de bioma (R2): botín único, solo la primera vez
+    const selloId = DataDB.biomas?.jefes_bioma?.[room.bioma?.id]?.sello;
+    if (selloId && selloDef(selloId)?.estado === 'activo' && !GameState.sellosObtenidos.includes(selloId)) {
+      spawnPickup('sello:' + selloId, cx, cy - 40);
+    }
     for (let i = 0; i < 3; i++) spawnPickup('coin', cx, cy + 26);
     return;
   }
@@ -803,6 +809,21 @@ EventBus.on('cadencia_hit', ({ x, y, quality, dmg, finisher }) => {
   if (finisher) {
     pushPopup(x, y - 34, t9('ui.finisher'), '#ff9c3a', 12);
     world.shockwaves.push({ x, y, r0: 8, r1: DataDB.balance.cadencia.finisher_aoe_radius_px, t: 0.28, tmax: 0.28, color: '#ffd54f' });
+    // Sello elemental (R2): el finisher lanza además una onda del elemento
+    const fx = finisherElemental();
+    if (fx) {
+      const col = DataDB.elementos[fx.elemento]?.color ?? '#e9e2f5';
+      world.shockwaves.push({ x, y, r0: 10, r1: fx.radio_px, t: 0.34, tmax: 0.34, color: col });
+      const p2 = world.player;
+      for (const e of world.enemies) {
+        if (e.health.dead || Math.hypot(e.x - x, e.y - y) > fx.radio_px + e.r) continue;
+        e.takeDamage(p2.stats.melee_damage * fx.dano_mult * elementMult(e.def.elemento, fx.elemento), x, y,
+          (fx.empuje ?? 0) / DataDB.balance.player.tear_knockback_px_s);
+        if (fx.quema) e.burn = { t: DataDB.balance.hechizos.quema_duracion_s };
+        if (fx.lento_s) e.slowT = Math.max(e.slowT ?? 0, fx.lento_s);
+      }
+      FX.burst(x, y, { n: 14, color: col, speed: 130, life: 0.5, size: 2, glow: true });
+    }
     FX.addShake(2.5);
     hitStopT = Math.max(hitStopT, 0.09);
   }
@@ -898,6 +919,14 @@ EventBus.on('data_reloaded', () => { world.player?.applyBalance(); flash('Datos 
 // ---------- Crónica del piso: alimenta el XP del Balance (trampilla) ----------
 EventBus.on('cadencia_hit', ({ quality }) => {
   if (RunState.apuesta?.tracking && quality === 'fail') RunState.apuesta.fails++;
+  // Sello de Marea (R2): los perfectos curan cada N SP ganado
+  if (quality === 'perfect') {
+    const curado = rasgoCuraPorSp(DataDB.balance.cadencia.sp_perfect, world.player);
+    if (curado) {
+      AudioManager.sfx('heart');
+      pushPopup(world.player.x, world.player.y - 24, '+♥', '#4FC3F7', 10);
+    }
+  }
   const fs = RunState.floorStats; if (!fs) return;
   if (quality === 'perfect') {
     fs.perfects++;
@@ -1161,24 +1190,32 @@ function update(dt) {
     EventBus.emit('activo_usado', p.mods.activo);
   }
 
-  // Aceite negro: el dash deja un rastro de tinta que daña (R1.4)
-  if (p.mods.dashTrail && p.dashT > 0) {
+  // Rastros del dash: Aceite negro daña (R1.4) y el Sello de Ascuas ARDE (R2)
+  const ascuas = rasgoDashBurn();
+  if ((p.mods.dashTrail || ascuas) && p.dashT > 0) {
     const last = world.trails[world.trails.length - 1];
     if (!last || Math.hypot(p.x - last.x, p.y - last.y) > 10) {
-      world.trails.push({ x: p.x, y: p.y + 4, t: p.mods.dashTrail.duracion_s, tick: 0 });
+      world.trails.push({
+        x: p.x, y: p.y + 4, tick: 0, fuego: !!ascuas,
+        t: ascuas ? ascuas.duracion_s : p.mods.dashTrail.duracion_s
+      });
     }
   }
   for (let i = world.trails.length - 1; i >= 0; i--) {
     const tr = world.trails[i];
     tr.t -= dt; tr.tick -= dt;
     if (tr.t <= 0) { world.trails.splice(i, 1); continue; }
-    if (tr.tick <= 0 && p.mods.dashTrail) {
+    if (tr.tick <= 0) {
       // tick de 0.5 s: con el redondeo "mínimo 1" un tick más fino inflaría el dps
       tr.tick = 0.5;
       for (const e of alive) {
         if (Math.hypot(e.x - tr.x, e.y - tr.y) < 14 + e.r) {
-          e.takeDamage(p.mods.dashTrail.dano_por_s * 0.5, tr.x, tr.y, 0);
+          if (tr.fuego) e.burn = { t: DataDB.balance.hechizos.quema_duracion_s };
+          else if (p.mods.dashTrail) e.takeDamage(p.mods.dashTrail.dano_por_s * 0.5, tr.x, tr.y, 0);
         }
+      }
+      if (tr.fuego && Math.random() < 0.7) {
+        FX.burst(tr.x, tr.y - 4, { n: 1, color: '#ff9c3a', speed: 16, life: 0.4, size: 1.8, glow: true, gravity: -50 });
       }
     }
   }
@@ -1369,6 +1406,14 @@ function update(dt) {
       } else if (pk.type.startsWith('item:')) {
         const it = DataDB.item(pk.type.slice(5));
         if (it) applyItem(it, p);
+        pk.dead = true;
+      } else if (pk.type.startsWith('sello:')) {
+        const s = obtenerSello(pk.type.slice(6));
+        if (s) {
+          AudioManager.bell(220, 0.1);
+          flash('Sello: ' + s.nombre, s.rasgo + ' · finisher: ' + s.d_finisher);
+          SaveManager.save(); // la colección es permanente
+        }
         pk.dead = true;
       }
     }
@@ -1775,6 +1820,19 @@ function drawPickup(pk, t) {
   const x = SX(pk.x), y = SY(pk.y, 4 + hover);
   ctx.fillStyle = 'rgba(0,0,0,0.3)';
   ctx.beginPath(); ctx.ellipse(SX(pk.x), SY(pk.y) + 3, 4, 1.6, 0, 0, 7); ctx.fill();
+  if (pk.type.startsWith('sello:')) {
+    // Sello elemental: rombo latiente del color de su elemento
+    const def = selloDef(pk.type.slice(6));
+    const col = DataDB.elementos[def?.elemento]?.color ?? '#e9e2f5';
+    const s = 1 + Math.sin(t * 6) * 0.12;
+    ctx.save(); ctx.translate(x, y - 2); ctx.scale(s, s);
+    ctx.fillStyle = col;
+    ctx.beginPath(); ctx.moveTo(0, -7); ctx.lineTo(5, 0); ctx.lineTo(0, 7); ctx.lineTo(-5, 0); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.75)';
+    ctx.fillRect(-1, -3, 2, 2);
+    ctx.restore();
+    return;
+  }
   if (pk.type === 'coin') {
     ctx.fillStyle = '#8a6d2f'; ctx.beginPath(); ctx.arc(x + 1, y + 1, 4.5, 0, 7); ctx.fill();
     ctx.fillStyle = '#e8c565'; ctx.beginPath(); ctx.arc(x, y, 4.5, 0, 7); ctx.fill();
@@ -2212,15 +2270,15 @@ function drawProjectiles() {
   });
 }
 
-// Charcos del Aceite negro (rastro del dash, R1.4)
+// Rastros del dash: tinta del Aceite negro (R1.4) o brasas de Ascuas (R2)
 function drawTrails() {
   for (const tr of world.trails) {
     const a = Math.min(0.55, tr.t);
     ctx.globalAlpha = a;
-    ctx.fillStyle = '#161228';
+    ctx.fillStyle = tr.fuego ? '#3a1408' : '#161228';
     ctx.beginPath(); ctx.ellipse(SX(tr.x), SY(tr.y), 13, 13 * KY, 0, 0, 7); ctx.fill();
     ctx.globalAlpha = a * 0.5;
-    ctx.fillStyle = '#3d2f6e';
+    ctx.fillStyle = tr.fuego ? '#ff7a2e' : '#3d2f6e';
     ctx.beginPath(); ctx.ellipse(SX(tr.x), SY(tr.y), 8, 8 * KY, 0, 0, 7); ctx.fill();
     ctx.globalAlpha = 1;
   }
@@ -2306,6 +2364,13 @@ function drawHUD(t) {
   ctx.fillStyle = '#fff2c8'; ctx.fillRect(15, 28, 2, 2);
   font(10); ctx.fillStyle = '#cfc6e8'; ctx.textAlign = 'left';
   ctx.fillText('× ' + RunState.oro, 27, 35);
+  // Sello elemental equipado: rombo de su elemento junto al oro
+  if (GameState.selloEquipado) {
+    const sd = selloDef(GameState.selloEquipado);
+    const col = DataDB.elementos[sd?.elemento]?.color ?? '#e9e2f5';
+    ctx.fillStyle = col;
+    ctx.beginPath(); ctx.moveTo(50, 26); ctx.lineTo(54, 31); ctx.lineTo(50, 36); ctx.lineTo(46, 31); ctx.closePath(); ctx.fill();
+  }
   // Objeto activo (X): carga por salas limpiadas
   if (p.mods.activo) {
     const cd = p.mods.activo.cooldown_salas;
@@ -3101,6 +3166,8 @@ function paintFatal(err) {
     batalla: (enc) => { batalla.start(enc || 'vigilia'); mode = 'batalla'; },
     // Equipa una reliquia por id (pruebas de items/familiares/activos)
     item: (id) => { const it = DataDB.item(id); if (it && world.player) applyItem(it, world.player); return it?.nombre ?? 'id desconocido'; },
+    // Obtiene y equipa un sello elemental (pruebas R2)
+    sello: (id = 'sello_ascuas') => { const s = obtenerSello(id); return s ? s.nombre + ' · ' + s.rasgo : 'id desconocido'; },
     unaMano: (on = true) => {
       Input.setScheme(on ? 'una_mano' : 'raton');
       if (on) Input.forceTouch();

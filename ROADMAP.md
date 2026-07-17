@@ -23,10 +23,12 @@ Claude Code: trabaja las fases EN ORDEN salvo indicación de Daniel. No avances 
 **Criterio:** los 20 items de items.json funcionan de verdad; dos runs con reliquias distintas se JUEGAN distinto.
 
 ## Fase R2 — Sellos elementales (la feature diseñada en `data/sellos.json`)
-- [ ] R2.1 Diseño de integración con Daniel: qué es equipar un Sello (rasgo pasivo + finisher elemental de Cadencia), dónde se obtiene (¿Santuario? ¿jefes de bioma?) y su columna en el menú de equipo.
-- [ ] R2.2 Motor: campo `sello` en RunState/GameState, rasgo pasivo data-driven, finisher de Cadencia teñido de elemento (interacción con `elementMult`).
-- [ ] R2.3 **Sello de Ascuas** (fuego) completo; después **Sello de Marea** (agua). Los otros 6 quedan `planificado` en el JSON.
-- [ ] R2.4 Resolver la colisión de nombres "sello" (Esfera/Santuario/elementales) al menos en comentarios y textos de UI.
+- [x] R2.1 Diseño de integración con Daniel: **decidido — botín de los jefes de bioma** (colección permanente; al cogerlo queda equipado y persiste entre runs).
+- [x] R2.2 Motor: campo `sello` en RunState/GameState, rasgo pasivo data-driven, finisher de Cadencia teñido de elemento (interacción con `elementMult`).
+- [x] R2.3 **Sello de Ascuas** (fuego) completo; después **Sello de Marea** (agua). Los otros 6 quedan `planificado` en el JSON.
+- [x] R2.4 Resolver la colisión de nombres "sello" (Esfera/Santuario/elementales) al menos en comentarios y textos de UI.
+
+- [ ] R2.5 (nueva) Selector de Sello en el menú de equipo cuando la colección tenga ≥2 (hoy: el último cogido queda equipado; cambio solo por hook de consola).
 
 **Criterio:** equipar Ascuas cambia perceptiblemente una run (rasgo + finisher); Marea funcional.
 

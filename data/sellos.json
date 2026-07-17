@@ -1,10 +1,90 @@
 [
-  { "id": "sello_ascuas",   "nombre": "Sello de Ascuas",   "elemento": "fuego",     "estado": "activo",      "rasgo": "El rastro del dash arde 2s",           "d_finisher": "Onda de fuego que quema" },
-  { "id": "sello_marea",    "nombre": "Sello de Marea",    "elemento": "agua",      "estado": "planificado", "rasgo": "Los golpes perfectos curan 1 cada 20 SP", "d_finisher": "Ola que empuja y ralentiza" },
-  { "id": "sello_vendaval", "nombre": "Sello del Vendaval","elemento": "viento",    "estado": "planificado", "rasgo": "+25% velocidad, dash sin cooldown",     "d_finisher": "Tornado que agrupa enemigos" },
-  { "id": "sello_pena",     "nombre": "Sello de la Peña",  "elemento": "tierra",    "estado": "planificado", "rasgo": "Armadura 1 por sala, inmune a knockback","d_finisher": "Seismo en cruz" },
-  { "id": "sello_alba",     "nombre": "Sello del Alba",    "elemento": "luz",       "estado": "planificado", "rasgo": "Revela secretos cercanos",              "d_finisher": "Destello que ciega" },
-  { "id": "sello_ocaso",    "nombre": "Sello del Ocaso",   "elemento": "oscuridad", "estado": "planificado", "rasgo": "Los enemigos te detectan más tarde",    "d_finisher": "Vacío que atrae y daña" },
-  { "id": "sello_trueno",   "nombre": "Sello del Trueno",  "elemento": "trueno",    "estado": "planificado", "rasgo": "Golpes perfectos encadenan rayo",       "d_finisher": "Tormenta en la sala" },
-  { "id": "sello_incoloro", "nombre": "Sello Incoloro",    "elemento": "neutro",    "estado": "planificado", "rasgo": "+1 golpe a la D-Addition",              "d_finisher": "Réplica espectral del combo" }
+  {
+    "id": "sello_ascuas",
+    "nombre": "Sello de Ascuas",
+    "elemento": "fuego",
+    "estado": "activo",
+    "rasgo": "El rastro del dash arde 2s",
+    "d_finisher": "Onda de fuego que quema",
+    "rasgo_fx": {
+      "tipo": "dash_burn",
+      "duracion_s": 2.0
+    },
+    "finisher_fx": {
+      "tipo": "onda_elemental",
+      "elemento": "fuego",
+      "dano_mult": 0.8,
+      "quema": true,
+      "radio_px": 64
+    }
+  },
+  {
+    "id": "sello_marea",
+    "nombre": "Sello de Marea",
+    "elemento": "agua",
+    "estado": "activo",
+    "rasgo": "Los golpes perfectos curan 1 cada 20 SP",
+    "d_finisher": "Ola que empuja y ralentiza",
+    "rasgo_fx": {
+      "tipo": "cura_por_sp",
+      "sp": 20,
+      "cura": 1
+    },
+    "finisher_fx": {
+      "tipo": "onda_elemental",
+      "elemento": "agua",
+      "dano_mult": 0.6,
+      "empuje": 260,
+      "lento_s": 2.0,
+      "radio_px": 64
+    }
+  },
+  {
+    "id": "sello_vendaval",
+    "nombre": "Sello del Vendaval",
+    "elemento": "viento",
+    "estado": "planificado",
+    "rasgo": "+25% velocidad, dash sin cooldown",
+    "d_finisher": "Tornado que agrupa enemigos"
+  },
+  {
+    "id": "sello_pena",
+    "nombre": "Sello de la Peña",
+    "elemento": "tierra",
+    "estado": "planificado",
+    "rasgo": "Armadura 1 por sala, inmune a knockback",
+    "d_finisher": "Seismo en cruz"
+  },
+  {
+    "id": "sello_alba",
+    "nombre": "Sello del Alba",
+    "elemento": "luz",
+    "estado": "planificado",
+    "rasgo": "Revela secretos cercanos",
+    "d_finisher": "Destello que ciega"
+  },
+  {
+    "id": "sello_ocaso",
+    "nombre": "Sello del Ocaso",
+    "elemento": "oscuridad",
+    "estado": "planificado",
+    "rasgo": "Los enemigos te detectan más tarde",
+    "d_finisher": "Vacío que atrae y daña"
+  },
+  {
+    "id": "sello_trueno",
+    "nombre": "Sello del Trueno",
+    "elemento": "trueno",
+    "estado": "planificado",
+    "rasgo": "Golpes perfectos encadenan rayo",
+    "d_finisher": "Tormenta en la sala"
+  },
+  {
+    "id": "sello_incoloro",
+    "nombre": "Sello Incoloro",
+    "elemento": "neutro",
+    "estado": "planificado",
+    "rasgo": "+1 golpe a la D-Addition",
+    "d_finisher": "Réplica espectral del combo"
+  }
 ]

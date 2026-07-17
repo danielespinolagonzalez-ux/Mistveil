@@ -107,11 +107,40 @@ canvas { image-rendering: pixelated; image-rendering: crisp-edges; background: #
 #rotate { position: fixed; inset: 0; display: none; place-items: center; background: #07050e; color: #cfc6e8;
   font: 22px VT323, monospace; text-align: center; z-index: 10; }
 body.movil-portrait #rotate { display: grid; }
+#fs { position: fixed; left: calc(8px + env(safe-area-inset-left)); top: calc(8px + env(safe-area-inset-top));
+  z-index: 20; background: rgba(20,17,32,0.55); color: #cfc6e8; border: 1px solid #4c4070;
+  font: 16px monospace; width: 34px; height: 34px; border-radius: 6px; cursor: pointer; }
+#fs:focus-visible { outline: 2px solid #e8c565; }
+#fstip { display: none; position: fixed; inset: 0; z-index: 30; background: rgba(7,5,14,0.94);
+  color: #cfc6e8; font: 20px/1.7 VT323, monospace; text-align: center; padding: 30vh 24px 0; }
+#fstip em { color: #6c6193; font-size: 15px; font-style: normal; display: block; margin-top: 18px; }
 </style>
 </head>
 <body>
 <canvas id="game" width="640" height="360"></canvas>
 <div id="rotate">⟳<br>Gira el móvil<br><span style="color:#6c6193;font-size:14px">MISTVEIL se juega en horizontal</span></div>
+<button id="fs" aria-label="Pantalla completa">⛶</button>
+<div id="fstip">Pantalla completa en iPhone:<br>botón Compartir → «Añadir a pantalla de inicio»<br>y abre Mistveil desde ese icono<em>toca para cerrar</em></div>
+<script>
+// Pantalla completa: API donde exista (Android/escritorio); en iPhone Safari no
+// hay API para páginas, así que el botón enseña el camino (webapp de inicio).
+addEventListener('DOMContentLoaded', () => {
+  const fs = document.getElementById('fs'), tip = document.getElementById('fstip');
+  const root = document.documentElement;
+  const pedir = root.requestFullscreen?.bind(root) ?? root.webkitRequestFullscreen?.bind(root);
+  const standalone = navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
+  if (standalone) fs.style.display = 'none';
+  fs.addEventListener('click', async () => {
+    if (pedir) {
+      try { await pedir(); await screen.orientation?.lock?.('landscape'); } catch {}
+    } else tip.style.display = 'block';
+  });
+  tip.addEventListener('click', () => { tip.style.display = 'none'; });
+  document.addEventListener('fullscreenchange', () => {
+    fs.style.display = document.fullscreenElement ? 'none' : '';
+  });
+});
+</script>
 <script>
 // Detección móvil (equivale a abrir movil.html) + datos embebidos servidos por
 // un fetch en memoria: la página es 100% autocontenida, funciona sin servidor.

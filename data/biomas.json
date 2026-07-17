@@ -86,7 +86,8 @@
       "hp": 90,
       "velocidad": 95,
       "counter_chance": 0.5,
-      "r": 18
+      "r": 18,
+      "sello": "sello_ascuas"
     },
     "archivo": {
       "base": "polilla_del_polvo",
@@ -101,7 +102,8 @@
         "dano": 1,
         "velocidad": 175,
         "cadencia_s": 1.4
-      }
+      },
+      "sello": "sello_marea"
     },
     "invertida": {
       "base": "campanero",

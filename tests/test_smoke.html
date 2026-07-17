@@ -23,6 +23,7 @@ import { EventBus } from '../js/event_bus.js';
 import { GameState, RunState } from '../js/state.js';
 import { nodoDisponible, activarNodo, esferaBonos } from '../js/esfera.js';
 import { syncFamiliares, updateFamiliares } from '../js/familiares.js';
+import { selloDef, obtenerSello, rasgoCuraPorSp, finisherElemental } from '../js/sellos.js';
 
 const out = document.getElementById('out');
 let failed = 0;
@@ -207,6 +208,29 @@ assert('la gota dispara al enemigo a rango', fWorld.tears.count === 1);
 dueno.mods.familiares.length = 0;
 syncFamiliares(fWorld, dueno);
 assert('sin el item, el familiar se despide', fWorld.familiares.length === 0);
+
+// R2 — Sellos elementales (botín de jefes de bioma)
+assert('sellos: Ascuas y Marea activos con efectos máquina',
+  selloDef('sello_ascuas')?.estado === 'activo' && selloDef('sello_ascuas').rasgo_fx?.tipo === 'dash_burn'
+  && selloDef('sello_marea')?.estado === 'activo' && selloDef('sello_marea').finisher_fx?.elemento === 'agua');
+assert('sellos: los jefes de bioma tienen su sello asignado',
+  DataDB.biomas.jefes_bioma.pendulos.sello === 'sello_ascuas'
+  && DataDB.biomas.jefes_bioma.archivo.sello === 'sello_marea');
+const selloPrevEq = GameState.selloEquipado, selloPrevCol = [...GameState.sellosObtenidos];
+GameState.sellosObtenidos.length = 0; GameState.selloEquipado = null; RunState.selloSpAcum = 0;
+obtenerSello('sello_ascuas');
+assert('sellos: obtener equipa y añade a la colección',
+  GameState.selloEquipado === 'sello_ascuas' && GameState.sellosObtenidos.includes('sello_ascuas'));
+assert('sellos: el finisher de Ascuas es onda de fuego', finisherElemental()?.elemento === 'fuego');
+obtenerSello('sello_marea');
+const pM = new Player(0, 0);
+pM.health.hp = 2;
+rasgoCuraPorSp(12, pM);
+const sinCura = pM.health.hp;
+rasgoCuraPorSp(12, pM);
+assert('marea: cura 1 al acumular 20 SP de perfectos', sinCura === 2 && pM.health.hp === 3);
+GameState.selloEquipado = selloPrevEq;
+GameState.sellosObtenidos.length = 0; GameState.sellosObtenidos.push(...selloPrevCol);
 
 // Generación procedural: 60 pisos válidos (spec §5)
 import('../js/rooms.js').then(async ({ buildTower }) => {
