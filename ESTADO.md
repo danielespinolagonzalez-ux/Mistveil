@@ -2,7 +2,7 @@
 > Claude Code: actualiza este archivo al final de CADA sesión.
 
 **Base actual:** kit HTML+JS de Daniel (reinicio 2026-07-17). El proyecto Godot anterior (Fases 0–3) vive solo en el historial de git.
-**Fase actual:** R-Arte "La Hora Dorada" — A1+A5 (pase 1) y A2+A3 (pase 1) COMPLETOS y publicados. Siguiente: A4 (lenguaje visual por habilidad) tras feedback de Daniel; luego R3 contenido.
+**Fase actual:** R-Arte "La Hora Dorada" COMPLETA en pase 1 (A1–A5, las 5 tareas). Siguiente: feedback de Daniel sobre tonos; luego R3 (contenido de pisos 4–9) o pase 2 de arte.
 
 ## Qué hay implementado (resumen del mapeo, 4 informes en paralelo)
 Juego jugable de punta a punta: Torre procedural vertical de 9 pisos con 3 biomas y semilla por run; Cadencia completa (compases, counter/parry, coyote, decay); parry activo; Ignición; 3 Artes de Tinta; El Redoble (combate por turnos CTB con QTE); Esfera del Reloj (31 nodos) + XP por desempeño; Santuario (8 nodos por Memoria); pueblo con 7 NPCs, contratos y bendiciones; tutorial de 7 fases; cámaras especiales (fundición, fusión, metrónomo, apuestas); minimapa; guardado localStorage schema 2; audio 100 % procedural con música generativa; 3 esquemas de input + mando + Una Mano móvil; smoke test de ~33 asserts (incluye 60 torres generadas).
