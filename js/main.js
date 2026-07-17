@@ -1559,8 +1559,8 @@ function bakeMist() {
     const g = c.getContext('2d');
     for (let i = 0; i < 15; i++) {
       const x = Math.random() * VW, y = Math.random() * VH, r = 45 + Math.random() * (70 + li * 45);
-      // Bruma perlada cálida (dirección de arte "Hora Dorada"; rgb en balance.arte)
-      const nc = DataDB.balance?.arte?.niebla ?? '168,156,206';
+      // Bruma perlada cálida (dirección de arte "Hora Dorada"; rgb por bioma o global)
+      const nc = floorMap?.current?.bioma?.niebla ?? DataDB.balance?.arte?.niebla ?? '168,156,206';
       const grad = g.createRadialGradient(x, y, 0, x, y, r);
       grad.addColorStop(0, `rgba(${nc},${0.09 - li * 0.02})`);
       grad.addColorStop(1, `rgba(${nc},0)`);
@@ -1572,8 +1572,11 @@ function bakeMist() {
   return layers;
 }
 EventBus.on('data_reloaded', () => { mistLayers = null; }); // rehornear con F5
+let _mistKey = '';
 function drawMist(t, strength = 1) {
-  if (!mistLayers) mistLayers = bakeMist();
+  // La bruma cambia de color con el bioma (biomas.json → niebla)
+  const key = floorMap?.current?.bioma?.niebla ?? DataDB.balance?.arte?.niebla ?? '';
+  if (!mistLayers || key !== _mistKey) { _mistKey = key; mistLayers = bakeMist(); }
   for (const m of mistLayers) {
     const ox = (((-cam.x * m.par + t * m.sp) % VW) + VW) % VW;
     const oy = (((-cam.y * m.par * KY + t * 2 + Math.sin(t * 0.13 + m.ph) * m.amp) % VH) + VH) % VH;
@@ -1891,6 +1894,72 @@ function drawPickup(pk, t) {
   }
 }
 
+// Decoración de fondo por bioma (A2): atrezzo determinista por sala, dibujado
+// tenue tras las entidades para vestir cada mundo sin ensuciar la lectura.
+function drawBiomaDecor(room, t) {
+  const bioma = room.bioma?.id;
+  if (!bioma) return;
+  const b = room.bounds;
+  // Semilla barata por sala: posiciones estables entre frames
+  const seed = (room.gx * 73856093 ^ room.gy * 19349663) >>> 0;
+  const rndAt = i => ((seed * (i + 17) * 2654435761) >>> 8) % 1000 / 1000;
+  ctx.save();
+  ctx.globalAlpha = 0.5;
+  if (bioma === 'pendulos' && room.type !== 'galeria') {
+    // Péndulos decorativos colgando del techo (los de las galerías son el peligro real)
+    for (let i = 0; i < 2; i++) {
+      const px = b.x + b.w * (0.2 + rndAt(i) * 0.6);
+      const largo = 26 + rndAt(i + 3) * 16;
+      const ang = Math.sin(t * 0.9 + seed % 7 + i * 2.4) * 0.28;
+      const x0 = SX(px), y0 = SY(b.y) - 26;
+      const x1 = x0 + Math.sin(ang) * largo, y1 = y0 + Math.cos(ang) * largo;
+      ctx.strokeStyle = '#6d5c42'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+      ctx.fillStyle = '#c8a24f';
+      ctx.beginPath(); ctx.arc(x1, y1, 4, 0, 7); ctx.fill();
+      ctx.fillStyle = '#ffe9b0'; ctx.fillRect(x1 - 1, y1 - 2, 1.5, 1.5);
+    }
+  } else if (bioma === 'archivo') {
+    // Estanterías del Archivo sobre la pared norte, con lomos apagados y tinta que gotea
+    for (let s = 0; s < 2; s++) {
+      const sx0 = SX(b.x + b.w * (0.18 + s * 0.5) - 34), sy0 = SY(b.y) - 34;
+      ctx.fillStyle = '#3a3a52';
+      ctx.fillRect(sx0, sy0, 68, 26);
+      const lomos = ['#7d90b8', '#a8a2c8', '#6d84a8', '#8d9cb0'];
+      for (let i = 0; i < 8; i++) {
+        ctx.fillStyle = lomos[(i + s) % lomos.length];
+        ctx.fillRect(sx0 + 4 + i * 8, sy0 + 4 + (i % 2), 6, 20 - (i % 3) * 2);
+      }
+      // Gota de tinta que cae periódicamente
+      const drip = ((t * 0.55 + rndAt(s + 9)) % 1);
+      ctx.fillStyle = 'rgba(60,80,160,0.8)';
+      ctx.fillRect(sx0 + 12 + s * 30, sy0 + 26 + drip * 26, 2, 4);
+    }
+  } else if (bioma === 'invertida') {
+    // Engranajes flotando al revés y un reloj derretido en la pared
+    for (let i = 0; i < 3; i++) {
+      const gx = SX(b.x + b.w * (0.15 + rndAt(i) * 0.7));
+      const gy = SY(b.y + b.h * (0.2 + rndAt(i + 5) * 0.35)) - 30 - Math.sin(t * 0.7 + i * 2.1) * 5;
+      const r = 6 + rndAt(i + 2) * 7;
+      ctx.strokeStyle = '#a06848'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(gx, gy, r, 0, 7); ctx.stroke();
+      const rot = t * (i % 2 ? 0.4 : -0.3) + i;
+      for (let d = 0; d < 4; d++) {
+        const a = rot + d * Math.PI / 2;
+        ctx.fillStyle = '#a06848';
+        ctx.fillRect(gx + Math.cos(a) * r - 1.5, gy + Math.sin(a) * r - 1.5, 3, 3);
+      }
+    }
+    // Esfera de reloj derretida chorreando sobre la pared norte
+    const mx = SX(b.x + b.w * (0.3 + rndAt(11) * 0.4)), my = SY(b.y) - 22;
+    ctx.strokeStyle = '#c8b090'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.ellipse(mx, my, 12, 8 + Math.sin(t * 0.5 + seed) * 1.5, 0.3, 0, 7); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(mx - 4, my + 7); ctx.quadraticCurveTo(mx - 3, my + 15, mx - 5, my + 18); ctx.stroke();
+  }
+  ctx.restore();
+  ctx.globalAlpha = 1;
+}
+
 function drawCandles(room, t) {
   room.candles().forEach((cd, i) => {
     const { x, y } = candleScreen(room, cd);
@@ -2075,6 +2144,36 @@ function drawEnemy(e, t) {
 
   ctx.fillStyle = 'rgba(0,0,0,0.4)';
   ctx.beginPath(); ctx.ellipse(SX(e.x), SY(e.y) + 4, e.r * 0.8, 3, 0, 0, 7); ctx.fill();
+
+  // A3 — Halo de FAMILIA de material: cera cálida, latón bruñido, polvo frío.
+  // Agrupa visualmente a los enemigos de un vistazo sobre el suelo claro.
+  const famCol = { cera: '255,214,150', laton: '232,197,101', polvo: '150,140,200' }[e.def.familia];
+  if (famCol) {
+    const hg = ctx.createRadialGradient(x, y, 2, x, y, e.r * 2.1);
+    hg.addColorStop(0, `rgba(${famCol},0.16)`);
+    hg.addColorStop(1, `rgba(${famCol},0)`);
+    ctx.fillStyle = hg;
+    ctx.beginPath(); ctx.arc(x, y, e.r * 2.1, 0, 7); ctx.fill();
+  }
+  // Telegrafía de zarpazo: anillo rojizo creciendo a los pies durante el windup
+  if (e.melees && atk.state === 'windup') {
+    const wdur = DataDB.balance.enemigo_melee.windup_s * (e.def.windup_mult ?? 1);
+    const k = 1 - atk.t / wdur;
+    ctx.strokeStyle = `rgba(255,107,94,${0.25 + k * 0.45})`;
+    ctx.lineWidth = 1.5 + k;
+    ctx.beginPath(); ctx.ellipse(SX(e.x), SY(e.y) + 4, e.r * (0.9 + k * 0.5), (e.r * (0.9 + k * 0.5)) * 0.4, 0, 0, 7); ctx.stroke();
+  }
+  // Élites (gemelo enfurecido) y jefes: aura latiente que impone
+  if (e.enraged || e.def.jefe) {
+    const pul = 0.6 + Math.sin(t * 6 + e.x) * 0.4;
+    ctx.strokeStyle = e.def.jefe ? `rgba(255,181,71,${0.3 * pul})` : `rgba(224,90,79,${0.35 * pul})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.ellipse(SX(e.x), SY(e.y) + 4, e.r * 1.5 + pul * 3, (e.r * 1.5 + pul * 3) * 0.4, 0, 0, 7); ctx.stroke();
+    if (Math.random() < 0.15) {
+      FX.burst(e.x + (Math.random() - 0.5) * e.r * 2, e.y - 4,
+        { n: 1, color: e.def.jefe ? '#ffb547' : '#e05a4f', speed: 14, life: 0.5, size: 1.5, glow: true, gravity: -40 });
+    }
+  }
 
   ctx.save();
   ctx.translate(x, y);
@@ -3058,6 +3157,7 @@ function render() {
     ctx.drawImage(room.canvas, SX(room.blockX), SY(room.blockY) - EXTRA_TOP);
   }
   for (const room of rooms) {
+    drawBiomaDecor(room, t);
     drawDoor(room, 'n'); drawDoor(room, 's'); drawDoor(room, 'e'); drawDoor(room, 'w');
     drawCandles(room, t);
     drawTrapdoor(room);
@@ -3225,6 +3325,8 @@ function paintFatal(err) {
     sello: (id = 'sello_ascuas') => { const s = obtenerSello(id); return s ? s.nombre + ' · ' + s.rasgo : 'id desconocido'; },
     // Rellena el Espíritu (pruebas de Ignición/Artes)
     sp: (n = 100) => { RunState.sp = Math.min(DataDB.balance.ignicion.sp_max, n); return RunState.sp; },
+    // Salta al piso n (pruebas de biomas)
+    piso: (n = 4) => { RunState.piso = n - 1; descendFloor(); return 'piso ' + RunState.piso + ' · ' + (floorMap.current?.bioma?.nombre ?? ''); },
     unaMano: (on = true) => {
       Input.setScheme(on ? 'una_mano' : 'raton');
       if (on) Input.forceTouch();
