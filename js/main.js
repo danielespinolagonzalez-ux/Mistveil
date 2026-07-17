@@ -106,6 +106,7 @@ let flashMsg = '', flashT = 0, flashSub = '';
 let trapdoorHintCd = 0;
 let freezeT = 0;   // péndulo quieto
 let slowmoT = 0, slowmoFactor = 1; // arena del tiempo (objeto activo)
+let ignicionFlashT = 0; // fogonazo dorado del estallido de Ignición
 let hitStopT = 0;  // micro-pausa en golpes perfectos (juice)
 let pendingUpgrades = null; // 3 mejoras ofrecidas al descender
 let dlg = null;             // diálogo activo del pueblo {npc, lines, i}
@@ -901,17 +902,29 @@ EventBus.on('boss_summon', (e) => {
   }
 });
 // --- Ignición ---
+// Ignición en TRES ACTOS (dirección de arte): estallido → arder → serenarse.
 EventBus.on('ignicion_started', (p) => {
   flash('¡IGNICIÓN!', 'El alma de Pip arde sin cera');
-  world.shockwaves.push({ x: p.x, y: p.y, r0: 8, r1: 70, t: 0.35, tmax: 0.35, color: '#ffb547' });
-  FX.burst(p.x, p.y, { n: 30, color: '#ffb547', speed: 160, life: 0.7, size: 2.5, glow: true, gravity: -60 });
-  FX.addShake(3);
-  AudioManager.beep(330, 0.4, 'sawtooth', 0.06, 660);
-  AudioManager.beep(660, 0.5, 'sine', 0.05, 660);
-  hitStopT = Math.max(hitStopT, 0.1);
+  // Acto 1 — el estallido: el mundo se detiene un instante y estalla en oro
+  for (const [r1, dt2, col] of [[70, 0.35, '#fff3d6'], [110, 0.5, '#ffd54f'], [150, 0.65, '#ffb547']]) {
+    world.shockwaves.push({ x: p.x, y: p.y, r0: 8, r1, t: dt2, tmax: dt2, color: col });
+  }
+  FX.burst(p.x, p.y, { n: 34, color: '#ffb547', speed: 170, life: 0.7, size: 2.5, glow: true, gravity: -60 });
+  FX.burst(p.x, p.y, { n: 16, color: '#fff3d6', speed: 240, life: 0.4, size: 1.8, glow: true });
+  FX.addShake(6);
+  // Tres campanadas ascendentes: el Reloj reconoce la llama
+  AudioManager.bell(392, 0.09);
+  setTimeout(() => AudioManager.bell(523, 0.1), 130);
+  setTimeout(() => AudioManager.bell(784, 0.12), 280);
+  AudioManager.beep(330, 0.5, 'sawtooth', 0.05, 660);
+  hitStopT = Math.max(hitStopT, 0.22);
+  ignicionFlashT = 0.7;
 });
 EventBus.on('ignicion_ended', (p) => {
-  FX.burst(p.x, p.y, { n: 14, color: '#8d82ad', speed: 60, life: 0.5, size: 2 });
+  // Acto 3 — serenarse: lluvia de brasas que caen y campana grave
+  FX.burst(p.x, p.y - 8, { n: 26, color: '#ffb547', speed: 70, life: 0.9, size: 2, glow: true, gravity: 90 });
+  FX.burst(p.x, p.y, { n: 12, color: '#8d82ad', speed: 50, life: 0.6, size: 2, gravity: 60 });
+  AudioManager.bell(131, 0.1);
   AudioManager.beep(440, 0.3, 'sine', 0.05, -300);
 });
 EventBus.on('data_reloaded', () => { world.player?.applyBalance(); flash('Datos recargados (F5)'); });
@@ -975,6 +988,7 @@ function update(dt) {
   }
 
   if (hurtFlashT > 0) hurtFlashT -= dt;
+  if (ignicionFlashT > 0) ignicionFlashT -= dt;
   if (mode === 'dead' || mode === 'victory') {
     FX.update(dt);
     const tap = Input.touchState().enabled && Input.justCode('TouchTap');
@@ -1152,6 +1166,12 @@ function update(dt) {
   if (Input.justPressed('ignicion') && p.ignicionT <= 0) {
     if (RunState.sp >= DataDB.balance.ignicion.sp_max) p.startIgnicion();
     else { AudioManager.sfx('no_sp'); pushPopup(p.x, p.y - 20, 'Espíritu insuficiente', '#e07a7a', 9); }
+  }
+  // Acto 2 — arder: chispas tangenciales orbitando + engranajes dorados que suben
+  if (p.ignicionT > 0 && Math.random() < dt * 9) {
+    const a = Math.random() * Math.PI * 2;
+    FX.burst(p.x + Math.cos(a) * 14, p.y - 6 + Math.sin(a) * 10,
+      { n: 1, color: '#ffe28a', speed: 34, dir: a + Math.PI / 2, spread: 0.4, life: 0.55, size: 1.6, glow: true });
   }
   if (p.ignicionT > 0 && Math.random() < dt * 30) {
     FX.burst(p.x + (Math.random() - 0.5) * 10, p.y - 8, { n: 1, color: Math.random() < 0.5 ? '#ffb547' : '#ff9c3a', speed: 22, life: 0.5, size: 2, glow: true, gravity: -80 });
@@ -1528,7 +1548,10 @@ lightCanvas.width = VW; lightCanvas.height = VH;
 const lctx = lightCanvas.getContext('2d');
 
 // NIEBLA de Mistveil: 2 capas de vaho con parallax y deriva (horneadas una vez)
-const mistLayers = (() => {
+// Bruma horneada en diferido: el color vive en balance.arte y DataDB aún no ha
+// cargado cuando este módulo se evalúa. Se hornea en el primer frame y con F5.
+let mistLayers = null;
+function bakeMist() {
   const layers = [];
   for (let li = 0; li < 2; li++) {
     const c = document.createElement('canvas');
@@ -1536,17 +1559,21 @@ const mistLayers = (() => {
     const g = c.getContext('2d');
     for (let i = 0; i < 15; i++) {
       const x = Math.random() * VW, y = Math.random() * VH, r = 45 + Math.random() * (70 + li * 45);
+      // Bruma perlada cálida (dirección de arte "Hora Dorada"; rgb en balance.arte)
+      const nc = DataDB.balance?.arte?.niebla ?? '168,156,206';
       const grad = g.createRadialGradient(x, y, 0, x, y, r);
-      grad.addColorStop(0, `rgba(168,156,206,${0.09 - li * 0.02})`);
-      grad.addColorStop(1, 'rgba(168,156,206,0)');
+      grad.addColorStop(0, `rgba(${nc},${0.09 - li * 0.02})`);
+      grad.addColorStop(1, `rgba(${nc},0)`);
       g.fillStyle = grad;
       g.beginPath(); g.arc(x, y, r, 0, 7); g.fill();
     }
     layers.push({ c, sp: 4 + li * 7, par: 0.10 + li * 0.09, amp: 9 + li * 7, ph: li * 2.1 });
   }
   return layers;
-})();
+}
+EventBus.on('data_reloaded', () => { mistLayers = null; }); // rehornear con F5
 function drawMist(t, strength = 1) {
+  if (!mistLayers) mistLayers = bakeMist();
   for (const m of mistLayers) {
     const ox = (((-cam.x * m.par + t * m.sp) % VW) + VW) % VW;
     const oy = (((-cam.y * m.par * KY + t * 2 + Math.sin(t * 0.13 + m.ph) * m.amp) % VH) + VH) % VH;
@@ -3079,14 +3106,42 @@ function render() {
   }
   ctx.restore();
 
-  // Overlays de pantalla completa SIN zoom (niebla, viñeta, ignición, congelación)
+  // Overlays de pantalla completa SIN zoom (grade, niebla, viñeta, ignición, congelación)
+  // "Hora Dorada": etalonaje cálido y luminoso de toda la escena (balance.arte,
+  // con posible override por bioma). Un overlay caldea; un screen levanta sombras.
+  const arte = floorMap?.current?.bioma?.grade ?? DataDB.balance.arte;
+  if (arte && mode !== 'pueblo') {
+    ctx.globalCompositeOperation = 'overlay';
+    ctx.globalAlpha = arte.grade_overlay_alpha ?? 0;
+    ctx.fillStyle = arte.grade_overlay ?? '#ffffff';
+    ctx.fillRect(0, 0, VW, VH);
+    ctx.globalCompositeOperation = 'screen';
+    ctx.globalAlpha = arte.grade_screen_alpha ?? 0;
+    ctx.fillStyle = arte.grade_screen ?? '#ffffff';
+    ctx.fillRect(0, 0, VW, VH);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 1;
+  }
   drawMist(t, 1);
   ctx.drawImage(vignette, 0, 0);
   if (world.player?.ignicionT > 0) {
+    // Borde llameante que late al compás + caldeo dorado de toda la escena
     const g = ctx.createRadialGradient(VW / 2, VH / 2, VH * 0.32, VW / 2, VH / 2, VH * 0.75);
     g.addColorStop(0, 'rgba(255,150,50,0)');
-    g.addColorStop(1, `rgba(255,140,40,${0.12 + Math.sin(t * 8) * 0.04})`);
+    g.addColorStop(1, `rgba(255,140,40,${0.14 + Math.sin(t * 8) * 0.05})`);
     ctx.fillStyle = g;
+    ctx.fillRect(0, 0, VW, VH);
+    ctx.globalCompositeOperation = 'overlay';
+    ctx.globalAlpha = 0.10 + Math.sin(t * 8) * 0.04;
+    ctx.fillStyle = '#ffb547';
+    ctx.fillRect(0, 0, VW, VH);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 1;
+  }
+  if (ignicionFlashT > 0) {
+    // Fogonazo del Acto 1: blanco dorado que se disuelve
+    const k = ignicionFlashT / 0.7;
+    ctx.fillStyle = `rgba(255,240,205,${0.55 * k * k})`;
     ctx.fillRect(0, 0, VW, VH);
   }
   if (freezeT > 0) {
@@ -3168,6 +3223,8 @@ function paintFatal(err) {
     item: (id) => { const it = DataDB.item(id); if (it && world.player) applyItem(it, world.player); return it?.nombre ?? 'id desconocido'; },
     // Obtiene y equipa un sello elemental (pruebas R2)
     sello: (id = 'sello_ascuas') => { const s = obtenerSello(id); return s ? s.nombre + ' · ' + s.rasgo : 'id desconocido'; },
+    // Rellena el Espíritu (pruebas de Ignición/Artes)
+    sp: (n = 100) => { RunState.sp = Math.min(DataDB.balance.ignicion.sp_max, n); return RunState.sp; },
     unaMano: (on = true) => {
       Input.setScheme(on ? 'una_mano' : 'raton');
       if (on) Input.forceTouch();

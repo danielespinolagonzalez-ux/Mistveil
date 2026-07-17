@@ -289,5 +289,12 @@
     "orbital_radio_px": 34,
     "orbital_vel_rad_s": 2.6,
     "orbital_r_px": 8
+  },
+  "arte": {
+    "grade_overlay": "#ffc98a",
+    "grade_overlay_alpha": 0.16,
+    "grade_screen": "#ffe9c9",
+    "grade_screen_alpha": 0.07,
+    "niebla": "255,224,196"
   }
 }

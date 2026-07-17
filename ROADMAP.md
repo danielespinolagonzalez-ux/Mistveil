@@ -42,6 +42,16 @@ Claude Code: trabaja las fases EN ORDEN salvo indicación de Daniel. No avances 
 
 **Criterio:** una run completa 1→9 con jefes distinguibles y final digno; cada bioma se SIENTE distinto también en salas.
 
+## Fase R-Arte — Dirección "La Hora Dorada" (encargo de Daniel: mágico, cálido, claro)
+Se intercala con R3; los valores viven en balance.arte / biomas.json (F5).
+- [x] A1 Etalonaje global cálido ("Hora Dorada"): overlay ámbar + lift de sombras + bruma perlada, data-driven y con override por bioma. PASE 1 — pendiente de afinar con Daniel.
+- [x] A5 Ignición épica en 3 actos: estallido (triple onda + fogonazo + 3 campanadas ascendentes + hit-stop), arder (aura, chispas orbitales, caldeo dorado pulsante), serenarse (lluvia de brasas + campana grave). PASE 1.
+- [ ] A2 Paleta e identidad completa por bioma: Péndulos = ámbar y miel; Archivo = celeste y pergamino con tinta índigo; Invertida = crepúsculo lavanda y cobre. Props de fondo por código (péndulos, estanterías, relojes derretidos).
+- [ ] A3 Enemigos diferenciados: familias de material (cera cálida y llama · latón bruñido · polvo frío), siluetas más marcadas, animación idle propia por enemigo, rim-light y auras de élite.
+- [ ] A4 Lenguaje visual único por habilidad: nova = corona de tinta índigo; marea = medialuna de espuma turquesa; ascua = abanico de rescoldos que caen; Cadencia con estética de esfera de reloj (numerales que saltan en la perfecta); parry = campana de cristal; dash = estela de engranajes.
+
+**Criterio:** capturas de los 3 biomas se distinguen a golpe de vista; cada habilidad se reconoce sin leer texto; la Ignición "se siente potente, fuerte, épica" (palabras de Daniel).
+
 ## Fase R4 — Refactor sostenible (sin cambiar comportamiento; smoke como red)
 - [ ] R4.1 Trocear `main.js`: `js/scenes/` (un módulo por modo con `{enter, update, render}`), `js/render/` (dibujo 2.5D, HUD, minimapa), `js/signals.js` (los ~40 listeners centralizados; hoy hay señales suscritas en 2-3 sitios).
 - [ ] R4.2 Extraer `AudioManager` de `state.js` a `js/audio.js`.
