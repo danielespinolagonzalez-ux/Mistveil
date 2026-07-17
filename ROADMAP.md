@@ -52,6 +52,15 @@ Se intercala con R3; los valores viven en balance.arte / biomas.json (F5).
 
 **Criterio:** capturas de los 3 biomas se distinguen a golpe de vista; cada habilidad se reconoce sin leer texto; la Ignición "se siente potente, fuerte, épica" (palabras de Daniel).
 
+## Mejoras de game feel (a petición de Daniel: "combate muy dinámico")
+Valores en balance.cadencia (F5).
+- [x] G1 Esquiva en Cadencia: el dash ya NO rompe el combo. Mientras dura el dash (+ gracia `dash_grace_s`) el anillo se CONGELA y el rango de mantener objetivo se ensancha (`dash_range_mult`): esquivas balas sin perder el ritmo. Anillo cian punteado como aviso.
+- [x] G2 Encadenar al matar (`chain_on_kill`): si el objetivo cae a mitad de combo y hay otro enemigo a rango, la Cadencia salta a él en vez de cortarse — flow contra grupos.
+- [x] G3 El ritmo premia la movilidad: cada golpe perfecto recorta el enfriamiento del dash (`perfect_dash_refund_s`); `move_damp_in_combo` subido 0.35→0.5 (más libertad para reposicionar).
+- [ ] G4 (idea) I-frames breves en el lunge de cada golpe / bullet-time al esquivar por los pelos (pendiente de decidir con Daniel).
+
+**Criterio:** se puede tejer esquivas dentro de un combo sin que "te inflen"; el combate fluye contra grupos.
+
 ## Fase R4 — Refactor sostenible (sin cambiar comportamiento; smoke como red)
 - [ ] R4.1 Trocear `main.js`: `js/scenes/` (un módulo por modo con `{enter, update, render}`), `js/render/` (dibujo 2.5D, HUD, minimapa), `js/signals.js` (los ~40 listeners centralizados; hoy hay señales suscritas en 2-3 sitios).
 - [ ] R4.2 Extraer `AudioManager` de `state.js` a `js/audio.js`.

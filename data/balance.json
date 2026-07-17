@@ -42,7 +42,7 @@
     "ring_contract_ms": 700,
     "acquire_range_px": 90,
     "keep_range_px": 150,
-    "move_damp_in_combo": 0.35,
+    "move_damp_in_combo": 0.5,
     "lunge_stop_px": 24,
     "finisher_aoe_radius_px": 56,
     "mult_perfect": 1.6,
@@ -54,7 +54,11 @@
     "sp_good": 6,
     "sp_counter_bonus": 8,
     "counter_window_ms": 350,
-    "counter_damage": 1
+    "counter_damage": 1,
+    "dash_grace_s": 0.22,
+    "dash_range_mult": 1.9,
+    "chain_on_kill": true,
+    "perfect_dash_refund_s": 0.12
   },
   "ignicion": {
     "sp_max": 100,

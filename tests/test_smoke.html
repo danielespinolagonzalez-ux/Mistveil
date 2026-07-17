@@ -15,7 +15,7 @@
 // Test de humo: DataDB valida, el player existe y se mueve, el pool de lágrimas funciona.
 import { DataDB } from '../js/data_db.js';
 import { Player, Enemy, TearPool, BulletPool } from '../js/entities.js';
-import { computeQuality } from '../js/cadencia.js';
+import { computeQuality, Cadencia } from '../js/cadencia.js';
 import { buildTestFloor, isDoorFront, TILE, RW, RH } from '../js/rooms.js';
 import { applyItem, applyItemEffects } from '../js/items.js';
 import { elementMult } from '../js/spells.js';
@@ -232,6 +232,43 @@ rasgoCuraPorSp(12, pM);
 assert('marea: cura 1 al acumular 20 SP de perfectos', sinCura === 2 && pM.health.hp === 3);
 GameState.selloEquipado = selloPrevEq;
 GameState.sellosObtenidos.length = 0; GameState.sellosObtenidos.push(...selloPrevCol);
+
+// Mejora — Esquiva en Cadencia: el dash NO rompe el combo, congela el anillo
+const cadD = new Cadencia(); cadD.getSolids = () => [];
+const cadP = new Player(100, 100);
+const cadE = new Enemy('cera_andante', 128, 100);
+let pressed = {};
+const cadIn = { justPressed: a => !!pressed[a], consume: a => { pressed[a] = false; } };
+pressed = { melee: true };
+cadD.update(1 / 60, cadIn, cadP, [cadE]);
+assert('Cadencia inicia al pulsar melee cerca', cadD.active === true);
+pressed = {};
+cadD.update(0.1, cadIn, cadP, [cadE]);
+const tAntes = cadD.t;
+assert('el anillo avanza sin dash', tAntes > 0);
+cadP.dashT = 0.12;
+cadD.update(0.05, cadIn, cadP, [cadE]);
+assert('el dash NO rompe el combo (esquiva en Cadencia)', cadD.active === true);
+assert('el anillo se congela mientras esquivas', Math.abs(cadD.t - tAntes) < 0.001);
+
+// Mejora — Encadenar: si el objetivo cae a mitad de combo, salta al siguiente
+const cadC = new Cadencia(); cadC.getSolids = () => [];
+const cadCP = new Player(100, 100);
+const objA = new Enemy('cera_andante', 120, 100); objA.health.hp = 1;
+const objB = new Enemy('cera_andante', 140, 100);
+cadC._start(cadCP, objA);
+cadC._landHit('perfect', cadCP, [objA, objB]);
+assert('el combo encadena al siguiente enemigo al matar', cadC.active === true && cadC.target === objB);
+
+// Mejora — Refund de dash: un golpe perfecto recorta el enfriamiento del dash
+const cadR = new Cadencia(); cadR.getSolids = () => [];
+const cadRP = new Player(100, 100);
+const objR = new Enemy('cera_andante', 120, 100);
+cadRP.dashCd = 0.5;
+cadR._start(cadRP, objR);
+cadR._landHit('perfect', cadRP, [objR]);
+assert('un perfecto recorta el cooldown del dash',
+  cadRP.dashCd < 0.5 && Math.abs(cadRP.dashCd - (0.5 - DataDB.balance.cadencia.perfect_dash_refund_s)) < 0.001);
 
 // A4 — Firmas visuales de habilidad: spawn, caducidad y numeral romano
 const artFx = [];

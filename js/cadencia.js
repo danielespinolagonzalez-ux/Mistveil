@@ -41,6 +41,7 @@ export class Cadencia {
     this.counterUsed = false; // regla: nunca dos counters en el mismo combo
     this.lastQuality = null;
     this.flashT = 0;
+    this.dashGraceT = 0;      // gracia tras el dash: el combo aguanta la esquiva
   }
   get cfg() { return DataDB.balance.cadencia; }
   get compas() { return DataDB.compas(RunState.compas); }
@@ -88,11 +89,17 @@ export class Cadencia {
     const target = this.target;
     if (target.health.dead) { this._end(); return; }
     const dist = Math.hypot(target.x - player.x, target.y - player.y);
-    if (dist > cfg.keep_range_px) { this._end('range'); return; }
-    // Dash cancela el combo (conserva el SP ganado)
-    if (player.dashT > 0) { this._end('dash'); return; }
+    // ESQUIVA EN CADENCIA: el dash ya NO rompe el combo. Mientras dura el dash
+    // (y una breve gracia después) el anillo se CONGELA y el rango se ensancha:
+    // puedes esquivar balas sin perder el ritmo y volver a caer sobre el objetivo.
+    if (player.dashT > 0) this.dashGraceT = cfg.dash_grace_s ?? 0.22;
+    else if (this.dashGraceT > 0) this.dashGraceT -= dt;
+    const dodging = player.dashT > 0 || this.dashGraceT > 0;
+    const keepRange = cfg.keep_range_px * (dodging ? (cfg.dash_range_mult ?? 1.9) : 1);
+    if (dist > keepRange) { this._end('range'); return; }
 
     player.comboLock = true;
+    if (player.dashT > 0) return; // el anillo se detiene mientras esquivas
     this.t += dt * 1000;
     const alignT = cfg.ring_contract_ms * this.compas.ritmo_mult;
     const wscale = (player.mods?.cadencia.window_scale ?? 1)
@@ -148,6 +155,7 @@ export class Cadencia {
     this.t = 0;
     this.counter = false;
     this.counterUsed = false;
+    this.dashGraceT = 0;
     this.allPerfect = true; // sinergias Compás × Arte: combo inmaculado
     player.comboLock = true;
     EventBus.emit('cadencia_started', target);
@@ -222,6 +230,12 @@ export class Cadencia {
       EventBus.emit('sp_changed', RunState.sp);
     }
 
+    // El ritmo PREMIA la movilidad: cada golpe perfecto recorta el enfriamiento
+    // del dash, así encadenar bien = más esquivas disponibles.
+    if (quality === 'perfect' && (cfg.perfect_dash_refund_s ?? 0) > 0) {
+      player.dashCd = Math.max(0, player.dashCd - cfg.perfect_dash_refund_s);
+    }
+
     AudioManager.sfx(quality === 'perfect' ? 'cad_perfect' : quality === 'good' ? 'cad_good' : 'cad_fail');
     if (finisher) AudioManager.sfx('finisher');
     // Sinergias Compás × Arte (combo inmaculado, todo perfecto)
@@ -254,6 +268,20 @@ export class Cadencia {
         }
       }
       EventBus.emit('cadencia_finisher', target.x, target.y, shockR);
+    }
+
+    // Si el objetivo CAE a mitad de combo, encadena al siguiente enemigo cercano
+    // (mantiene el ritmo y el flow contra grupos) en vez de cortar en seco.
+    if (target.health.dead && ok && !isLastHit && (cfg.chain_on_kill ?? true) && enemies) {
+      const next = this._nearest(player, enemies, cfg.acquire_range_px);
+      if (next) {
+        this.target = next;
+        this.hitIndex++;
+        this.t = 0;
+        this._rollCounter(player);
+        EventBus.emit('cadencia_chain', next);
+        return;
+      }
     }
 
     if (!ok || isLastHit || target.health.dead) { this._end(); return; }
@@ -312,17 +340,21 @@ export class Cadencia {
     const inGood = Math.abs(this.t - alignT) <= gw / 2;
     const inPerfect = Math.abs(this.t - alignT) <= pw / 2;
 
-    const col = this.counter ? '#ff3b30' : inPerfect ? '#ffffff' : inGood ? '#ffd54f' : '#b9aee0';
+    // Esquivando: el anillo se pinta cian y punteado — "ritmo en pausa, sigue vivo"
+    const dodging = (this.player?.dashT > 0) || this.dashGraceT > 0;
+    const col = dodging ? '#5ad1ff' : this.counter ? '#ff3b30' : inPerfect ? '#ffffff' : inGood ? '#ffd54f' : '#b9aee0';
 
     // Anillo interior fijo
-    ctx.strokeStyle = this.counter ? 'rgba(255,80,60,0.9)' : 'rgba(233,226,245,0.9)';
+    ctx.strokeStyle = dodging ? 'rgba(90,209,255,0.9)' : this.counter ? 'rgba(255,80,60,0.9)' : 'rgba(233,226,245,0.9)';
     ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.arc(x, y, innerR, 0, 7); ctx.stroke();
 
-    // Anillo exterior que se contrae
+    // Anillo exterior que se contrae (punteado mientras esquivas)
     ctx.strokeStyle = col;
     ctx.lineWidth = this.counter ? 3 : 2;
+    if (dodging) ctx.setLineDash([4, 4]);
     ctx.beginPath(); ctx.arc(x, y, outerR, 0, 7); ctx.stroke();
+    ctx.setLineDash([]);
 
     // Destello al entrar en ventana
     if (inPerfect && !this.counter) {
