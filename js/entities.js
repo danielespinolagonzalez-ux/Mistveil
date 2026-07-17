@@ -64,6 +64,7 @@ export class Player {
     this.fireCd = 0;
     this.trail = [];
     this.dashT = 0; this.dashCd = 0; this.dashDir = [1, 0]; this.dashElapsed = 0;
+    this.comboIframeT = 0; // i-frames breves al conectar un golpe de Cadencia (G4)
     this.parryCd = 0;
     this.ignicionT = 0; this._igDur = 1; // transformación Ignición (F con SP lleno)
     this.attackAnim = null; // {t, tmax, dir, finisher} — lo setea main en cadencia_hit
@@ -125,7 +126,7 @@ export class Player {
     this.armor = this.mods.armorPerRoom;
     this.autoParryCharges = this.mods.autoParryPerRoom;
   }
-  get invulnerable() { return this.health.invuln > 0 || (this.dashT > 0 && this.dashElapsed < this.b.dash_iframes_s); }
+  get invulnerable() { return this.health.invuln > 0 || this.comboIframeT > 0 || (this.dashT > 0 && this.dashElapsed < this.b.dash_iframes_s); }
   // Hurtbox del jugador: más pequeña que el cuerpo (justicia bullet-hell: solo cuentan los golpes claros)
   get hurtR() { return this.r * 0.7; }
 
@@ -148,6 +149,7 @@ export class Player {
     const b = this.b;
     this.health.update(dt);
     if (this.dashCd > 0) this.dashCd -= dt;
+    if (this.comboIframeT > 0) this.comboIframeT -= dt;
     if (this.parryCd > 0) this.parryCd -= dt;
     // Ignición: consume el Espíritu como combustible
     if (this.ignicionT > 0) {

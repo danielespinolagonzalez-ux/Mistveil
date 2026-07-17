@@ -235,6 +235,12 @@ export class Cadencia {
     if (quality === 'perfect' && (cfg.perfect_dash_refund_s ?? 0) > 0) {
       player.dashCd = Math.max(0, player.dashCd - cfg.perfect_dash_refund_s);
     }
+    // G4 — i-frames breves al CONECTAR (perfect > good): atacar es también esquivar.
+    // Fallar no da nada (whiffeaste, sin refugio). Muy Dragoon: clavas el timing → intocable.
+    if (ok) {
+      const ifr = quality === 'perfect' ? (cfg.lunge_iframes_perfect_s ?? 0.22) : (cfg.lunge_iframes_s ?? 0.14);
+      player.comboIframeT = Math.max(player.comboIframeT, ifr);
+    }
 
     AudioManager.sfx(quality === 'perfect' ? 'cad_perfect' : quality === 'good' ? 'cad_good' : 'cad_fail');
     if (finisher) AudioManager.sfx('finisher');

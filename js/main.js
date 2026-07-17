@@ -2059,6 +2059,15 @@ function drawPlayer(p, t) {
   ctx.globalAlpha = 1;
 
   if (p.health.invuln > 0 && p.dashT <= 0 && Math.floor(performance.now() / 60) % 2 === 0) return;
+  // G4 — halo dorado breve mientras los i-frames del golpe protegen a Pip
+  if (p.comboIframeT > 0) {
+    const px = SX(p.x), py = SY(p.y) - 8;
+    const g = ctx.createRadialGradient(px, py, 3, px, py, 20);
+    g.addColorStop(0, 'rgba(255,224,138,0.5)');
+    g.addColorStop(1, 'rgba(255,224,138,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(px, py, 20, 0, 7); ctx.fill();
+  }
   const moving = Math.hypot(p.vx, p.vy) > 25;
   const bob = moving ? Math.sin(t * 13) * 1.5 : Math.sin(t * 2.2) * 0.6;
   const aa = p.attackAnim;

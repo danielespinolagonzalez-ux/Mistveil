@@ -270,6 +270,24 @@ cadR._landHit('perfect', cadRP, [objR]);
 assert('un perfecto recorta el cooldown del dash',
   cadRP.dashCd < 0.5 && Math.abs(cadRP.dashCd - (0.5 - DataDB.balance.cadencia.perfect_dash_refund_s)) < 0.001);
 
+// G4 — i-frames en el lunge: conectar un golpe hace a Pip brevemente intocable
+const cadI = new Cadencia(); cadI.getSolids = () => [];
+const cadIP = new Player(100, 100);
+const objI = new Enemy('cera_andante', 120, 100);
+cadI._start(cadIP, objI);
+cadIP.comboIframeT = 0;
+cadI._landHit('good', cadIP, [objI]);
+assert('golpe bueno concede i-frames de combo', cadIP.comboIframeT > 0 && cadIP.invulnerable === true);
+const iGood = cadIP.comboIframeT;
+cadIP.comboIframeT = 0;
+cadI._start(cadIP, objI);
+cadI._landHit('perfect', cadIP, [objI]);
+assert('el perfecto da MÁS i-frames que el bueno', cadIP.comboIframeT > iGood);
+cadIP.comboIframeT = 0;
+cadI._start(cadIP, objI);
+cadI._landHit('fail', cadIP, [objI]);
+assert('fallar NO da i-frames (sin refugio)', cadIP.comboIframeT === 0);
+
 // A4 — Firmas visuales de habilidad: spawn, caducidad y numeral romano
 const artFx = [];
 spawnArt(artFx, 'corona_tinta', 0, 0, { tmax: 0.1 });

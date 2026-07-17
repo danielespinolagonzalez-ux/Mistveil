@@ -57,7 +57,8 @@ Valores en balance.cadencia (F5).
 - [x] G1 Esquiva en Cadencia: el dash ya NO rompe el combo. Mientras dura el dash (+ gracia `dash_grace_s`) el anillo se CONGELA y el rango de mantener objetivo se ensancha (`dash_range_mult`): esquivas balas sin perder el ritmo. Anillo cian punteado como aviso.
 - [x] G2 Encadenar al matar (`chain_on_kill`): si el objetivo cae a mitad de combo y hay otro enemigo a rango, la Cadencia salta a él en vez de cortarse — flow contra grupos.
 - [x] G3 El ritmo premia la movilidad: cada golpe perfecto recorta el enfriamiento del dash (`perfect_dash_refund_s`); `move_damp_in_combo` subido 0.35→0.5 (más libertad para reposicionar).
-- [ ] G4 (idea) I-frames breves en el lunge de cada golpe / bullet-time al esquivar por los pelos (pendiente de decidir con Daniel).
+- [x] G4 I-frames breves en el lunge de cada golpe: al CONECTAR (perfect > good, fallar no da nada) Pip es intocable un instante — atacar es también esquivar. Halo dorado como aviso. (Balance: `lunge_iframes_s`, `lunge_iframes_perfect_s`.)
+- [ ] G5 (idea aparcada de G4) Bullet-time al esquivar por los pelos (micro slow-mo). Pendiente de decidir con Daniel.
 
 **Criterio:** se puede tejer esquivas dentro de un combo sin que "te inflen"; el combate fluye contra grupos.
 
