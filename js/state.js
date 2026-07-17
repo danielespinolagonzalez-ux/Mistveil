@@ -15,7 +15,7 @@ export const GameState = {
 };
 
 export const RunState = {
-  piso: 1, oro: 0, sp: 0, items: [], semilla: 0,
+  piso: 1, oro: 0, sp: 0, items: [], semilla: 0, activoSalas: 0,
   hechizo: 'estallido_de_tinta',           // Arte de Tinta equipada (Q)
   tomos: ['estallido_de_tinta'],           // hechizos conocidos
   compas: 'tic_tac',                       // ritmo de Cadencia elegido (C)
@@ -36,6 +36,7 @@ export const RunState = {
     this.resetFloorStats();
     this.contrato = null;      // contrato del Gremio (tablón del pueblo)
     this.apuesta = null;       // Reloj de Apuestas
+    this.activoSalas = 0;      // salas limpiadas desde el último uso del objeto activo
     this.arteGratis = false;   // sinergia de Campana
     this.compasRobado = null;  // El Primer Relojero
   }

@@ -95,16 +95,73 @@
     "quema_dano_por_s": 1.0,
     "quema_duracion_s": 2.0
   },
-  "items_rareza_pct": { "comun": 60, "raro": 33, "legendario": 7 },
+  "items_rareza_pct": {
+    "comun": 60,
+    "raro": 33,
+    "legendario": 7
+  },
   "mejoras_piso": [
-    { "id": "cuerda_tensa", "nombre": "Cuerda tensa", "desc": "+15% velocidad de movimiento", "tipo": "stat", "stat": "move_speed", "mult": 1.15 },
-    { "id": "lagrimas_afiladas", "nombre": "Lágrimas afiladas", "desc": "+20% daño de lágrima", "tipo": "stat", "stat": "tear_damage", "mult": 1.2 },
-    { "id": "pulso_febril", "nombre": "Pulso febril", "desc": "+20% cadencia de disparo", "tipo": "stat", "stat": "tear_rate_per_s", "mult": 1.2 },
-    { "id": "corazon_de_cera", "nombre": "Corazón de cera", "desc": "+1 corazón máximo (y cura 1)", "tipo": "corazon" },
-    { "id": "puno_de_bronce", "nombre": "Puño de bronce", "desc": "+25% daño de melé", "tipo": "stat", "stat": "melee_damage", "mult": 1.25 },
-    { "id": "paso_ligero", "nombre": "Paso ligero", "desc": "Dash un 15% más frecuente", "tipo": "stat", "stat": "dash_cooldown_s", "mult": 0.85 },
-    { "id": "alma_avara", "nombre": "Alma avara", "desc": "+20% Espíritu ganado", "tipo": "sp_gain", "mult": 1.2 },
-    { "id": "alcance_del_relojero", "nombre": "Alcance del relojero", "desc": "+25% alcance de lágrima", "tipo": "stat", "stat": "tear_range_px", "mult": 1.25 }
+    {
+      "id": "cuerda_tensa",
+      "nombre": "Cuerda tensa",
+      "desc": "+15% velocidad de movimiento",
+      "tipo": "stat",
+      "stat": "move_speed",
+      "mult": 1.15
+    },
+    {
+      "id": "lagrimas_afiladas",
+      "nombre": "Lágrimas afiladas",
+      "desc": "+20% daño de lágrima",
+      "tipo": "stat",
+      "stat": "tear_damage",
+      "mult": 1.2
+    },
+    {
+      "id": "pulso_febril",
+      "nombre": "Pulso febril",
+      "desc": "+20% cadencia de disparo",
+      "tipo": "stat",
+      "stat": "tear_rate_per_s",
+      "mult": 1.2
+    },
+    {
+      "id": "corazon_de_cera",
+      "nombre": "Corazón de cera",
+      "desc": "+1 corazón máximo (y cura 1)",
+      "tipo": "corazon"
+    },
+    {
+      "id": "puno_de_bronce",
+      "nombre": "Puño de bronce",
+      "desc": "+25% daño de melé",
+      "tipo": "stat",
+      "stat": "melee_damage",
+      "mult": 1.25
+    },
+    {
+      "id": "paso_ligero",
+      "nombre": "Paso ligero",
+      "desc": "Dash un 15% más frecuente",
+      "tipo": "stat",
+      "stat": "dash_cooldown_s",
+      "mult": 0.85
+    },
+    {
+      "id": "alma_avara",
+      "nombre": "Alma avara",
+      "desc": "+20% Espíritu ganado",
+      "tipo": "sp_gain",
+      "mult": 1.2
+    },
+    {
+      "id": "alcance_del_relojero",
+      "nombre": "Alcance del relojero",
+      "desc": "+25% alcance de lágrima",
+      "tipo": "stat",
+      "stat": "tear_range_px",
+      "mult": 1.25
+    }
   ],
   "una_mano": {
     "autofire": true,
@@ -136,11 +193,29 @@
     "muerte_mult": 0.5,
     "nivel_base": 80,
     "nivel_incremento": 45,
-    "hechizo_niveles": [15, 40],
-    "hechizo_dano_mult": [1.0, 1.25, 1.5],
-    "hechizo_area_mult": [1.0, 1.1, 1.22],
-    "compas_niveles": [30, 80],
-    "compas_ventana_mult": [1.0, 1.05, 1.1]
+    "hechizo_niveles": [
+      15,
+      40
+    ],
+    "hechizo_dano_mult": [
+      1.0,
+      1.25,
+      1.5
+    ],
+    "hechizo_area_mult": [
+      1.0,
+      1.1,
+      1.22
+    ],
+    "compas_niveles": [
+      30,
+      80
+    ],
+    "compas_ventana_mult": [
+      1.0,
+      1.05,
+      1.1
+    ]
   },
   "sinergias": {
     "campana_arte_gratis": true,
@@ -205,5 +280,14 @@
     "bolsillo_cosido": 25,
     "diario_de_vesper": 20,
     "cuarto_de_la_penumbra": 100
+  },
+  "familiares": {
+    "gota_dano_mult": 0.6,
+    "gota_cadencia_s": 1.1,
+    "gota_alcance_px": 260,
+    "gota_lag": 3.2,
+    "orbital_radio_px": 34,
+    "orbital_vel_rad_s": 2.6,
+    "orbital_r_px": 8
   }
 }

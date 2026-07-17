@@ -2,7 +2,7 @@
 // Spec: docs/sistemas/generacion_procedural.md §2-3 (aquí: piso de 6 salas a mano, Fase 3).
 import { DataDB } from './data_db.js';
 import { EventBus } from './event_bus.js';
-import { AudioManager, GameState } from './state.js';
+import { AudioManager, GameState, RunState } from './state.js';
 import { Enemy } from './entities.js';
 import { rollItem } from './items.js';
 
@@ -153,15 +153,21 @@ export class Room {
     } else if (type === 'apuestas') {
       this.altars.push({ kind: 'apuesta', x: this.bounds.x + this.bounds.w / 2, y: this.bounds.y + this.bounds.h / 2, used: false });
     }
-    // Sala del tesoro: pedestal con una reliquia del pool 'tesoro'
+    // Sala del tesoro: pedestal con una reliquia del pool 'tesoro'.
+    // Con Páginas perdidas (extra_choice, R1.5) ofrece DOS y eliges una.
     this.pedestal = null;
+    this.pedestal2 = null;
     if (type === 'tesoro') {
       const it = rollItem('tesoro');
-      this.pedestal = it ? {
-        x: this.bounds.x + this.bounds.w / 2,
-        y: this.bounds.y + this.bounds.h / 2 - 4,
-        itemId: it.id, taken: false
-      } : null;
+      const cx = this.bounds.x + this.bounds.w / 2, cy = this.bounds.y + this.bounds.h / 2 - 4;
+      this.pedestal = it ? { x: cx, y: cy, itemId: it.id, taken: false } : null;
+      if (it && RunState.items.includes('paginas_perdidas')) {
+        const it2 = rollItem('tesoro');
+        if (it2 && it2.id !== it.id) {
+          this.pedestal.x = cx - 44;
+          this.pedestal2 = { x: cx + 44, y: cy, itemId: it2.id, taken: false };
+        }
+      }
     }
     // Tienda: 3 productos con precio (4 con la Estantería de Margo)
     this.stock = null;

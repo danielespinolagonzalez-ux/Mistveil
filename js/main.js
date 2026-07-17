@@ -18,6 +18,7 @@ import { applyItem, rollItem } from './items.js';
 import { cast, elementMult } from './spells.js';
 import { FX } from './fx.js';
 import { PLAZA, NPCS, visita, resetVisita, drawNPC, drawCoro, drawPuebloBackdrop, drawPlazaGround } from './pueblo.js';
+import { syncFamiliares, updateFamiliares, drawFamiliar } from './familiares.js';
 
 const PORTRAIT = !!window.MISTVEIL_PORTRAIT;
 const MOBILE = !!window.MISTVEIL_MOBILE;
@@ -71,7 +72,8 @@ function camGoal() {
 const world = {
   player: null, enemies: [],
   tears: new TearPool(), bullets: new BulletPool(),
-  pickups: [], dmgNumbers: [], shockwaves: [], corpses: [], pet: null
+  pickups: [], dmgNumbers: [], shockwaves: [], corpses: [], pet: null,
+  familiares: [], trails: []
 };
 const cad = new Cadencia();
 const batalla = new RelojBatalla(ctx, VW, VH, font);
@@ -88,7 +90,8 @@ const TOUCH_BTNS_PLAY = [
   { code: 'TouchF', label: 'F', x: VW - 66, y: VH - 130, r: 16 }, // respaldo si el agitado no va
   { code: 'TouchC', label: '♪', x: VW - 26, y: VH - 208, r: 14 },
   { code: 'TouchPause', label: 'II', x: VW - 16, y: 58, r: 13 },
-  { code: 'TouchMenu', label: '≡', x: VW - 16, y: 88, r: 13 }
+  { code: 'TouchMenu', label: '≡', x: VW - 16, y: 88, r: 13 },
+  { code: 'TouchX', label: '⌛', x: VW - 70, y: VH - 178, r: 14 } // objeto activo (solo si llevas uno)
 ];
 const TOUCH_BTNS_PUEBLO = [TOUCH_BTNS_PLAY[5]];
 const TOUCH_BTNS_1MANO = [TOUCH_BTNS_PLAY[4], TOUCH_BTNS_PLAY[5]]; // solo pausa y ≡
@@ -101,6 +104,7 @@ let fps = 60, fpsAcc = 0, fpsN = 0;
 let flashMsg = '', flashT = 0, flashSub = '';
 let trapdoorHintCd = 0;
 let freezeT = 0;   // péndulo quieto
+let slowmoT = 0, slowmoFactor = 1; // arena del tiempo (objeto activo)
 let hitStopT = 0;  // micro-pausa en golpes perfectos (juice)
 let pendingUpgrades = null; // 3 mejoras ofrecidas al descender
 let dlg = null;             // diálogo activo del pueblo {npc, lines, i}
@@ -180,7 +184,8 @@ function newRun() {
   world.shockwaves = [];
   world.tears.clear(); world.bullets.clear();
   cad.reset();
-  freezeT = 0; hitStopT = 0;
+  freezeT = 0; hitStopT = 0; slowmoT = 0;
+  world.familiares = []; world.trails = [];
   pendingUpgrades = null;
   mode = 'play';
   placePlayerAtTop();
@@ -903,7 +908,10 @@ EventBus.on('cadencia_hit', ({ quality }) => {
 EventBus.on('enemy_died', () => { if (RunState.floorStats) RunState.floorStats.kills++; });
 EventBus.on('cadencia_parried', () => { if (RunState.floorStats) RunState.floorStats.parries++; });
 EventBus.on('cadencia_auto_parried', () => { if (RunState.floorStats) RunState.floorStats.parries++; });
-EventBus.on('room_cleared', () => { if (RunState.floorStats) RunState.floorStats.salas++; });
+EventBus.on('room_cleared', () => {
+  if (RunState.floorStats) RunState.floorStats.salas++;
+  RunState.activoSalas++; // recarga del objeto activo (R1.2)
+});
 EventBus.on('player_hurt', (hp, amount) => { Input.vibrar?.(70); if (RunState.floorStats && amount > 0) RunState.floorStats.corazones += amount; });
 EventBus.on('hechizo_subio', (h, lv) => flash('Arte perfeccionada: ' + h.nombre + ' Nv.' + lv, 'Su tinta corre más espesa'));
 EventBus.on('esfera_activada', (n) => flash('Esfera: ' + n.nombre, n.desc));
@@ -1120,16 +1128,58 @@ function update(dt) {
     FX.burst(p.x + (Math.random() - 0.5) * 10, p.y - 8, { n: 1, color: Math.random() < 0.5 ? '#ffb547' : '#ff9c3a', speed: 22, life: 0.5, size: 2, glow: true, gravity: -80 });
   }
 
-  for (const room of rooms) room.update(dt, world);
+  // Arena del tiempo: el MUNDO se ralentiza (enemigos, balas, salas); Pip no.
+  if (slowmoT > 0) slowmoT -= dt;
+  const dtMundo = slowmoT > 0 ? dt * slowmoFactor : dt;
+
+  for (const room of rooms) room.update(dtMundo, world);
   world.tears.update(dt, bb);
-  if (freezeT <= 0) world.bullets.update(dt, bb);
+  if (freezeT <= 0) world.bullets.update(dtMundo, bb);
 
   const alive = world.enemies.filter(e => !e.health.dead);
   if (freezeT > 0) freezeT -= dt;
   else {
     for (const e of alive) {
       const ctxE = { bounds: e.room?.bounds ?? bb, groundSolids: () => e.room?.groundSolids() ?? [] };
-      e.update(dt, p, ctxE, world);
+      e.update(dtMundo, p, ctxE, world);
+    }
+  }
+
+  // Familiares de reliquia (R1.1)
+  syncFamiliares(world, p);
+  if (freezeT <= 0) updateFamiliares(dt, world, p, alive);
+
+  // Objeto activo (X): un uso, recarga limpiando salas (R1.2)
+  if (Input.justPressed('activo') && p.mods.activo && RunState.activoSalas >= p.mods.activo.cooldown_salas) {
+    RunState.activoSalas = 0;
+    if (p.mods.activo.accion === 'global_slowmo') {
+      slowmoT = p.mods.activo.duracion_s;
+      slowmoFactor = p.mods.activo.factor;
+      AudioManager.beep(320, 0.5, 'sine', 0.06, -180);
+      flash('El tiempo se espesa...');
+    }
+    EventBus.emit('activo_usado', p.mods.activo);
+  }
+
+  // Aceite negro: el dash deja un rastro de tinta que daña (R1.4)
+  if (p.mods.dashTrail && p.dashT > 0) {
+    const last = world.trails[world.trails.length - 1];
+    if (!last || Math.hypot(p.x - last.x, p.y - last.y) > 10) {
+      world.trails.push({ x: p.x, y: p.y + 4, t: p.mods.dashTrail.duracion_s, tick: 0 });
+    }
+  }
+  for (let i = world.trails.length - 1; i >= 0; i--) {
+    const tr = world.trails[i];
+    tr.t -= dt; tr.tick -= dt;
+    if (tr.t <= 0) { world.trails.splice(i, 1); continue; }
+    if (tr.tick <= 0 && p.mods.dashTrail) {
+      // tick de 0.5 s: con el redondeo "mínimo 1" un tick más fino inflaría el dps
+      tr.tick = 0.5;
+      for (const e of alive) {
+        if (Math.hypot(e.x - tr.x, e.y - tr.y) < 14 + e.r) {
+          e.takeDamage(p.mods.dashTrail.dano_por_s * 0.5, tr.x, tr.y, 0);
+        }
+      }
     }
   }
 
@@ -1352,10 +1402,13 @@ function update(dt) {
         if (s.hintCd > 0) s.hintCd -= dt;
       }
     }
-    if (room.pedestal && !room.pedestal.taken) {
-      const pd = room.pedestal;
+    // Pedestales (1 o 2 con Páginas perdidas — coger uno retira el otro, R1.5)
+    for (const pd of [room.pedestal, room.pedestal2]) {
+      if (!pd || pd.taken) continue;
       if (Math.hypot(p.x - pd.x, p.y - pd.y) < 16 + p.r) {
         pd.taken = true;
+        const otro = pd === room.pedestal ? room.pedestal2 : room.pedestal;
+        if (otro && !otro.taken) { otro.taken = true; flash('La otra reliquia se desvanece...'); }
         const it = DataDB.item(pd.itemId);
         if (it) applyItem(it, p);
       }
@@ -1377,6 +1430,12 @@ function update(dt) {
   // Polvo al correr
   if (Math.hypot(p.vx, p.vy) > 140 && Math.random() < dt * 14) {
     FX.burst(p.x - p.vx * 0.02, p.y + 6, { n: 1, color: '#6c6193', speed: 18, life: 0.35, size: 1.5, gravity: -20 });
+  }
+  // Ambiente del bioma: motas características por mundo (pase 1 de identidad visual)
+  const amb = floorMap.current?.bioma?.ambiente;
+  if (amb && Math.random() < dt * amb.rate) {
+    FX.burst(p.x + (Math.random() - 0.5) * 360, p.y + (Math.random() - 0.5) * 220,
+      { n: 1, color: amb.color, speed: 6, life: 1.6, size: amb.size, gravity: amb.grav, glow: true });
   }
   // Llamitas sobre enemigos ardiendo + motas de polvo ambiental
   for (const e of alive) {
@@ -1612,8 +1671,7 @@ function drawWaxBlock(w, maxHp) {
   }
 }
 
-function drawPedestalObj(room, t) {
-  const pd = room.pedestal;
+function drawPedestalObj(room, t, pd = room.pedestal) {
   const x = SX(pd.x), y = SY(pd.y);
   ctx.fillStyle = 'rgba(0,0,0,0.35)';
   ctx.beginPath(); ctx.ellipse(x, y + 8, 12, 4, 0, 0, 7); ctx.fill();
@@ -1789,6 +1847,7 @@ function drawLight(t, rooms) {
     });
     if (room.trapdoor) hole(SX(room.trapdoor.x), SY(room.trapdoor.y), 50, 0.6);
     if (room.pedestal && !room.pedestal.taken) hole(SX(room.pedestal.x), SY(room.pedestal.y) - 20, 55, 0.6);
+    if (room.pedestal2 && !room.pedestal2.taken) hole(SX(room.pedestal2.x), SY(room.pedestal2.y) - 20, 55, 0.6);
     if (room.stock) for (const s of room.stock) if (!s.taken) hole(SX(s.x), SY(s.y) - 10, 40, 0.5);
   }
   ctx.drawImage(lightCanvas, 0, 0);
@@ -2153,6 +2212,20 @@ function drawProjectiles() {
   });
 }
 
+// Charcos del Aceite negro (rastro del dash, R1.4)
+function drawTrails() {
+  for (const tr of world.trails) {
+    const a = Math.min(0.55, tr.t);
+    ctx.globalAlpha = a;
+    ctx.fillStyle = '#161228';
+    ctx.beginPath(); ctx.ellipse(SX(tr.x), SY(tr.y), 13, 13 * KY, 0, 0, 7); ctx.fill();
+    ctx.globalAlpha = a * 0.5;
+    ctx.fillStyle = '#3d2f6e';
+    ctx.beginPath(); ctx.ellipse(SX(tr.x), SY(tr.y), 8, 8 * KY, 0, 0, 7); ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+}
+
 function drawShockwaves() {
   for (const s of world.shockwaves) {
     const k = 1 - s.t / s.tmax;
@@ -2233,6 +2306,14 @@ function drawHUD(t) {
   ctx.fillStyle = '#fff2c8'; ctx.fillRect(15, 28, 2, 2);
   font(10); ctx.fillStyle = '#cfc6e8'; ctx.textAlign = 'left';
   ctx.fillText('× ' + RunState.oro, 27, 35);
+  // Objeto activo (X): carga por salas limpiadas
+  if (p.mods.activo) {
+    const cd = p.mods.activo.cooldown_salas;
+    const listo = RunState.activoSalas >= cd;
+    font(9);
+    ctx.fillStyle = listo ? '#e8c565' : '#6c6193';
+    ctx.fillText(`⌛${listo ? ' X' : ` ${Math.min(RunState.activoSalas, cd)}/${cd}`}`, 62, 35);
+  }
 
   const spMax = DataDB.balance.ignicion.sp_max;
   const k = RunState.sp / spMax;
@@ -2326,7 +2407,7 @@ function drawHUD(t) {
 function drawMinimap() {
   const CW = 11, CH = 8, GAP = 2;
   const known = new Map();
-  const vesper = GameState.tiene('diario_de_vesper'); // revela toda la Torre
+  const vesper = GameState.tiene('diario_de_vesper') || world.player?.mods.revealMap; // revela toda la Torre
   for (const [k, room] of floorMap.rooms) {
     if (room.visited) {
       known.set(k, 'visited');
@@ -2463,6 +2544,10 @@ function drawTouchUI(t) {
     if (b.code === 'TouchD') { on = p.dashCd <= 0; col = '#8fa2ff'; }
     if (b.code === 'TouchA') col = '#ffd54f';
     if (b.code === 'TouchMenu') col = '#ffd54f';
+    if (b.code === 'TouchX') {
+      if (!p.mods.activo) continue; // el botón solo existe si llevas un objeto activo
+      on = RunState.activoSalas >= p.mods.activo.cooldown_salas; col = '#e8c565';
+    }
     // Depresión visual: 160ms de pulso al tocar (input→respuesta visible)
     const pk = b.pressT ? Math.max(0, 1 - (performance.now() - b.pressT) / 160) : 0;
     const rr = b.r * (1 - pk * 0.12);
@@ -2892,9 +2977,12 @@ function render() {
   for (const room of rooms) {
     for (const r of room.rocks) sortables.push({ y: r.y + r.h, draw: () => drawRock(r) });
     for (const w of room.wax) sortables.push({ y: w.y + w.h, draw: () => drawWaxBlock(w, maxWaxHp) });
-    if (room.pedestal) sortables.push({ y: room.pedestal.y + 10, draw: () => drawPedestalObj(room, t) });
+    if (room.pedestal) sortables.push({ y: room.pedestal.y + 10, draw: () => drawPedestalObj(room, t, room.pedestal) });
+    if (room.pedestal2) sortables.push({ y: room.pedestal2.y + 10, draw: () => drawPedestalObj(room, t, room.pedestal2) });
     if (room.stock) for (const s of room.stock) sortables.push({ y: s.y + 8, draw: () => drawShopItem(s, t) });
   }
+  // Familiares de reliquia (van con el jugador, no con una sala)
+  for (const f of world.familiares) sortables.push({ y: f.y, draw: () => drawFamiliar(ctx, SX, SY, f, t) });
   for (const pk of world.pickups) sortables.push({ y: pk.y, draw: () => drawPickup(pk, t) });
   for (const e of world.enemies) if (!e.health.dead) sortables.push({ y: e.y + e.r, draw: () => drawEnemy(e, t) });
   if (world.player) sortables.push({ y: world.player.y + 10, draw: () => drawPlayer(world.player, t) });
@@ -2903,6 +2991,7 @@ function render() {
 
   drawProjectiles();
   FX.draw(ctx, (x, y) => [SX(x), SY(y, 4)]);
+  drawTrails();
   drawShockwaves();
 
   drawLight(t, rooms);
@@ -2937,6 +3026,11 @@ function render() {
   }
   if (freezeT > 0) {
     ctx.fillStyle = 'rgba(126,232,224,0.10)';
+    ctx.fillRect(0, 0, VW, VH);
+  }
+  if (slowmoT > 0) {
+    // Arena del tiempo: velo dorado sutil mientras el mundo va lento
+    ctx.fillStyle = 'rgba(232,197,101,0.06)';
     ctx.fillRect(0, 0, VW, VH);
   }
   if (hurtFlashT > 0) {
@@ -3005,6 +3099,8 @@ function paintFatal(err) {
   // Hook de depuración: entrar directo al Reloj de Batalla (también accesible por El Redoble en el pueblo)
   window.__mistveil = {
     batalla: (enc) => { batalla.start(enc || 'vigilia'); mode = 'batalla'; },
+    // Equipa una reliquia por id (pruebas de items/familiares/activos)
+    item: (id) => { const it = DataDB.item(id); if (it && world.player) applyItem(it, world.player); return it?.nombre ?? 'id desconocido'; },
     unaMano: (on = true) => {
       Input.setScheme(on ? 'una_mano' : 'raton');
       if (on) Input.forceTouch();

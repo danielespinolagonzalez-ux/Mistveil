@@ -14,14 +14,15 @@
 <script type="module">
 // Test de humo: DataDB valida, el player existe y se mueve, el pool de lágrimas funciona.
 import { DataDB } from '../js/data_db.js';
-import { Player, Enemy, TearPool } from '../js/entities.js';
+import { Player, Enemy, TearPool, BulletPool } from '../js/entities.js';
 import { computeQuality } from '../js/cadencia.js';
 import { buildTestFloor, isDoorFront, TILE, RW, RH } from '../js/rooms.js';
-import { applyItem } from '../js/items.js';
+import { applyItem, applyItemEffects } from '../js/items.js';
 import { elementMult } from '../js/spells.js';
 import { EventBus } from '../js/event_bus.js';
-import { GameState } from '../js/state.js';
+import { GameState, RunState } from '../js/state.js';
 import { nodoDisponible, activarNodo, esferaBonos } from '../js/esfera.js';
+import { syncFamiliares, updateFamiliares } from '../js/familiares.js';
 
 const out = document.getElementById('out');
 let failed = 0;
@@ -170,6 +171,42 @@ assert('esfera: activar i0 gasta y abre el sello XII', activarNodo('i0') === tru
 assert('esfera: bonos agregados sin error', typeof esferaBonos().window === 'number');
 GameState.esfera.length = 0; GameState.esfera.push(...esferaPrev);
 GameState.engranajes = engrPrev;
+
+// R1 — Reliquias completas: los 6 efectos antes "pendientes" ya se interpretan
+const p3 = new Player(100, 100);
+applyItem(DataDB.item('tinta_viva'), p3);
+assert('tinta_viva: registra el familiar gota_tinta', p3.mods.familiares.includes('gota_tinta'));
+applyItem(DataDB.item('polilla_lunar'), p3);
+assert('polilla_lunar: registra el orbital', p3.mods.familiares.includes('orbital_polilla'));
+applyItem(DataDB.item('arena_del_tiempo'), p3);
+assert('arena_del_tiempo: objeto activo cargado al cogerlo',
+  p3.mods.activo?.accion === 'global_slowmo' && RunState.activoSalas === p3.mods.activo.cooldown_salas);
+applyItem(DataDB.item('ojo_de_vidrio'), p3);
+assert('ojo_de_vidrio: revela el mapa', p3.mods.revealMap === true);
+applyItem(DataDB.item('aceite_negro'), p3);
+assert('aceite_negro: rastro del dash configurado', p3.mods.dashTrail?.dano_por_s === 2);
+applyItem(DataDB.item('paginas_perdidas'), p3);
+assert('paginas_perdidas: doble elección en el tesoro', p3.mods.extraChoice === 2);
+
+// R1.6 — NINGÚN item de items.json deja efectos sin interpretar
+const p4 = new Player(100, 100);
+for (const it of DataDB.items.items) applyItemEffects(it, p4);
+assert('todos los items interpretados (pendientes vacío)' +
+  (p4.mods.pendientes.length ? ' [' + p4.mods.pendientes.join(', ') + ']' : ''),
+  p4.mods.pendientes.length === 0);
+
+// R1.1 — Familiares en movimiento: la gota dispara al enemigo cercano
+const dueno = new Player(100, 100);
+dueno.mods.familiares.push('gota_tinta');
+const fWorld = { tears: new TearPool(), bullets: new BulletPool(), familiares: [] };
+syncFamiliares(fWorld, dueno);
+assert('syncFamiliares crea la gota', fWorld.familiares.length === 1 && fWorld.familiares[0].id === 'gota_tinta');
+const cebo = new Enemy('cera_andante', 160, 100);
+updateFamiliares(1 / 60, fWorld, dueno, [cebo]);
+assert('la gota dispara al enemigo a rango', fWorld.tears.count === 1);
+dueno.mods.familiares.length = 0;
+syncFamiliares(fWorld, dueno);
+assert('sin el item, el familiar se despide', fWorld.familiares.length === 0);
 
 // Generación procedural: 60 pisos válidos (spec §5)
 import('../js/rooms.js').then(async ({ buildTower }) => {

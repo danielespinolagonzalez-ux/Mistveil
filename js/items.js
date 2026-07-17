@@ -55,12 +55,30 @@ export function applyItemEffects(itemDef, player) {
           case 'freeze_room':
             player.mods.parryFreezeS = Math.max(player.mods.parryFreezeS, ef.duracion_s);
             break;
+          case 'reveal_map':
+            player.mods.revealMap = true;
+            EventBus.emit('mapa_revelado');
+            break;
+          case 'damage_trail':
+            player.mods.dashTrail = { duracion_s: ef.duracion_s, dano_por_s: ef.dano_por_s };
+            break;
+          case 'extra_choice':
+            player.mods.extraChoice = Math.max(player.mods.extraChoice, ef.opciones ?? 2);
+            break;
           default:
-            player.mods.pendientes.push(itemDef.id + ':' + ef.accion); // reveal_map, extra_choice... (Fase 5 resto)
+            player.mods.pendientes.push(itemDef.id + ':' + ef.accion); // desconocido: queda registrado
         }
         break;
+      case 'familiar':
+        player.mods.familiares.push(ef.id);
+        break;
+      case 'activo':
+        // Objeto activo (tecla X): un solo hueco; coger otro lo sustituye ya cargado
+        player.mods.activo = { accion: ef.accion, factor: ef.factor, duracion_s: ef.duracion_s, cooldown_salas: ef.cooldown_salas };
+        RunState.activoSalas = ef.cooldown_salas;
+        break;
       default:
-        player.mods.pendientes.push(itemDef.id + ':' + ef.tipo); // familiar, activo... (Fase 5 resto)
+        player.mods.pendientes.push(itemDef.id + ':' + ef.tipo); // desconocido: queda registrado
     }
   }
   // Sinergias declaradas cuyo par está completo

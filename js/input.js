@@ -12,6 +12,7 @@ export const INPUT_MAP = {
   hechizo:    ['KeyQ', 'TouchQ', 'TouchHold'],
   ignicion:   ['KeyF', 'TouchF', 'TouchShake', 'TouchDouble'],
   compas:     ['KeyC', 'TouchC'],
+  activo:     ['KeyX', 'TouchX'],
   menu:       ['Tab', 'KeyI', 'TouchMenu'],
   pause:      ['Escape', 'KeyP', 'TouchPause'],
   restart:    ['KeyR', 'TouchTap'],

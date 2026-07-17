@@ -13,12 +13,12 @@ Claude Code: trabaja las fases EN ORDEN salvo indicación de Daniel. No avances 
 **Criterio:** smoke ampliado en verde; una run al piso 4+ no muestra enemigos inertes ni comportamientos rotos.
 
 ## Fase R1 — Reliquias completas (cerrar la cola `pendientes` de items)
-- [ ] R1.1 Sistema de **familiares** (compañeros que siguen/orbitan): `tinta_viva` (gota que dispara contigo) y `polilla_lunar` (orbital que bloquea proyectiles). Unificar con la mascota Tuerca donde tenga sentido.
-- [ ] R1.2 Sistema de **objetos activos** con recarga por salas + hueco propio en HUD y botón/gesto: `arena_del_tiempo` (slow-mo global 3 s, recarga 4 salas).
-- [ ] R1.3 `ojo_de_vidrio` (`reveal_map`: revela el minimapa del piso al cogerlo).
-- [ ] R1.4 `aceite_negro` (`damage_trail`: el dash deja rastro que daña).
-- [ ] R1.5 `paginas_perdidas` (`extra_choice`: el tesoro ofrece 2 reliquias, elige 1).
-- [ ] R1.6 Vaciar `mods.pendientes`: todo efecto de `items.json` interpretado o retirado del JSON. Asserts por item nuevo.
+- [x] R1.1 Sistema de **familiares** (compañeros que siguen/orbitan): `tinta_viva` (gota que dispara contigo) y `polilla_lunar` (orbital que bloquea proyectiles). Unificar con la mascota Tuerca donde tenga sentido.
+- [x] R1.2 Sistema de **objetos activos** con recarga por salas + hueco propio en HUD y botón/gesto: `arena_del_tiempo` (slow-mo global 3 s, recarga 4 salas).
+- [x] R1.3 `ojo_de_vidrio` (`reveal_map`: revela el minimapa del piso al cogerlo).
+- [x] R1.4 `aceite_negro` (`damage_trail`: el dash deja rastro que daña).
+- [x] R1.5 `paginas_perdidas` (`extra_choice`: el tesoro ofrece 2 reliquias, elige 1).
+- [x] R1.6 Vaciar `mods.pendientes`: todo efecto de `items.json` interpretado o retirado del JSON. Asserts por item nuevo.
 
 **Criterio:** los 20 items de items.json funcionan de verdad; dos runs con reliquias distintas se JUEGAN distinto.
 
@@ -31,6 +31,7 @@ Claude Code: trabaja las fases EN ORDEN salvo indicación de Daniel. No avances 
 **Criterio:** equipar Ascuas cambia perceptiblemente una run (rasgo + finisher); Marea funcional.
 
 ## Fase R3 — Contenido de la Torre (pisos 4–9 con identidad propia)
+- [x] R3.0 (adelantada; pase 1 de identidad visual) Partículas ambientales por bioma (motas doradas de cera / lluvia de tinta / chispas invertidas que suben), definidas en `biomas.json → ambiente`.
 - [ ] R3.1 Sets de plantillas por bioma (`salas/`): hoy los 3 biomas reutilizan las 5 plantillas de piso1. Añadir ≥4 por bioma con sus obstáculos temáticos.
 - [ ] R3.2 Jefes de bioma con patrones propios: usar de verdad la data de patrones (`lluvia_de_cera`, `anillo_de_llamas`, `charcos_ardientes`, `invocar_velones`…) que hoy es decorativa. 2 fases por jefe.
 - [ ] R3.3 1–2 enemigos nuevos por bioma que expresen su mecánica (tinta, inversión…), definidos en JSON.

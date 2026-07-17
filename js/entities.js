@@ -81,6 +81,8 @@ export class Player {
       ignicionDurAdd: 0,
       armorPerRoom: 0, autoParryPerRoom: 0,
       finisherShock: null, parryFreezeS: 0,
+      familiares: [], activo: null,
+      revealMap: false, dashTrail: null, extraChoice: 0,
       sinergias: [], pendientes: []
     };
   }
