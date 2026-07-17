@@ -8,6 +8,7 @@ Claude Code: trabaja las fases EN ORDEN salvo indicación de Daniel. No avances 
 - [x] R0.4 `esfera.js`: deduplicar el switch de efectos de `esferaBonos()` (lógica repetida función+inline).
 - [x] R0.5 Decidir y ejecutar sobre `buildFloor` (generador Isaac desconectado): borrarlo o rescatarlo como variante de piso (propuesta: borrar; la Torre es el juego).
 - [x] R0.6 Asserts nuevos en `test_smoke.html`: orbit_shoot, escalado por piso, EventBus.off, y humo de Esfera (activar nodo adyacente, rechazar no-adyacente).
+- [x] R0.7 (añadida a petición de Daniel) `tools/build_artifact.mjs`: empaqueta el juego en UN html autocontenido (módulos inlineados, JSON embebidos, fuente en base64) para publicarlo como página de pruebas con URL. Sirve también de base para el archivo único de itch.io (R5).
 
 **Criterio:** smoke ampliado en verde; una run al piso 4+ no muestra enemigos inertes ni comportamientos rotos.
 
