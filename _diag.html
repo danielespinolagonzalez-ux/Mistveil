@@ -1,0 +1,7 @@
+<!DOCTYPE html><html><body><script>
+fetch('js/main.js', {cache:'no-store'}).then(async r => {
+  const t = await r.text();
+  console.log('STATUS', r.status, 'LEN', t.length, 'HEAD', JSON.stringify(t.slice(0,60)), 'TAIL', JSON.stringify(t.slice(-60)));
+}).catch(e => console.log('FETCH ERR', String(e)));
+import('./js/main.js').then(() => console.log('MODULE OK')).catch(e => console.log('MODULE ERR', e.message));
+</script></body></html>

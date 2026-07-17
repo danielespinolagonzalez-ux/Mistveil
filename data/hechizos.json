@@ -1,0 +1,31 @@
+{
+  "hechizos": [
+    {
+      "id": "estallido_de_tinta",
+      "nombre": "Estallido de tinta",
+      "desc": "Una corona de lágrimas estalla en todas direcciones.",
+      "elemento": "neutro",
+      "coste_sp": 25,
+      "tipo": "nova",
+      "params": { "n": 16, "dano_mult": 1.7, "alcance_px": 230, "velocidad_mult": 1.0 }
+    },
+    {
+      "id": "marea_de_cera",
+      "nombre": "Marea de cera",
+      "desc": "Una ola que empuja a los enemigos y apaga las llamas.",
+      "elemento": "agua",
+      "coste_sp": 30,
+      "tipo": "onda",
+      "params": { "radio_px": 135, "dano": 11, "knockback": 380 }
+    },
+    {
+      "id": "ascua_hendida",
+      "nombre": "Ascua hendida",
+      "desc": "Un abanico de fuego que quema y derrite la cera.",
+      "elemento": "fuego",
+      "coste_sp": 35,
+      "tipo": "cono",
+      "params": { "alcance_px": 140, "angulo_deg": 75, "dano": 15, "quema_s": 3 }
+    }
+  ]
+}

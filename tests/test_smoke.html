@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Mistveil — test de humo</title>
+<style>
+  body { background: #14121d; color: #cfc6e8; font: 14px/1.6 monospace; padding: 24px; }
+  .pass { color: #7ec98f; } .fail { color: #e07a7a; }
+</style>
+</head>
+<body>
+<h1>test_smoke</h1>
+<div id="out"></div>
+<script type="module">
+// Test de humo: DataDB valida, el player existe y se mueve, el pool de lágrimas funciona.
+import { DataDB } from '../js/data_db.js';
+import { Player, Enemy, TearPool } from '../js/entities.js';
+import { computeQuality } from '../js/cadencia.js';
+import { buildTestFloor, isDoorFront, TILE, RW, RH } from '../js/rooms.js';
+import { applyItem } from '../js/items.js';
+import { elementMult } from '../js/spells.js';
+
+const out = document.getElementById('out');
+let failed = 0;
+function assert(name, cond) {
+  const li = document.createElement('div');
+  li.className = cond ? 'pass' : 'fail';
+  li.textContent = (cond ? 'PASS  ' : 'FAIL  ') + name;
+  out.appendChild(li);
+  if (!cond) failed++;
+}
+
+// Corrige las rutas relativas de DataDB (tests/ está un nivel por debajo)
+const origFetch = window.fetch;
+window.fetch = (url, ...a) => origFetch(url.startsWith('data/') ? '../' + url : url, ...a);
+
+const ok = await DataDB.load();
+assert('DataDB carga sin errores', ok && DataDB.errors.length === 0);
+assert('balance.player.move_speed existe y es número', typeof DataDB.balance?.player?.move_speed === 'number');
+assert('elementos define color para neutro', typeof DataDB.elementos?.neutro?.color === 'string');
+assert('enemigos incluye cera_andante', !!DataDB.enemigo('cera_andante'));
+assert('textos_es tiene ui.muerte', DataDB.texto('ui.muerte') !== '[ui.muerte]');
+
+// Player existe y responde a la física
+const room = { x: 0, y: 0, w: 416, h: 224 };
+const roomCtx = {
+  bounds: room,
+  playerSolids: () => [],
+  clampPlayer: p => {
+    p.x = Math.min(Math.max(p.x, room.x + p.r), room.x + room.w - p.r);
+    p.y = Math.min(Math.max(p.y, room.y + p.r), room.y + room.h - p.r);
+  }
+};
+const p = new Player(200, 100);
+assert('Player se instancia con hp = max_hp', p.health.hp === DataDB.balance.player.max_hp);
+const fakeInput = {
+  moveVector: () => [1, 0],
+  aimVector: () => ({ x: 1, y: 0, active: false }),
+  shooting: () => false,
+  justPressed: () => false
+};
+const world = { tears: new TearPool(), bullets: { spawn(){} } };
+const x0 = p.x;
+for (let i = 0; i < 30; i++) p.update(1 / 60, fakeInput, roomCtx, world);
+assert('Player acelera hacia la derecha con input', p.x > x0 + 10);
+
+// Pool de lágrimas: spawn, avance y expiración por alcance
+const tp = new TearPool();
+tp.spawn(50, 50, 200, 0, 100, 3.5);
+assert('TearPool activa 1 lágrima', tp.count === 1);
+for (let i = 0; i < 60; i++) tp.update(1 / 60, room);
+assert('La lágrima expira al agotar su alcance', tp.count === 0);
+
+// Enemigo data-driven
+const e = new Enemy('cera_andante', 300, 100);
+assert('Enemy toma hp del JSON', e.health.hp === DataDB.enemigo('cera_andante').hp);
+const dmg = e.takeDamage(3.5, 290, 100);
+assert('Daño redondeado (3.5 → 4)', dmg === 4);
+
+// Cadencia: ventanas de timing (función pura)
+assert('Cadencia: pulsar en el alineamiento = perfecta', computeQuality(700, 700, 120, 230, 40) === 'perfect');
+assert('Cadencia: -80ms = buena', computeQuality(620, 700, 120, 230, 40) === 'good');
+assert('Cadencia: coyote input (-135ms) = buena', computeQuality(565, 700, 120, 230, 40) === 'good');
+assert('Cadencia: +130ms = fallo', computeQuality(830, 700, 120, 230, 40) === 'fail');
+assert('Cadencia: tarde no tiene coyote', computeQuality(850, 700, 120, 230, 40) === 'fail');
+
+// Piso de prueba: 6 salas conectadas y puertas compartidas
+const floor = buildTestFloor();
+assert('El piso tiene 6 salas', floor.rooms.size === 6);
+assert('Hay sala del jefe', [...floor.rooms.values()].some(r => r.type === 'jefe'));
+assert('Puertas compartidas entre salas', floor.at(0, 1).doors.e === floor.at(1, 1).doors.w);
+assert('El vecino al este de la inicial existe', floor.neighbor(floor.at(0, 1), 'e') === floor.at(1, 1));
+
+// Validador de plantillas: nada sólido frente a las puertas
+let doorsClear = true;
+for (const room of floor.rooms.values()) {
+  for (let ty = 0; ty < RH; ty++) for (let tx = 0; tx < RW; tx++) {
+    if (!isDoorFront(tx, ty)) continue;
+    const cx = room.bounds.x + tx * TILE + TILE / 2, cy = room.bounds.y + ty * TILE + TILE / 2;
+    for (const s of room.groundSolids()) {
+      if (cx > s.x && cx < s.x + s.w && cy > s.y && cy < s.y + s.h) doorsClear = false;
+    }
+  }
+}
+assert('Ninguna plantilla bloquea una puerta', doorsClear);
+
+// Motor de items: stats y efectos
+const p2 = new Player(100, 100);
+const speed0 = p2.stats.move_speed;
+applyItem(DataDB.item('segundero_suelto'), p2);
+assert('segundero_suelto: move_speed ×1.15', Math.abs(p2.stats.move_speed - speed0 * 1.15) < 0.01);
+applyItem(DataDB.item('cuerda_extra'), p2);
+assert('cuerda_extra: +1 corazón máximo (+2 puntos)', p2.health.max === DataDB.balance.player.max_hp + 2);
+applyItem(DataDB.item('metronomo_bolsillo'), p2);
+assert('metrónomo: ventanas ×1.4', Math.abs(p2.mods.cadencia.window_scale - 1.4) < 0.01);
+
+// Elementos: oposiciones
+assert('fuego → agua = ×1.5', elementMult('agua', 'fuego') === 1.5);
+assert('fuego → fuego = ×0.5', elementMult('fuego', 'fuego') === 0.5);
+assert('neutro → fuego = ×1.0', elementMult('neutro', 'fuego') === 1.0);
+assert('hechizos.json cargado', !!DataDB.hechizo('estallido_de_tinta'));
+assert('compases.json cargado (3 compases)', DataDB.compases?.compases?.length === 3);
+assert('santuario.json: 8 nodos con coste en balance.arbol',
+  DataDB.santuario?.nodos?.length === 8 &&
+  DataDB.santuario.nodos.every(n => typeof DataDB.balance.arbol[n.id] === 'number'));
+assert('mejoras_piso en balance (≥6)', (DataDB.balance.mejoras_piso?.length ?? 0) >= 6);
+
+// Generación procedural: 60 pisos válidos (spec §5)
+import('../js/rooms.js').then(async ({ buildFloor, buildTower }) => {
+  const R = DataDB.balance.run;
+  let ok = true, fallos = [];
+  for (let i = 0; i < 60; i++) {
+    const piso = 1 + (i % 3);
+    const f = buildTower(piso, i * 7717 + 13);
+    const rooms = [...f.rooms.values()];
+    const types = rooms.map(r => r.type);
+    for (const need of ['jefe', 'tesoro', 'tienda', 'inicial']) {
+      if (!types.includes(need)) { ok = false; fallos.push(i + ':sin_' + need); }
+    }
+    // Cadena vertical conexa: cada segmento de la columna comparte puerta con el siguiente
+    const col = rooms.filter(r => r.gx === 1).sort((a, b) => a.gy - b.gy);
+    if (col[0].type !== 'inicial' || col[col.length - 1].type !== 'jefe') { ok = false; fallos.push(i + ':orden'); }
+    for (let j = 0; j < col.length - 1; j++) {
+      if (!col[j].doors.s || col[j].doors.s !== col[j + 1].doors.n) { ok = false; fallos.push(i + ':cadena' + j); }
+    }
+    // Las alcobas cuelgan de un segmento de la columna
+    for (const r of rooms) {
+      if (r.gx !== 1 && !(r.doors.e || r.doors.w)) { ok = false; fallos.push(i + ':alcoba'); }
+    }
+  }
+  assert('60 torres generadas: inicial→jefe conexo, tesoro/tienda presentes' + (fallos.length ? ' [' + fallos.slice(0, 3) + ']' : ''), ok);
+  const h2 = document.createElement('h2');
+  h2.className = failed ? 'fail' : 'pass';
+  h2.textContent = failed ? `${failed} test(s) FALLARON` : 'TODOS LOS TESTS PASAN';
+  out.appendChild(h2);
+  document.title = failed ? 'FAIL' : 'PASS';
+  console.log('SMOKE: ' + (failed ? failed + ' FAIL' : 'ALL PASS'));
+});
+
+// (el veredicto final se pinta tras el test asíncrono de generación)
+</script>
+</body>
+</html>

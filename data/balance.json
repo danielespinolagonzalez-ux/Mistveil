@@ -2,33 +2,49 @@
   "schema_version": 1,
   "player": {
     "max_hp": 6,
-    "move_speed": 220.0,
-    "acceleration": 1400.0,
-    "friction": 1600.0,
+    "move_speed": 235.0,
+    "acceleration": 2600.0,
+    "friction": 2400.0,
     "dash_speed": 520.0,
     "dash_duration_s": 0.18,
-    "dash_cooldown_s": 0.9,
+    "dash_cooldown_s": 0.65,
     "dash_iframes_s": 0.12,
     "hurt_iframes_s": 1.0,
-    "hurt_blink_hz": 8.0,
     "tear_damage": 3.5,
     "tear_rate_per_s": 2.4,
     "tear_speed": 420.0,
     "tear_range_px": 320.0,
     "melee_damage": 5.0,
     "melee_range_px": 40.0,
-    "melee_windup_s": 0.12,
-    "melee_active_s": 0.1,
-    "melee_recovery_s": 0.16
+    "tear_knockback_px_s": 110.0,
+    "hurt_knockback_px_s": 150.0
+  },
+  "parry": {
+    "window_s": 0.3,
+    "stun_s": 1.3,
+    "sp_gain": 12,
+    "cooldown_s": 0.35,
+    "range_px": 48
+  },
+  "enemigo_melee": {
+    "trigger_range_px": 30,
+    "windup_s": 0.5,
+    "strike_s": 0.22,
+    "strike_speed_mult": 3.4,
+    "recover_s": 0.5
   },
   "cadencia": {
     "combo_hits_base": 3,
-    "ring_contract_ms": 650,
-    "target_range_px": 56.0,
     "window_perfect_ms": 120,
     "window_good_ms": 230,
     "window_decay_per_hit": 0.9,
     "coyote_input_ms": 40,
+    "ring_contract_ms": 700,
+    "acquire_range_px": 90,
+    "keep_range_px": 150,
+    "move_damp_in_combo": 0.35,
+    "lunge_stop_px": 24,
+    "finisher_aoe_radius_px": 56,
     "mult_perfect": 1.6,
     "mult_good": 1.0,
     "mult_fail": 0.4,
@@ -40,37 +56,23 @@
     "counter_window_ms": 350,
     "counter_damage": 1
   },
-  "dragoon": {
+  "ignicion": {
     "sp_max": 100,
-    "duration_s": 12.0,
+    "duration_s": 10.0,
     "damage_mult": 1.6,
+    "speed_mult": 1.3,
+    "tear_rate_mult": 1.7,
     "defense_mult": 0.5,
-    "d_addition_hits": 4,
-    "d_addition_window_ms": 90,
-    "d_finisher_shockwave_radius": 96.0,
     "post_transform_vulnerable_s": 1.0
-  },
-  "feedback": {
-    "tear_knockback_px_s": 140.0,
-    "melee_knockback_px_s": 200.0,
-    "contact_knockback_px_s": 220.0,
-    "knockback_decay_px_s2": 900.0,
-    "damage_number_duration_s": 0.6,
-    "damage_number_rise_px": 18.0
   },
   "elementos": {
     "opposite_mult": 1.5,
     "same_mult": 0.5,
     "neutral_mult": 1.0
   },
-  "salas": {
-    "transicion_camara_s": 0.35,
-    "cera_hp": 6,
-    "spawn_opcional_pct": 50
-  },
   "run": {
-    "floors_total": 3,
-    "rooms_min": 8,
+    "floors_total": 9,
+    "rooms_min": 7,
     "rooms_max": 14,
     "grid_w": 9,
     "grid_h": 8,
@@ -79,10 +81,116 @@
     "escalado_dano_por_piso": 0.25,
     "drop_corazon_pct": 18,
     "drop_oro_pct": 40,
+    "drop_tomo_pct": 8,
     "oro_min": 1,
     "oro_max": 4
   },
+  "salas": {
+    "transition_s": 0.5,
+    "door_width_px": 48,
+    "wax_hp": 8,
+    "spawn_telegraph_s": 0.55
+  },
+  "hechizos": {
+    "quema_dano_por_s": 1.0,
+    "quema_duracion_s": 2.0
+  },
   "items_rareza_pct": { "comun": 60, "raro": 33, "legendario": 7 },
+  "mejoras_piso": [
+    { "id": "cuerda_tensa", "nombre": "Cuerda tensa", "desc": "+15% velocidad de movimiento", "tipo": "stat", "stat": "move_speed", "mult": 1.15 },
+    { "id": "lagrimas_afiladas", "nombre": "Lágrimas afiladas", "desc": "+20% daño de lágrima", "tipo": "stat", "stat": "tear_damage", "mult": 1.2 },
+    { "id": "pulso_febril", "nombre": "Pulso febril", "desc": "+20% cadencia de disparo", "tipo": "stat", "stat": "tear_rate_per_s", "mult": 1.2 },
+    { "id": "corazon_de_cera", "nombre": "Corazón de cera", "desc": "+1 corazón máximo (y cura 1)", "tipo": "corazon" },
+    { "id": "puno_de_bronce", "nombre": "Puño de bronce", "desc": "+25% daño de melé", "tipo": "stat", "stat": "melee_damage", "mult": 1.25 },
+    { "id": "paso_ligero", "nombre": "Paso ligero", "desc": "Dash un 15% más frecuente", "tipo": "stat", "stat": "dash_cooldown_s", "mult": 0.85 },
+    { "id": "alma_avara", "nombre": "Alma avara", "desc": "+20% Espíritu ganado", "tipo": "sp_gain", "mult": 1.2 },
+    { "id": "alcance_del_relojero", "nombre": "Alcance del relojero", "desc": "+25% alcance de lágrima", "tipo": "stat", "stat": "tear_range_px", "mult": 1.25 }
+  ],
+  "una_mano": {
+    "autofire": true,
+    "lock_range_px": 260,
+    "lock_memoria_s": 2.5,
+    "longpress_ms": 250
+  },
+  "game_feel": {
+    "input_buffer_s": 0.14,
+    "turn_assist_mult": 1.9,
+    "aim_assist_cone_deg": 13,
+    "aim_assist_range_px": 280,
+    "magnet_radius_px": 52,
+    "magnet_accel": 950,
+    "cam_lookahead_aim_px": 14,
+    "cam_lookahead_vel_s": 0.05,
+    "enemy_separation": 0.6
+  },
+  "xp": {
+    "base_piso": 40,
+    "por_piso_extra": 15,
+    "por_kill": 3,
+    "por_perfect": 2,
+    "por_good": 1,
+    "por_parry": 5,
+    "por_sala": 6,
+    "castigo_corazon": 8,
+    "minimo": 15,
+    "muerte_mult": 0.5,
+    "nivel_base": 80,
+    "nivel_incremento": 45,
+    "hechizo_niveles": [15, 40],
+    "hechizo_dano_mult": [1.0, 1.25, 1.5],
+    "hechizo_area_mult": [1.0, 1.1, 1.22],
+    "compas_niveles": [30, 80],
+    "compas_ventana_mult": [1.0, 1.05, 1.1]
+  },
+  "sinergias": {
+    "campana_arte_gratis": true,
+    "febril_quema_mult": 2.0,
+    "sereno_sp_bonus": 0.4,
+    "desafinado_window_mult": 0.78
+  },
+  "camaras": {
+    "fundicion_min_corazones": 2,
+    "metronomo_beats": 8,
+    "metronomo_beat_ms": 620,
+    "metronomo_aciertos": 6,
+    "apuesta_coste": 10,
+    "apuesta_premio": 32
+  },
+  "contratos": {
+    "premio_engranajes": 1,
+    "premio_memoria": 15
+  },
+  "batalla": {
+    "pip_agi": 14,
+    "pip_hp_mult": 3,
+    "icv_base": 240,
+    "rec_atacar_base": 100,
+    "rec_magia": 130,
+    "rec_guardia": 55,
+    "rec_ignicion": 165,
+    "rec_enemigo": 100,
+    "beat_ms": 640,
+    "window_perfect_ms": 130,
+    "window_good_ms": 265,
+    "parry_window_ms": 400,
+    "mult_perfect": 1.7,
+    "mult_good": 1.0,
+    "mult_fail": 0.35,
+    "sp_perfect": 14,
+    "sp_good": 7,
+    "sp_parry": 18,
+    "guardia_reduccion": 0.5,
+    "stagger_push": 130,
+    "quema_dano": 3,
+    "quema_turnos": 2,
+    "lento_mult": 1.5,
+    "lento_turnos": 2,
+    "ignicion_golpes": 5,
+    "ignicion_dano_mult": 2.0,
+    "dano_enemigo_base": 1,
+    "recompensa_oro": 14,
+    "recompensa_memoria": 8
+  },
   "meta": {
     "memoria_por_jefe": 30,
     "memoria_por_reto": 10,

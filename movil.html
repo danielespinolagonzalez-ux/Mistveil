@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>MISTVEIL · móvil</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; height: 100%; background: #07050e; overflow: hidden; overscroll-behavior: none; }
+  body { display: grid; place-items: center; }
+  canvas {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    background: #141120;
+    touch-action: none;
+    -webkit-user-select: none; user-select: none;
+  }
+  /* Aviso: el juego es apaisado */
+  #rotate {
+    position: fixed; inset: 0; display: none; place-items: center;
+    background: #07050e; color: #cfc6e8; font: 22px VT323, monospace;
+    text-align: center; z-index: 10;
+  }
+  @media (orientation: portrait) { #rotate { display: grid; } }
+</style>
+</head>
+<body>
+<canvas id="game" width="640" height="360"></canvas>
+<div id="rotate">⟳<br>Gira el móvil<br><span style="color:#6c6193;font-size:14px">MISTVEIL se juega en horizontal</span></div>
+<script>window.MISTVEIL_MOBILE = true;</script>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

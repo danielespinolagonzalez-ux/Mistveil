@@ -1,0 +1,42 @@
+{
+  "descripcion": "La Esfera del Reloj — tablero de progresión permanente. Pip gana XP al descender cada piso; cada nivel otorga 1 engranaje. Los engranajes activan nodos ADYACENTES a los ya activados (se viaja por la esfera, como en el tablero de esferas de FFX). Los sellos del Gremio cuestan 2 y abren el anillo exterior.",
+  "nodos": [
+    { "id": "eje", "nombre": "El Eje", "desc": "Donde nacen todas las horas. Tu punto de partida.", "ring": 0, "hora": 0, "coste": 0, "cat": "inicio", "efecto": null },
+
+    { "id": "i0", "nombre": "Minutero afilado", "desc": "+10% daño de lágrima. La aguja fina también corta.", "ring": 1, "hora": 0, "coste": 1, "cat": "ofensa", "efecto": { "tipo": "stat", "stat": "tear_damage", "mult": 1.10 } },
+    { "id": "i1", "nombre": "Gota constante", "desc": "+8% cadencia de disparo.", "ring": 1, "hora": 1, "coste": 1, "cat": "ofensa", "efecto": { "tipo": "stat", "stat": "tear_rate_per_s", "mult": 1.08 } },
+    { "id": "i2", "nombre": "Alcance del péndulo", "desc": "+12% alcance de lágrima.", "ring": 1, "hora": 2, "coste": 1, "cat": "ofensa", "efecto": { "tipo": "stat", "stat": "tear_range_px", "mult": 1.12 } },
+    { "id": "i3", "nombre": "Horario templado", "desc": "+12% daño de melé.", "ring": 1, "hora": 3, "coste": 1, "cat": "ofensa", "efecto": { "tipo": "stat", "stat": "melee_damage", "mult": 1.12 } },
+    { "id": "i4", "nombre": "Ventana entornada", "desc": "Ventanas de Cadencia un 6% más anchas.", "ring": 1, "hora": 4, "coste": 1, "cat": "ritmo", "efecto": { "tipo": "cadencia", "param": "window", "mult": 1.06 } },
+    { "id": "i5", "nombre": "Alma encendida", "desc": "+10% Espíritu ganado.", "ring": 1, "hora": 5, "coste": 1, "cat": "alma", "efecto": { "tipo": "sp", "mult": 1.10 } },
+    { "id": "i6", "nombre": "Cuerda nueva", "desc": "+1 corazón máximo.", "ring": 1, "hora": 6, "coste": 1, "cat": "vida", "efecto": { "tipo": "stat", "stat": "max_hp", "add": 1 } },
+    { "id": "i7", "nombre": "Paso del segundero", "desc": "+6% velocidad de movimiento.", "ring": 1, "hora": 7, "coste": 1, "cat": "ritmo", "efecto": { "tipo": "stat", "stat": "move_speed", "mult": 1.06 } },
+    { "id": "i8", "nombre": "Resorte engrasado", "desc": "El dash recarga un 10% antes.", "ring": 1, "hora": 8, "coste": 1, "cat": "ritmo", "efecto": { "tipo": "stat", "stat": "dash_cooldown_s", "mult": 0.90 } },
+    { "id": "i9", "nombre": "Tinta cargada", "desc": "+12% daño de Artes de Tinta.", "ring": 1, "hora": 9, "coste": 1, "cat": "alma", "efecto": { "tipo": "artes", "mult": 1.12 } },
+    { "id": "i10", "nombre": "Bolsa del relojero", "desc": "Empiezas cada run con +8 de oro.", "ring": 1, "hora": 10, "coste": 1, "cat": "fortuna", "efecto": { "tipo": "oro_inicial", "add": 8 } },
+    { "id": "i11", "nombre": "Péndulo sabio", "desc": "+8% experiencia ganada.", "ring": 1, "hora": 11, "coste": 1, "cat": "fortuna", "efecto": { "tipo": "xp", "mult": 1.08 } },
+
+    { "id": "s0", "nombre": "Sello de bronce", "desc": "Un sello del Gremio de Relojeros. Cede ante dos engranajes.", "ring": 1.5, "hora": 0, "coste": 2, "cat": "sello", "efecto": null },
+    { "id": "s3", "nombre": "Sello de hierro", "desc": "Un sello del Gremio de Relojeros. Cede ante dos engranajes.", "ring": 1.5, "hora": 3, "coste": 2, "cat": "sello", "efecto": null },
+    { "id": "s6", "nombre": "Sello de plata", "desc": "Un sello del Gremio de Relojeros. Cede ante dos engranajes.", "ring": 1.5, "hora": 6, "coste": 2, "cat": "sello", "efecto": null },
+    { "id": "s9", "nombre": "Sello de oro", "desc": "Un sello del Gremio de Relojeros. Cede ante dos engranajes.", "ring": 1.5, "hora": 9, "coste": 2, "cat": "sello", "efecto": null },
+
+    { "id": "o0", "nombre": "Campanada del mediodía", "desc": "+22% daño de lágrima.", "ring": 2, "hora": 0, "coste": 1, "cat": "ofensa", "efecto": { "tipo": "stat", "stat": "tear_damage", "mult": 1.22 } },
+    { "id": "o1", "nombre": "Lluvia de agujas", "desc": "+15% cadencia de disparo.", "ring": 2, "hora": 1, "coste": 1, "cat": "ofensa", "efecto": { "tipo": "stat", "stat": "tear_rate_per_s", "mult": 1.15 } },
+    { "id": "o2", "nombre": "Doble campanada", "desc": "Todos tus compases ganan un golpe extra.", "ring": 2, "hora": 2, "coste": 1, "cat": "ritmo", "efecto": { "tipo": "cadencia", "param": "combo", "add": 1 } },
+    { "id": "o3", "nombre": "Yunque del taller", "desc": "+25% daño de melé.", "ring": 2, "hora": 3, "coste": 1, "cat": "ofensa", "efecto": { "tipo": "stat", "stat": "melee_damage", "mult": 1.25 } },
+    { "id": "o4", "nombre": "Ojo del relojero", "desc": "Ventanas de Cadencia un 12% más anchas.", "ring": 2, "hora": 4, "coste": 1, "cat": "ritmo", "efecto": { "tipo": "cadencia", "param": "window", "mult": 1.12 } },
+    { "id": "o5", "nombre": "Fuelle del alma", "desc": "+20% Espíritu ganado.", "ring": 2, "hora": 5, "coste": 1, "cat": "alma", "efecto": { "tipo": "sp", "mult": 1.20 } },
+    { "id": "o6", "nombre": "Corazón remontado", "desc": "+2 corazones máximos.", "ring": 2, "hora": 6, "coste": 1, "cat": "vida", "efecto": { "tipo": "stat", "stat": "max_hp", "add": 2 } },
+    { "id": "o7", "nombre": "Zancada de péndulo", "desc": "+12% velocidad de movimiento.", "ring": 2, "hora": 7, "coste": 1, "cat": "ritmo", "efecto": { "tipo": "stat", "stat": "move_speed", "mult": 1.12 } },
+    { "id": "o8", "nombre": "Escape sin fricción", "desc": "El dash recarga un 18% antes.", "ring": 2, "hora": 8, "coste": 1, "cat": "ritmo", "efecto": { "tipo": "stat", "stat": "dash_cooldown_s", "mult": 0.82 } },
+    { "id": "o9", "nombre": "Pluma del archivero", "desc": "+25% daño de Artes de Tinta.", "ring": 2, "hora": 9, "coste": 1, "cat": "alma", "efecto": { "tipo": "artes", "mult": 1.25 } },
+    { "id": "o10", "nombre": "Reloj de arena fiel", "desc": "La Ignición dura 3 segundos más.", "ring": 2, "hora": 10, "coste": 1, "cat": "alma", "efecto": { "tipo": "ignicion", "add": 3 } },
+    { "id": "o11", "nombre": "Memoria del gremio", "desc": "+15% experiencia ganada.", "ring": 2, "hora": 11, "coste": 1, "cat": "fortuna", "efecto": { "tipo": "xp", "mult": 1.15 } },
+
+    { "id": "m10", "nombre": "Hora del Lobo", "desc": "HORA MUERTA — +25% velocidad, pero el Espíritu llega menguado (×0.85).", "ring": 3, "hora": 10, "coste": 2, "cat": "mutador", "efecto": { "tipo": "multi", "lista": [{ "tipo": "stat", "stat": "move_speed", "mult": 1.25 }, { "tipo": "sp", "mult": 0.85 }] } },
+    { "id": "m11", "nombre": "Vigilia Amarga", "desc": "HORA MUERTA — +30% daño de lágrima, pero las ventanas se estrechan (×0.92).", "ring": 3, "hora": 11, "coste": 2, "cat": "mutador", "efecto": { "tipo": "multi", "lista": [{ "tipo": "stat", "stat": "tear_damage", "mult": 1.30 }, { "tipo": "cadencia", "param": "window", "mult": 0.92 }] } },
+    { "id": "m1", "nombre": "Insomnio", "desc": "HORA MUERTA — +20% cadencia de disparo, pero cuesta 1 corazón máximo.", "ring": 3, "hora": 1, "coste": 2, "cat": "mutador", "efecto": { "tipo": "multi", "lista": [{ "tipo": "stat", "stat": "tear_rate_per_s", "mult": 1.20 }, { "tipo": "stat", "stat": "max_hp", "add": -1 }] } },
+    { "id": "m2", "nombre": "Duermevela", "desc": "HORA MUERTA — ventanas un 15% más anchas, pero el melé pierde filo (×0.85).", "ring": 3, "hora": 2, "coste": 2, "cat": "mutador", "efecto": { "tipo": "multi", "lista": [{ "tipo": "cadencia", "param": "window", "mult": 1.15 }, { "tipo": "stat", "stat": "melee_damage", "mult": 0.85 }] } }
+  ]
+}

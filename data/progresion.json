@@ -1,0 +1,9 @@
+{
+  "descripcion": "Desbloqueos graduales por nivel de Pip. Se evalúan contra GameState.nivel (sin migración de saves). La progresión se abre poco a poco: primero una postura, luego otra, luego duelos nuevos.",
+  "desbloqueos": [
+    { "nivel": 2, "tipo": "compas", "id": "allegro" },
+    { "nivel": 3, "tipo": "mascota", "id": "tuerca", "nombre": "Tuerca", "sub": "Un engranajito con patas te sigue y recoge el botín lejano" },
+    { "nivel": 4, "tipo": "compas", "id": "adagio" },
+    { "nivel": 5, "tipo": "encuentro", "id": "enjambre", "nombre": "El Enjambre de Polvo", "sub": "Nuevo duelo en El Redoble" }
+  ]
+}

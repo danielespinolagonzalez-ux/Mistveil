@@ -1,0 +1,12 @@
+{
+  "nodos": [
+    { "id": "recuerdo_de_cuerda", "nombre": "Recuerdo de cuerda", "desc": "+1 corazón base permanente", "tipo": "poder" },
+    { "id": "pulso_constante", "nombre": "Pulso constante", "desc": "Ventanas de Cadencia +10%", "tipo": "poder" },
+    { "id": "sello_de_marea", "nombre": "Sello de Marea", "desc": "Empiezas conociendo Marea de cera", "tipo": "variedad" },
+    { "id": "estanteria_de_margo", "nombre": "Estantería de Margo", "desc": "La tienda ofrece un producto más", "tipo": "variedad" },
+    { "id": "llave_del_sotano", "nombre": "Llave del sótano", "desc": "Alcoba maldita en cada piso", "tipo": "variedad" },
+    { "id": "bolsillo_cosido", "nombre": "Bolsillo cosido", "desc": "Empiezas cada run con 5 de oro", "tipo": "comodidad" },
+    { "id": "diario_de_vesper", "nombre": "Diario de Vesper", "desc": "El minimapa revela toda la Torre", "tipo": "comodidad" },
+    { "id": "cuarto_de_la_penumbra", "nombre": "Cuarto de la penumbra", "desc": "Modo Cuerda Tensa: +25% vida enemiga, +50% Memoria", "tipo": "reto" }
+  ]
+}
