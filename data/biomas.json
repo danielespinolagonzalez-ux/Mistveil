@@ -1,17 +1,116 @@
 {
   "descripcion": "Biomas de la Torre: un mundo cada 3 pisos. tint = desplazamiento RGB de las losas; cada bioma trae una mecánica propia.",
   "biomas": [
-    { "id": "pendulos", "nombre": "La Sala de Péndulos", "sub": "los péndulos barren las galerías: cruza a compás", "pisos": [1, 3], "tint": [0, 0, 0],
-      "pendulo": { "period_s": 1.6, "half_deg": 52, "largo_px": 118, "dano": 1, "sp_roce": 4 } },
-    { "id": "archivo", "nombre": "El Archivo Anegado", "sub": "la tinta encharca el suelo: el fuego la seca", "pisos": [4, 6], "tint": [-6, 2, 10],
-      "tinta": { "slow_mult": 0.55, "surf_mult": 1.18, "charcos_min": 4, "charcos_max": 8 } },
-    { "id": "invertida", "nombre": "La Relojería Invertida", "sub": "el tiempo duda: telegrafía doble, zarpazo feroz", "pisos": [7, 9], "tint": [10, -4, -8],
-      "invertida": { "windup_mult": 1.6, "strike_mult": 1.35 } }
+    {
+      "id": "pendulos",
+      "nombre": "La Sala de Péndulos",
+      "sub": "los péndulos barren las galerías: cruza a compás",
+      "pisos": [
+        1,
+        3
+      ],
+      "tint": [
+        0,
+        0,
+        0
+      ],
+      "pendulo": {
+        "period_s": 1.6,
+        "half_deg": 52,
+        "largo_px": 118,
+        "dano": 1,
+        "sp_roce": 4
+      },
+      "ambiente": {
+        "color": "#e8c565",
+        "grav": -14,
+        "rate": 5,
+        "size": 1.4
+      }
+    },
+    {
+      "id": "archivo",
+      "nombre": "El Archivo Anegado",
+      "sub": "la tinta encharca el suelo: el fuego la seca",
+      "pisos": [
+        4,
+        6
+      ],
+      "tint": [
+        -6,
+        2,
+        10
+      ],
+      "tinta": {
+        "slow_mult": 0.55,
+        "surf_mult": 1.18,
+        "charcos_min": 4,
+        "charcos_max": 8
+      },
+      "ambiente": {
+        "color": "#4f6fc3",
+        "grav": 60,
+        "rate": 8,
+        "size": 1.8
+      }
+    },
+    {
+      "id": "invertida",
+      "nombre": "La Relojería Invertida",
+      "sub": "el tiempo duda: telegrafía doble, zarpazo feroz",
+      "pisos": [
+        7,
+        9
+      ],
+      "tint": [
+        10,
+        -4,
+        -8
+      ],
+      "invertida": {
+        "windup_mult": 1.6,
+        "strike_mult": 1.35
+      },
+      "ambiente": {
+        "color": "#e05a4f",
+        "grav": -46,
+        "rate": 6,
+        "size": 1.3
+      }
+    }
   ],
   "jefes_bioma": {
-    "pendulos": { "base": "campanero", "nombre": "Campanero Mayor", "hp": 90, "velocidad": 95, "counter_chance": 0.5, "r": 18 },
-    "archivo": { "base": "polilla_del_polvo", "nombre": "Archivera Anegada", "hp": 130, "velocidad": 110, "counter_chance": 0.3, "r": 16, "vuela": true, "entinta": true,
-      "proyectil": { "dano": 1, "velocidad": 175, "cadencia_s": 1.4 } },
-    "invertida": { "base": "campanero", "nombre": "El Primer Relojero", "hp": 170, "velocidad": 105, "counter_chance": 0.55, "r": 18, "roba_compas": true }
+    "pendulos": {
+      "base": "campanero",
+      "nombre": "Campanero Mayor",
+      "hp": 90,
+      "velocidad": 95,
+      "counter_chance": 0.5,
+      "r": 18
+    },
+    "archivo": {
+      "base": "polilla_del_polvo",
+      "nombre": "Archivera Anegada",
+      "hp": 130,
+      "velocidad": 110,
+      "counter_chance": 0.3,
+      "r": 16,
+      "vuela": true,
+      "entinta": true,
+      "proyectil": {
+        "dano": 1,
+        "velocidad": 175,
+        "cadencia_s": 1.4
+      }
+    },
+    "invertida": {
+      "base": "campanero",
+      "nombre": "El Primer Relojero",
+      "hp": 170,
+      "velocidad": 105,
+      "counter_chance": 0.55,
+      "r": 18,
+      "roba_compas": true
+    }
   }
 }
