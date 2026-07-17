@@ -23,6 +23,7 @@ import { EventBus } from '../js/event_bus.js';
 import { GameState, RunState } from '../js/state.js';
 import { nodoDisponible, activarNodo, esferaBonos } from '../js/esfera.js';
 import { syncFamiliares, updateFamiliares } from '../js/familiares.js';
+import { spawnArt, updateArt, romano } from '../js/artes_fx.js';
 import { selloDef, obtenerSello, rasgoCuraPorSp, finisherElemental } from '../js/sellos.js';
 
 const out = document.getElementById('out');
@@ -231,6 +232,15 @@ rasgoCuraPorSp(12, pM);
 assert('marea: cura 1 al acumular 20 SP de perfectos', sinCura === 2 && pM.health.hp === 3);
 GameState.selloEquipado = selloPrevEq;
 GameState.sellosObtenidos.length = 0; GameState.sellosObtenidos.push(...selloPrevCol);
+
+// A4 — Firmas visuales de habilidad: spawn, caducidad y numeral romano
+const artFx = [];
+spawnArt(artFx, 'corona_tinta', 0, 0, { tmax: 0.1 });
+spawnArt(artFx, 'campana_cristal', 0, 0, { tmax: 0.1 });
+assert('artes_fx: spawnArt añade efectos', artFx.length === 2);
+updateArt(artFx, 0.2);
+assert('artes_fx: los efectos caducan por tiempo', artFx.length === 0);
+assert('artes_fx: numeral romano del combo (3 → III)', romano(3) === 'III' && romano(1) === 'I');
 
 // Generación procedural: 60 pisos válidos (spec §5)
 import('../js/rooms.js').then(async ({ buildTower }) => {

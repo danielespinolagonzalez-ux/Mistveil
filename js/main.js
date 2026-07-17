@@ -19,6 +19,7 @@ import { cast, elementMult } from './spells.js';
 import { FX } from './fx.js';
 import { PLAZA, NPCS, visita, resetVisita, drawNPC, drawCoro, drawPuebloBackdrop, drawPlazaGround } from './pueblo.js';
 import { syncFamiliares, updateFamiliares, drawFamiliar } from './familiares.js';
+import { spawnArt, updateArt, drawArt, romano } from './artes_fx.js';
 import { selloDef, selloEquipado, obtenerSello, rasgoCuraPorSp, rasgoDashBurn, finisherElemental } from './sellos.js';
 
 const PORTRAIT = !!window.MISTVEIL_PORTRAIT;
@@ -74,7 +75,7 @@ const world = {
   player: null, enemies: [],
   tears: new TearPool(), bullets: new BulletPool(),
   pickups: [], dmgNumbers: [], shockwaves: [], corpses: [], pet: null,
-  familiares: [], trails: []
+  familiares: [], trails: [], artFx: []
 };
 const cad = new Cadencia();
 const batalla = new RelojBatalla(ctx, VW, VH, font);
@@ -187,7 +188,7 @@ function newRun() {
   world.tears.clear(); world.bullets.clear();
   cad.reset();
   freezeT = 0; hitStopT = 0; slowmoT = 0;
-  world.familiares = []; world.trails = [];
+  world.familiares = []; world.trails = []; world.artFx = [];
   pendingUpgrades = null;
   mode = 'play';
   placePlayerAtTop();
@@ -789,11 +790,16 @@ EventBus.on('tear_fired', (x, y, dx, dy) => {
 EventBus.on('wax_broken', (w) => {
   FX.burst(w.x + w.w / 2, w.y + w.h / 2, { n: 14, color: '#e8dfc8', speed: 100, life: 0.5, size: 2.5, gravity: 200 });
 });
-EventBus.on('cadencia_hit', ({ x, y, quality, dmg, finisher }) => {
+EventBus.on('cadencia_hit', ({ x, y, quality, dmg, finisher, hitIndex }) => {
   // Háptica acorde: perfect = golpe seco, good = leve, fail = zumbido de error.
   // + micro hit-stop en perfect/finisher: el mundo "acusa" tu golpe.
   Input.vibrar?.(quality === 'perfect' ? 24 : quality === 'good' ? 10 : [45, 30, 25]);
   if (quality === 'perfect') freezeT = Math.max(freezeT, finisher ? 0.09 : 0.045);
+  // Firma de la Cadencia perfecta: el numeral romano del golpe SALTA en dorado,
+  // como los tiempos de una esfera de reloj marcándose uno a uno.
+  if (quality === 'perfect') {
+    pushPopup(x - 12, y - 30, romano((hitIndex ?? 0) + 1), '#ffe9a8', 16);
+  }
   const p = world.player;
   const ddx = x - p.x, ddy = y - p.y;
   const dl = Math.hypot(ddx, ddy) || 1;
@@ -839,7 +845,7 @@ EventBus.on('cadencia_parried', (e) => {
   Input.vibrar?.([10, 20, 30]);
   freezeT = Math.max(freezeT, 0.07);
   pushPopup(e.x, e.y - 26, t9('ui.cad_parry'), '#7ee8e0', 11);
-  world.shockwaves.push({ x: e.x, y: e.y, r0: 4, r1: 30, t: 0.2, tmax: 0.2, color: '#7ee8e0' });
+  spawnArt(world.artFx, 'campana_cristal', e.x, e.y, { tmax: 0.4, r: 32, color: '#aef4ec' });
 });
 EventBus.on('cadencia_whiff', (x, y) => {
   AudioManager.beep(420, 0.06, 'triangle', 0.03, -120);
@@ -860,15 +866,26 @@ EventBus.on('armor_absorbed', (p) => {
 EventBus.on('item_equipado', (it) => flash(it.nombre, it.descripcion));
 EventBus.on('sinergia_activada', (syn) => flash('SINERGIA: ' + syn.nombre, syn.regla));
 EventBus.on('hechizo_lanzado', (h, x, y) => {
+  // A4 — cada Arte tiene su firma dibujada, reconocible de un vistazo
   const color = DataDB.elementos[h.elemento]?.color ?? '#bcd0ff';
-  if (h.tipo === 'onda') world.shockwaves.push({ x, y, r0: 10, r1: h.params.radio_px, t: 0.3, tmax: 0.3, color });
-  else world.shockwaves.push({ x, y, r0: 6, r1: 34, t: 0.2, tmax: 0.2, color });
-  if (h.tipo === 'cono') {
-    const aim = Math.atan2(world.player.aim.y, world.player.aim.x);
-    FX.burst(x + world.player.aim.x * 30, y + world.player.aim.y * 30,
-      { n: 26, color, speed: 180, life: 0.45, size: 2.5, glow: true, spread: h.params.angulo_deg * Math.PI / 180, dir: aim });
+  const aim = Math.atan2(world.player.aim.y, world.player.aim.x);
+  if (h.tipo === 'nova') {
+    // Corona de tinta índigo: gotas que estallan en radial
+    spawnArt(world.artFx, 'corona_tinta', x, y, { tmax: 0.5, r: (h.params.alcance_px ?? 90) * 0.5, color: '#3949AB' });
+    FX.burst(x, y, { n: 10, color: '#5c6bc0', speed: 90, life: 0.4, size: 2, glow: true });
+    AudioManager.beep(520, 0.14, 'triangle', 0.05, 180);
+  } else if (h.tipo === 'onda') {
+    // Medialuna de espuma turquesa que barre hacia el aim
+    spawnArt(world.artFx, 'medialuna_espuma', x, y, { tmax: 0.42, r: h.params.radio_px, dir: aim, color: '#4FC3F7' });
+    world.shockwaves.push({ x, y, r0: 10, r1: h.params.radio_px, t: 0.3, tmax: 0.3, color });
+  } else if (h.tipo === 'cono') {
+    // Abanico de rescoldos que caen y prenden
+    spawnArt(world.artFx, 'abanico_rescoldos', x, y, { tmax: 0.55, r: h.params.alcance_px, dir: aim, color: '#E4572E' });
+    FX.burst(x + world.player.aim.x * 24, y + world.player.aim.y * 24,
+      { n: 16, color: '#ff9c3a', speed: 150, life: 0.4, size: 2, glow: true, spread: (h.params.angulo_deg ?? 75) * Math.PI / 180, dir: aim, gravity: 120 });
   } else {
-    FX.burst(x, y, { n: 14, color, speed: 120, life: 0.4, size: 2, glow: true });
+    world.shockwaves.push({ x, y, r0: 6, r1: 34, t: 0.2, tmax: 0.2, color });
+    FX.burst(x, y, { n: 12, color, speed: 120, life: 0.4, size: 2, glow: true });
   }
   FX.addShake(1.5);
 });
@@ -1195,6 +1212,7 @@ function update(dt) {
   }
 
   // Familiares de reliquia (R1.1)
+  updateArt(world.artFx, dt);
   syncFamiliares(world, p);
   if (freezeT <= 0) updateFamiliares(dt, world, p, alive);
 
@@ -1293,7 +1311,7 @@ function update(dt) {
         e.stun(DataDB.balance.parry.stun_s);
         parried = true;
         pushPopup(e.x, e.y - e.r - 8, t9('ui.cad_parry'), '#7ee8e0', 11);
-        world.shockwaves.push({ x: e.x, y: e.y, r0: 5, r1: 36, t: 0.22, tmax: 0.22, color: '#7ee8e0' });
+        spawnArt(world.artFx, 'campana_cristal', e.x, e.y, { tmax: 0.4, r: 34, color: '#aef4ec' });
       }
     }
     if (parried) {
@@ -2020,10 +2038,23 @@ function drawLight(t, rooms) {
 }
 
 function drawPlayer(p, t) {
+  // A4 — estela de dash: engranajes espectrales que giran y se desvanecen
   for (const tr of p.trail) {
-    ctx.globalAlpha = tr.t * 2.2;
+    const a = tr.t * 2.2;
+    const gx = SX(tr.x), gy = SY(tr.y) - 6;
+    const rot = t * 6 + tr.x * 0.3;
+    const r = 5 + tr.t * 6;
+    ctx.globalAlpha = a * 0.8;
+    ctx.strokeStyle = '#9fb0ff'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(gx, gy, r, 0, 7); ctx.stroke();
+    ctx.fillStyle = '#c3ccff';
+    for (let d = 0; d < 6; d++) {
+      const ga = rot + d * Math.PI / 3;
+      ctx.fillRect(gx + Math.cos(ga) * r - 1, gy + Math.sin(ga) * r - 1, 2, 2);
+    }
+    ctx.globalAlpha = a * 0.4;
     ctx.fillStyle = '#8fa2ff';
-    ctx.fillRect(SX(tr.x) - 5, SY(tr.y) - 12, 10, 14);
+    ctx.beginPath(); ctx.arc(gx, gy, r * 0.4, 0, 7); ctx.fill();
   }
   ctx.globalAlpha = 1;
 
@@ -3185,6 +3216,7 @@ function render() {
   FX.draw(ctx, (x, y) => [SX(x), SY(y, 4)]);
   drawTrails();
   drawShockwaves();
+  drawArt(ctx, SX, SY, world.artFx);
 
   drawLight(t, rooms);
 

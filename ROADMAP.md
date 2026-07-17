@@ -48,7 +48,7 @@ Se intercala con R3; los valores viven en balance.arte / biomas.json (F5).
 - [x] A5 Ignición épica en 3 actos: estallido (triple onda + fogonazo + 3 campanadas ascendentes + hit-stop), arder (aura, chispas orbitales, caldeo dorado pulsante), serenarse (lluvia de brasas + campana grave). PASE 1.
 - [x] A2 (pase 1) Paleta e identidad completa por bioma: Péndulos = ámbar y miel; Archivo = celeste y pergamino con tinta índigo; Invertida = crepúsculo lavanda y cobre. Props de fondo por código (péndulos, estanterías, relojes derretidos).
 - [x] A3 (pase 1) Enemigos diferenciados: familias de material (cera cálida y llama · latón bruñido · polvo frío), siluetas más marcadas, animación idle propia por enemigo, rim-light y auras de élite.
-- [ ] A4 Lenguaje visual único por habilidad: nova = corona de tinta índigo; marea = medialuna de espuma turquesa; ascua = abanico de rescoldos que caen; Cadencia con estética de esfera de reloj (numerales que saltan en la perfecta); parry = campana de cristal; dash = estela de engranajes.
+- [x] A4 (pase 1) Lenguaje visual único por habilidad: nova = corona de tinta índigo; marea = medialuna de espuma turquesa; ascua = abanico de rescoldos que caen; Cadencia con estética de esfera de reloj (numerales que saltan en la perfecta); parry = campana de cristal; dash = estela de engranajes.
 
 **Criterio:** capturas de los 3 biomas se distinguen a golpe de vista; cada habilidad se reconoce sin leer texto; la Ignición "se siente potente, fuerte, épica" (palabras de Daniel).
 
