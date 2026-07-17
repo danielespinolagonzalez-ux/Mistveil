@@ -341,6 +341,14 @@ export class Enemy {
     const base = DataDB.enemigo(id);
     if (!base) throw new Error(`Enemy: id desconocido '${id}'`);
     this.def = { ...base, ...overrides };
+    // Escalado de daño por piso (spec §4): multiplica contacto/proyectil/explosión
+    const dm = this.def.danoMult ?? 1;
+    delete this.def.danoMult;
+    if (dm !== 1) {
+      if (this.def.dano_contacto > 0) this.def.dano_contacto = Math.max(1, Math.round(this.def.dano_contacto * dm));
+      if (this.def.proyectil) this.def.proyectil = { ...this.def.proyectil, dano: Math.max(1, Math.round(this.def.proyectil.dano * dm)) };
+      if (this.def.explosion) this.def.explosion = { ...this.def.explosion, dano: Math.max(1, Math.round(this.def.explosion.dano * dm)) };
+    }
     this.id = id;
     this.x = x; this.y = y; this.vx = 0; this.vy = 0;
     this.r = overrides.r ?? 10;
@@ -552,6 +560,31 @@ export class Enemy {
             damage: def.proyectil.dano, color: this.elementColor
           });
           AudioManager.beep(980, 0.05, 'square', 0.03);
+        }
+        break;
+      }
+      case 'orbit_shoot': {
+        // Polilla: orbita al jugador a su radio (orbita_px del JSON) y escupe
+        // polvo con su cadencia. Sentido de giro fijo por instancia.
+        if (this._orbitDir === undefined) this._orbitDir = Math.random() < 0.5 ? -1 : 1;
+        const orbitR = def.orbita_px ?? 120;
+        const tx = -dy / dist * this._orbitDir, ty = dx / dist * this._orbitDir;
+        // Corrección radial: acercarse/alejarse hasta el radio de órbita
+        const radial = Math.max(-1, Math.min(1, (dist - orbitR) / orbitR * 2));
+        let mx = tx + dx / dist * radial, my = ty + dy / dist * radial;
+        const ml = Math.hypot(mx, my) || 1;
+        this.vx = mx / ml * def.velocidad;
+        this.vy = my / ml * def.velocidad;
+        this.fireCd -= dt;
+        if (this.fireCd <= 0 && def.proyectil) {
+          this.fireCd = def.proyectil.cadencia_s;
+          world.bullets.spawn({
+            x: this.x, y: this.y,
+            vx: dx / dist * def.proyectil.velocidad,
+            vy: dy / dist * def.proyectil.velocidad,
+            damage: def.proyectil.dano, color: this.elementColor
+          });
+          AudioManager.beep(700, 0.06, 'sine', 0.035, -120);
         }
         break;
       }

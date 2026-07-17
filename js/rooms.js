@@ -307,7 +307,10 @@ export class Room {
       const { base, ...ov } = jb;
       this.pendingSpawns = [{
         id: base, x: c.x, y: c.y,
-        overrides: { ...ov, hp: Math.round(jb.hp * hpMult), coste_dificultad: 0, jefe: true }
+        overrides: {
+          ...ov, hp: Math.round(jb.hp * hpMult), coste_dificultad: 0, jefe: true,
+          danoMult: 1 + (this.piso - 1) * (DataDB.balance.run.escalado_dano_por_piso ?? 0)
+        }
       }];
       this._seal(world);
     } else if (!this.cleared && this.spawnPts.length) {
@@ -334,6 +337,7 @@ export class Room {
     // Maldita: presupuesto doble. Escalado por piso según spec §4.
     let budget = R.dificultad_sala_base * (this.type === 'maldita' ? 2 : 1) + (this.piso - 1) * 2;
     const hpMult = 1 + (this.piso - 1) * R.escalado_hp_por_piso;
+    const danoMult = 1 + (this.piso - 1) * (R.escalado_dano_por_piso ?? 0);
     const inv = this.bioma?.invertida; // Relojería Invertida: telegrafía doble, zarpazo feroz
     const out = [];
     const pts = [...this.spawnPts].sort(() => Math.random() - 0.5);
@@ -343,7 +347,7 @@ export class Room {
       if (budget <= 0 && out.length) break;
       const affordable = pool.filter(d => d.coste_dificultad <= Math.max(budget, 1));
       const def = affordable.length ? pick(affordable) : pick(pool);
-      const ov = { hp: Math.round(def.hp * hpMult) };
+      const ov = { hp: Math.round(def.hp * hpMult), danoMult };
       if (inv) { ov.windup_mult = inv.windup_mult; ov.strike_mult = inv.strike_mult; }
       if (def.gemelo) {
         // Los minuteros llegan SIEMPRE en pareja vinculada
@@ -619,90 +623,8 @@ function mulberry32(a) {
 }
 const DIRS = [[0, -1], [0, 1], [1, 0], [-1, 0]];
 
-export function buildFloor(piso = 1, seed = Date.now()) {
-  const R = DataDB.balance.run;
-  const rnd = mulberry32((seed ^ (piso * 7919)) >>> 0);
-  const cx = Math.floor(R.grid_w / 2), cy = Math.floor(R.grid_h / 2);
-  const startKey = cx + ',' + cy;
-
-  for (let attempt = 0; attempt < 20; attempt++) {
-    const n = Math.min(R.rooms_max, R.rooms_min + piso * 2 + Math.floor(rnd() * 3));
-    const cells = new Set([startKey]);
-    const list = [[cx, cy]];
-    let guard = 600;
-    while (cells.size < n && guard-- > 0) {
-      const [bx, by] = list[Math.floor(rnd() * list.length)];
-      const [dx, dy] = DIRS[Math.floor(rnd() * 4)];
-      const nx = bx + dx, ny = by + dy;
-      if (nx < 0 || ny < 0 || nx >= R.grid_w || ny >= R.grid_h) continue;
-      const k = nx + ',' + ny;
-      if (cells.has(k)) continue;
-      let touch = 0;
-      for (const [ax, ay] of DIRS) if (cells.has((nx + ax) + ',' + (ny + ay))) touch++;
-      if (touch > 2) continue; // evita bloques macizos
-      cells.add(k);
-      list.push([nx, ny]);
-    }
-    if (cells.size < R.rooms_min) continue;
-
-    // BFS: distancias desde la inicial (y validación de alcanzabilidad)
-    const dist = new Map([[startKey, 0]]);
-    const q = [[cx, cy]];
-    while (q.length) {
-      const [ax, ay] = q.shift();
-      for (const [dx, dy] of DIRS) {
-        const k = (ax + dx) + ',' + (ay + dy);
-        if (cells.has(k) && !dist.has(k)) {
-          dist.set(k, dist.get(ax + ',' + ay) + 1);
-          q.push([ax + dx, ay + dy]);
-        }
-      }
-    }
-    if (dist.size !== cells.size) continue;
-
-    // Callejones sin salida, ordenados por lejanía
-    const neighCount = k => {
-      const [ax, ay] = k.split(',').map(Number);
-      let c = 0;
-      for (const [dx, dy] of DIRS) if (cells.has((ax + dx) + ',' + (ay + dy))) c++;
-      return c;
-    };
-    const dead = [...cells].filter(k => k !== startKey && neighCount(k) === 1)
-      .sort((a, b) => dist.get(b) - dist.get(a));
-    if (dead.length < 3) continue; // necesitamos jefe + tesoro + tienda
-
-    const types = new Map();
-    types.set(dead[0], 'jefe');
-    types.set(dead[1], 'tesoro');
-    types.set(dead[2], 'tienda');
-    if (dead[3] && rnd() < 0.75) types.set(dead[3], 'maldita');
-
-    const rooms = new Map();
-    for (const k of cells) {
-      const [ax, ay] = k.split(',').map(Number);
-      rooms.set(k, new Room(ax, ay, types.get(k) ?? (k === startKey ? 'inicial' : 'normal'), piso));
-    }
-    for (const k of cells) {
-      const [ax, ay] = k.split(',').map(Number);
-      const r = rooms.get(k);
-      const east = rooms.get((ax + 1) + ',' + ay);
-      if (east) { const d = { open: true }; r.doors.e = d; east.doors.w = d; }
-      const south = rooms.get(ax + ',' + (ay + 1));
-      if (south) { const d = { open: true }; r.doors.s = d; south.doors.n = d; }
-    }
-    return {
-      rooms, piso,
-      current: rooms.get(startKey),
-      at(gx, gy) { return rooms.get(gx + ',' + gy) ?? null; },
-      neighbor(room, dir) {
-        const d = { n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0] }[dir];
-        return this.at(room.gx + d[0], room.gy + d[1]);
-      }
-    };
-  }
-  console.warn('buildFloor: 20 intentos fallidos, usando piso de respaldo');
-  return buildTestFloor();
-}
+// (El generador de rejilla tipo Isaac que vivía aquí se retiró en la fase R0.5:
+// la Torre vertical de buildTower es el modo canónico. Historia en git.)
 
 // ---------- La Torre: piso vertical continuo (sustituye al layout Isaac) ----------
 // Segmentos apilados en una columna: cámaras (se sellan al entrar) y galerías

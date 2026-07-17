@@ -7,6 +7,12 @@ export const EventBus = {
     listeners.get(signal).add(fn);
     return () => listeners.get(signal)?.delete(fn);
   },
+  // Suscripción de un solo disparo (se limpia sola)
+  once(signal, fn) {
+    const un = this.on(signal, (...args) => { un(); fn(...args); });
+    return un;
+  },
+  off(signal, fn) { listeners.get(signal)?.delete(fn); },
   emit(signal, ...args) {
     const set = listeners.get(signal);
     if (set) for (const fn of [...set]) fn(...args);

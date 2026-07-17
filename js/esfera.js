@@ -53,8 +53,10 @@ export function activarNodo(id, player) {
 export function esferaBonos() {
   if (_cache && _rev === _ver) return _cache;
   const b = { statMult: {}, statAdd: {}, window: 1, combo: 0, sp: 1, artes: 1, ignicionDur: 0, oroInicial: 0, xp: 1 };
+  // Un único intérprete de efectos; 'multi' (Horas Muertas) recurre sobre su lista.
   const aplicar = ef => {
     switch (ef.tipo) {
+      case 'multi': for (const sub of ef.lista) aplicar(sub); break;
       case 'stat':
         if (ef.mult != null) b.statMult[ef.stat] = (b.statMult[ef.stat] ?? 1) * ef.mult;
         if (ef.add != null) b.statAdd[ef.stat] = (b.statAdd[ef.stat] ?? 0) + ef.add;
@@ -72,23 +74,7 @@ export function esferaBonos() {
   };
   for (const id of GameState.esfera) {
     const ef = nodoEsfera(id)?.efecto;
-    if (!ef) continue;
-    switch (ef.tipo) {
-      case 'multi': for (const sub of ef.lista) aplicar(sub); break;
-      case 'stat':
-        if (ef.mult != null) b.statMult[ef.stat] = (b.statMult[ef.stat] ?? 1) * ef.mult;
-        if (ef.add != null) b.statAdd[ef.stat] = (b.statAdd[ef.stat] ?? 0) + ef.add;
-        break;
-      case 'cadencia':
-        if (ef.param === 'window') b.window *= ef.mult;
-        else if (ef.param === 'combo') b.combo += ef.add;
-        break;
-      case 'sp': b.sp *= ef.mult; break;
-      case 'artes': b.artes *= ef.mult; break;
-      case 'ignicion': b.ignicionDur += ef.add; break;
-      case 'oro_inicial': b.oroInicial += ef.add; break;
-      case 'xp': b.xp *= ef.mult; break;
-    }
+    if (ef) aplicar(ef);
   }
   _cache = b; _rev = _ver;
   return b;

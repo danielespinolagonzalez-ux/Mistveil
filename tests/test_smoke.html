@@ -19,6 +19,9 @@ import { computeQuality } from '../js/cadencia.js';
 import { buildTestFloor, isDoorFront, TILE, RW, RH } from '../js/rooms.js';
 import { applyItem } from '../js/items.js';
 import { elementMult } from '../js/spells.js';
+import { EventBus } from '../js/event_bus.js';
+import { GameState } from '../js/state.js';
+import { nodoDisponible, activarNodo, esferaBonos } from '../js/esfera.js';
 
 const out = document.getElementById('out');
 let failed = 0;
@@ -125,8 +128,51 @@ assert('santuario.json: 8 nodos con coste en balance.arbol',
   DataDB.santuario.nodos.every(n => typeof DataDB.balance.arbol[n.id] === 'number'));
 assert('mejoras_piso en balance (≥6)', (DataDB.balance.mejoras_piso?.length ?? 0) >= 6);
 
+// R0.3 — EventBus: off y once
+let nOn = 0;
+const fnOn = () => nOn++;
+EventBus.on('prueba_emitida', fnOn);
+EventBus.emit('prueba_emitida');
+EventBus.off('prueba_emitida', fnOn);
+EventBus.emit('prueba_emitida');
+assert('EventBus.off desuscribe', nOn === 1);
+let nOnce = 0;
+EventBus.once('prueba_emitida', () => nOnce++);
+EventBus.emit('prueba_emitida');
+EventBus.emit('prueba_emitida');
+assert('EventBus.once dispara una sola vez', nOnce === 1);
+
+// R0.1 — orbit_shoot en tiempo real: la polilla se mueve Y dispara
+const moth = new Enemy('polilla_del_polvo', 340, 96, {});
+const fired = [];
+const mothWorld = { tears: new TearPool(), bullets: { spawn(b) { fired.push(b); } }, corpses: [] };
+const mx0 = moth.x, my0 = moth.y;
+for (let i = 0; i < 260; i++) moth.update(1 / 60, p, roomCtx, mothWorld);
+assert('orbit_shoot: la polilla se mueve (orbita)', Math.hypot(moth.x - mx0, moth.y - my0) > 20 || Math.hypot(moth.vx, moth.vy) > 1);
+assert('orbit_shoot: la polilla dispara con su cadencia', fired.length >= 1);
+
+// R0.2 — escalado de daño por piso (danoMult en overrides)
+const eScaled = new Enemy('tejedor_horas', 0, 0, { danoMult: 1.5 });
+assert('danoMult escala el proyectil (1 → 2)', eScaled.def.proyectil.dano === 2);
+const cScaled = new Enemy('cera_andante', 0, 0, { danoMult: 1.5 });
+assert('danoMult escala el contacto (1 → 2)', cScaled.def.dano_contacto === 2);
+const sinEscala = new Enemy('cera_andante', 0, 0, {});
+assert('sin danoMult el daño no cambia', sinEscala.def.dano_contacto === DataDB.enemigo('cera_andante').dano_contacto);
+
+// R0.6 — Esfera del Reloj: adyacencia y agregado de bonos
+const esferaPrev = [...GameState.esfera];
+const engrPrev = GameState.engranajes;
+GameState.esfera.length = 0; GameState.esfera.push('eje');
+GameState.engranajes = 9;
+assert('esfera: nodo pegado al eje disponible', nodoDisponible('i0') === true);
+assert('esfera: anillo exterior bloqueado sin sello', nodoDisponible('o0') === false);
+assert('esfera: activar i0 gasta y abre el sello XII', activarNodo('i0') === true && nodoDisponible('s0') === true);
+assert('esfera: bonos agregados sin error', typeof esferaBonos().window === 'number');
+GameState.esfera.length = 0; GameState.esfera.push(...esferaPrev);
+GameState.engranajes = engrPrev;
+
 // Generación procedural: 60 pisos válidos (spec §5)
-import('../js/rooms.js').then(async ({ buildFloor, buildTower }) => {
+import('../js/rooms.js').then(async ({ buildTower }) => {
   const R = DataDB.balance.run;
   let ok = true, fallos = [];
   for (let i = 0; i < 60; i++) {

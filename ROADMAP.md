@@ -2,12 +2,12 @@
 Claude Code: trabaja las fases EN ORDEN salvo indicación de Daniel. No avances de fase sin cumplir su **criterio de aceptación**. Marca `[x]` al completar; añade subtareas si hace falta; **nunca borres tareas**. El plan nace del estado real del kit (ver ESTADO.md): el juego ya es jugable de punta a punta — esto es completar, robustecer y publicar.
 
 ## Fase R0 — Afinación (bugs y huecos detectados en el mapeo)
-- [ ] R0.1 Implementar `orbit_shoot` en tiempo real (la `polilla_del_polvo` hoy se queda quieta y muda; en El Redoble sí funciona). Orbitar al jugador + disparo con su `cadencia_s`.
-- [ ] R0.2 Aplicar `run.escalado_dano_por_piso` (definido en balance, hoy huérfano) al daño de contacto/proyectil enemigo por piso — o retirarlo del JSON si Daniel prefiere no escalar daño.
-- [ ] R0.3 `EventBus`: añadir `off(señal, fn)` y `once`; arreglar las sondas de `window.__mistveil` que hoy fugan listeners (`EventBus.off?.()` silencioso).
-- [ ] R0.4 `esfera.js`: deduplicar el switch de efectos de `esferaBonos()` (lógica repetida función+inline).
-- [ ] R0.5 Decidir y ejecutar sobre `buildFloor` (generador Isaac desconectado): borrarlo o rescatarlo como variante de piso (propuesta: borrar; la Torre es el juego).
-- [ ] R0.6 Asserts nuevos en `test_smoke.html`: orbit_shoot, escalado por piso, EventBus.off, y humo de Esfera (activar nodo adyacente, rechazar no-adyacente).
+- [x] R0.1 Implementar `orbit_shoot` en tiempo real (la `polilla_del_polvo` hoy se queda quieta y muda; en El Redoble sí funciona). Orbitar al jugador + disparo con su `cadencia_s`.
+- [x] R0.2 Aplicar `run.escalado_dano_por_piso` (definido en balance, hoy huérfano) al daño de contacto/proyectil enemigo por piso — o retirarlo del JSON si Daniel prefiere no escalar daño.
+- [x] R0.3 `EventBus`: añadir `off(señal, fn)` y `once`; arreglar las sondas de `window.__mistveil` que hoy fugan listeners (`EventBus.off?.()` silencioso).
+- [x] R0.4 `esfera.js`: deduplicar el switch de efectos de `esferaBonos()` (lógica repetida función+inline).
+- [x] R0.5 Decidir y ejecutar sobre `buildFloor` (generador Isaac desconectado): borrarlo o rescatarlo como variante de piso (propuesta: borrar; la Torre es el juego).
+- [x] R0.6 Asserts nuevos en `test_smoke.html`: orbit_shoot, escalado por piso, EventBus.off, y humo de Esfera (activar nodo adyacente, rechazar no-adyacente).
 
 **Criterio:** smoke ampliado en verde; una run al piso 4+ no muestra enemigos inertes ni comportamientos rotos.
 
