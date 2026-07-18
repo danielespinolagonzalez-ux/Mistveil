@@ -68,6 +68,7 @@ export class Player {
     this.groove = 0; this.grooveBuffed = false; // racha (G7c): sube encadenando, cae al recibir
     this.parryCd = 0;
     this.castT = 0; this.parryAnimT = 0; // ventanas de POSE de sprite (arte/parada); solo visual
+    this.facing = 1; // 1 mira a la dcha, -1 a la izda; drawPlayer anima el giro (solo visual)
     this.ignicionT = 0; this._igDur = 1; // transformación Ignición (F con SP lleno)
     this.attackAnim = null; // {t, tmax, dir, finisher} — lo setea main en cadencia_hit
     this.comboLock = false; // lo controla el sistema de Cadencia
@@ -184,6 +185,11 @@ export class Player {
     if (this.parryCd > 0) this.parryCd -= dt;
     if (this.castT > 0) this.castT -= dt;        // pose de Arte (visual)
     if (this.parryAnimT > 0) this.parryAnimT -= dt; // pose de Parada (visual)
+    // Orientación: Pip mira hacia donde CAMINA (o ataca); parado, hacia el apuntado.
+    // Umbral en vx para no voltear al moverse solo en vertical; drawPlayer suaviza el giro.
+    if (this.attackAnim && this.attackAnim.dir[0]) this.facing = this.attackAnim.dir[0] >= 0 ? 1 : -1;
+    else if (Math.abs(this.vx) > 22) this.facing = this.vx > 0 ? 1 : -1;
+    else if (Math.hypot(this.vx, this.vy) < 24 && Math.abs(this.aim.x) > 0.3) this.facing = this.aim.x >= 0 ? 1 : -1;
     // Ignición: consume el Espíritu como combustible
     if (this.ignicionT > 0) {
       this.ignicionT -= dt;

@@ -2160,6 +2160,9 @@ function drawLight(t, rooms) {
 const POSE_DRAWH = { pip_dash: 40, pip_ataque: 34, pip_parada: 38, pip_arte: 44, pip_ignicion: 50 };
 // Ajuste vertical fino por pose (px): 0 = pies en el suelo; negativo sube (poses aéreas).
 const POSE_DY = { pip_dash: -2, pip_arte: -1, pip_ignicion: -1 };
+// Transiciones animadas por código (ms). FLIP = giro izquierda↔derecha (Pip pivota);
+// FADE = crossfade entre poses DISTINTAS (no entre los dos fotogramas de andar).
+const FLIP_MS = 130, POSE_FADE_MS = 75;
 
 function drawPlayer(p, t) {
   // A4 — estela de dash: engranajes espectrales que giran y se desvanecen
@@ -2252,21 +2255,43 @@ function drawPlayer(p, t) {
     : p.ignicionT > 0 ? 'pip_ignicion'
     : moving ? walkFrame
     : 'pip_idle';
-  let spr = Sprites.get(poseId);
-  // Si la pose de ese estado aún no cargó, cae a idle (y si tampoco, al vector).
-  if (!spr && poseId !== 'pip_idle') spr = Sprites.get('pip_idle');
-  if (spr) {
-    const inf = Sprites.info(Sprites.get(poseId) ? poseId : 'pip_idle');
-    const drawH = POSE_DRAWH[poseId] ?? 34;             // alto por pose (cuerpo constante)
-    const dw = Math.round(inf.w * drawH / inf.h);       // guardado a 2×, dibujado a la mitad
-    const faceRight = (aa ? aa.dir[0] : p.aim.x) >= 0;
-    const flip = (inf.face === 'right') !== faceRight;
+  // Giro suave (Pip pivota al cambiar de lado) y crossfade entre poses distintas,
+  // ambos animados por código con performance.now() (independiente de dt del bucle).
+  const nowMs = performance.now();
+  if (p._drawnFacing === undefined) p._drawnFacing = p.facing;
+  if (p.facing !== p._drawnFacing) { p._flipAt = nowMs; p._drawnFacing = p.facing; }
+  const flipK = Math.min(1, (nowMs - (p._flipAt ?? -1e9)) / FLIP_MS);
+  const turnSX = 0.12 + 0.88 * flipK; // ancho horizontal durante el giro (nunca 0 del todo)
+
+  if (poseId !== p._lastPose) {
+    // No hacemos crossfade entre los dos fotogramas de andar: ese cambio ES el paso.
+    const walkInternal = poseId.startsWith('pip_paso') && String(p._lastPose).startsWith('pip_paso');
+    if (p._lastPose && !walkInternal) { p._prevPose = p._lastPose; p._poseAt = nowMs; }
+    p._lastPose = poseId;
+  }
+  const fadeK = Math.min(1, (nowMs - (p._poseAt ?? -1e9)) / POSE_FADE_MS); // 0..1
+
+  // Dibuja una pose a cierta opacidad; hereda facing, giro y el alto por pose.
+  const drawPose = (pid, alpha) => {
+    const im = Sprites.get(pid); if (!im) return false;
+    const info = Sprites.info(pid);
+    const dH = POSE_DRAWH[pid] ?? 34;                    // alto por pose (cuerpo constante)
+    const dW = Math.round(info.w * dH / info.h);         // guardado a 2×, dibujado a la mitad
+    const flip = (info.face === 'right') !== (p.facing >= 0);
     ctx.save();
-    ctx.translate(x, y + 11 + (POSE_DY[poseId] ?? 0));
-    if (flip) ctx.scale(-1, 1);
-    if (p.dashT > 0) ctx.globalAlpha = 0.8; // esquiva: cuerpo espectral
-    ctx.drawImage(spr, Math.round(-dw / 2), -drawH, dw, drawH);
+    ctx.globalAlpha = alpha * (p.dashT > 0 ? 0.8 : 1);   // esquiva: cuerpo espectral
+    ctx.translate(x, y + 11 + (POSE_DY[pid] ?? 0));
+    ctx.scale((flip ? -1 : 1) * turnSX, 1);
+    ctx.drawImage(im, Math.round(-dW / 2), -dH, dW, dH);
     ctx.restore();
+    return true;
+  };
+
+  if (Sprites.get(poseId)) {
+    if (p._prevPose && p._prevPose !== poseId && fadeK < 1) drawPose(p._prevPose, 1 - fadeK); // pose saliente
+    drawPose(poseId, fadeK < 1 ? fadeK : 1);                                                  // pose entrante
+  } else if (Sprites.get('pip_idle')) {
+    drawPose('pip_idle', 1); // esta pose aún carga: idle mientras llega
   } else {
   const ig = p.ignicionT > 0;
   ctx.fillStyle = p.dashT > 0 ? '#e8ecff' : ig ? '#9c5f2e' : '#4a4577';
