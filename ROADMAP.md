@@ -55,9 +55,10 @@ Se intercala con R3; los valores viven en balance.arte / biomas.json (F5).
 ## Fase R-Assets — Arte pintado por IA (decisión Daniel 2026-07-18: rompe la regla "cero assets")
 Estilo: romanticismo pictórico + fantasía FFIX/FFXIV. Daniel genera con ChatGPT según `docs/encargo_arte.md`; Claude trocea e integra SIEMPRE con fallback al dibujo por código.
 - [x] AS0 Encargo completo redactado: listado de ~55 assets con prompts exactos, llave de estilo, plantillas y orden de producción (`docs/encargo_arte.md`).
-- [ ] AS1 `tools/slice_assets.mjs`: troceado automático (componentes de transparencia vía Chromium headless) + `assets/manifest.json`; chroma-key magenta como plan B.
-- [ ] AS2 Cargador de sprites en runtime con fallback por-código; campo opcional `sprite` en `data/*.json`; F5 recarga también sprites.
-- [ ] AS3 Integración del lote de validación (Pip + 3 enemigos + suelo/muro Péndulos + iconos reliquias) y captura comparativa para Daniel.
+- [x] AS1 `tools/slice_assets.mjs`: troceado automático con 3 estrategias auto-detectadas (alfa real / damero pintado / fondo degradado por crecimiento de región), recorte, reducción por mitades a 2× y red de seguridad anti-"sprite comido"; `assets/sprites/manifest.json`.
+- [x] AS2 Cargador `js/sprites.js` con fallback por-código; en el bundle los PNG van incrustados en base64 (`__MISTVEIL_SPRITES__`).
+- [ ] AS3 Integración del lote de validación — HECHO Pip (idle/paso/ataque, volteo por dirección, hereda embestida/squash del motor); FALTAN 3 enemigos + suelo/muro Péndulos + iconos reliquias (esperando imágenes de Daniel).
+  - [ ] AS3b Campo `sprite` en `data/enemigos.json` + integración en `drawEnemy` cuando lleguen los enemigos.
 - [ ] AS4 Resto de lotes según lleguen (jefes, pueblo+retratos, biomas 2-3, iconos UI, botones táctiles, portada, marcos).
 - [ ] AS5 Peso del bundle vigilado (<8 MB) y divulgación de IA en itch.io (enlaza con R5.5).
 

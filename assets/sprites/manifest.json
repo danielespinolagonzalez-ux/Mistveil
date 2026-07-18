@@ -1,0 +1,17 @@
+{
+ "pip_ataque": {
+  "w": 90,
+  "h": 68,
+  "face": "left"
+ },
+ "pip_idle": {
+  "w": 44,
+  "h": 68,
+  "face": "right"
+ },
+ "pip_paso": {
+  "w": 50,
+  "h": 68,
+  "face": "left"
+ }
+}

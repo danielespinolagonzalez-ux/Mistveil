@@ -3,3 +3,6 @@
 node_modules/
 # Build autocontenido (se regenera con: node tools/build_artifact.mjs)
 mistveil_bundle.html
+# Originales de arte de Daniel (pesados; los conserva él — al repo solo van los
+# sprites troceados de assets/sprites/)
+assets/src/

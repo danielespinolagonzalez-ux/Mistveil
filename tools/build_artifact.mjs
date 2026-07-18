@@ -74,6 +74,22 @@ const DATA_PATHS = [
 const dataObj = {};
 for (const p of DATA_PATHS) dataObj[p] = JSON.parse(readFileSync(join(ROOT, p), 'utf8'));
 
+// ---------- 2b. Sprites pintados (R-Assets): PNG en base64 + manifest ----------
+// js/sprites.js mira window.__MISTVEIL_SPRITES__ antes de intentar fetch.
+let spritesObj = null;
+try {
+  const sdir = join(ROOT, 'assets/sprites');
+  const manifest = JSON.parse(readFileSync(join(sdir, 'manifest.json'), 'utf8'));
+  spritesObj = { manifest, png: {} };
+  let peso = 0;
+  for (const id of Object.keys(manifest)) {
+    const buf = readFileSync(join(sdir, id + '.png'));
+    spritesObj.png[id] = 'data:image/png;base64,' + buf.toString('base64');
+    peso += buf.length;
+  }
+  console.log(`sprites incrustados: ${Object.keys(manifest).length} (${Math.round(peso / 1024)} KB)`);
+} catch { console.log('sin assets/sprites (el juego dibuja todo por código)'); }
+
 // ---------- 3. Fuente VT323 (opcional; si falla, fallback monospace) ----------
 let fontCss = '';
 if (!SIN_FUENTE) {
@@ -152,6 +168,7 @@ if (window.MISTVEIL_MOBILE) {
   mq.addEventListener?.('change', upd); addEventListener('DOMContentLoaded', upd);
 }
 window.__MISTVEIL_DATA__ = ${JSON.stringify(dataObj)};
+window.__MISTVEIL_SPRITES__ = ${spritesObj ? JSON.stringify(spritesObj) : 'null'};
 const __origFetch = window.fetch.bind(window);
 window.fetch = (url, opts) => {
   const key = String(url).replace(/^\\.\\//, '');

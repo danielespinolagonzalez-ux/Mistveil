@@ -21,6 +21,7 @@ import { PLAZA, NPCS, visita, resetVisita, drawNPC, drawCoro, drawPuebloBackdrop
 import { syncFamiliares, updateFamiliares, drawFamiliar } from './familiares.js';
 import { spawnArt, updateArt, drawArt, romano } from './artes_fx.js';
 import { selloDef, selloEquipado, obtenerSello, rasgoCuraPorSp, rasgoDashBurn, finisherElemental } from './sellos.js';
+import { Sprites } from './sprites.js';
 
 const PORTRAIT = !!window.MISTVEIL_PORTRAIT;
 const MOBILE = !!window.MISTVEIL_MOBILE;
@@ -2219,6 +2220,22 @@ function drawPlayer(p, t) {
   ctx.scale(sx2, sy2);
   ctx.translate(-x, -y);
 
+  // Sprite pintado si está cargado (hereda embestida/squash del transform de
+  // arriba); si no, el Pip vectorial de siempre — fallback obligatorio.
+  const poseId = aa ? 'pip_ataque' : moving && Math.sin(t * 13) > 0 ? 'pip_paso' : 'pip_idle';
+  const spr = Sprites.get(poseId);
+  if (spr) {
+    const inf = Sprites.info(poseId);
+    const dh = 34, dw = Math.round(inf.w * dh / inf.h); // guardado a 2×, dibujado a la mitad
+    const faceRight = (aa ? aa.dir[0] : p.aim.x) >= 0;
+    const flip = (inf.face === 'right') !== faceRight;
+    ctx.save();
+    ctx.translate(x, y + 11);
+    if (flip) ctx.scale(-1, 1);
+    if (p.dashT > 0) ctx.globalAlpha = 0.8; // esquiva: cuerpo espectral
+    ctx.drawImage(spr, Math.round(-dw / 2), -dh, dw, dh);
+    ctx.restore();
+  } else {
   const ig = p.ignicionT > 0;
   ctx.fillStyle = p.dashT > 0 ? '#e8ecff' : ig ? '#9c5f2e' : '#4a4577';
   ctx.beginPath();
@@ -2260,6 +2277,7 @@ function drawPlayer(p, t) {
   ctx.fillRect(-1, -4, 2, 8);
   ctx.fillRect(-3, -4, 6, 2);
   ctx.restore();
+  }
   ctx.restore();
 
   if (aa) {
@@ -3532,6 +3550,7 @@ function paintFatal(err) {
     return;
   }
   SaveManager.load();
+  Sprites.load(); // arte pintado opcional: sin await — el fallback cubre mientras carga
   Input.init(canvas, toWorld);
   if (GameState.opciones.esquema_control) Input.setScheme(GameState.opciones.esquema_control);
   Input.setTouchButtons(TOUCH_BTNS_PLAY);
