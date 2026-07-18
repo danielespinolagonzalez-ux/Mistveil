@@ -1681,6 +1681,36 @@ function clipText(text, maxW) {
   return s + '…';
 }
 
+// --- Chrome ornamentado del HUD (100% por código, sin assets) ---
+// Panel oscuro con borde dorado biselado (gradiente) + hilo interior claro y
+// rombos en las esquinas. Es la pieza base para banners y cartelas del HUD, para
+// acercar el acabado "premium" de la referencia sin meter imágenes.
+function ornateFrame(x, y, w, h, opts = {}) {
+  const fill = opts.fill ?? 'rgba(12,9,24,0.82)';
+  const g1 = opts.gold ?? '#e9c877', g2 = opts.gold2 ?? '#8a6a2c';
+  ctx.fillStyle = fill; ctx.fillRect(x, y, w, h);
+  const gr = ctx.createLinearGradient(0, y, 0, y + h);
+  gr.addColorStop(0, g1); gr.addColorStop(0.5, g2); gr.addColorStop(1, g1);
+  ctx.strokeStyle = gr; ctx.lineWidth = 1.4; ctx.strokeRect(x + 0.7, y + 0.7, w - 1.4, h - 1.4);
+  ctx.strokeStyle = 'rgba(255,240,205,0.22)'; ctx.lineWidth = 1; ctx.strokeRect(x + 2.5, y + 2.5, w - 5, h - 5);
+  if (opts.corners !== false) {
+    ctx.fillStyle = g1; const r = opts.cr ?? 2.1;
+    for (const [cx, cy] of [[x, y], [x + w, y], [x, y + h], [x + w, y + h]]) {
+      ctx.beginPath(); ctx.moveTo(cx, cy - r); ctx.lineTo(cx + r, cy); ctx.lineTo(cx, cy + r); ctx.lineTo(cx - r, cy); ctx.closePath(); ctx.fill();
+    }
+  }
+}
+// Banner ornamentado ajustado a un texto ya medido (con la fuente actual fijada).
+// side: 'left' ancla en x, 'right' ancla el borde derecho en x. Devuelve el rect.
+function hudBanner(text, x, y, opts = {}) {
+  const padX = opts.padX ?? 8, h = opts.h ?? 15;
+  const tw = ctx.measureText(text).width;
+  const w = tw + padX * 2;
+  const fx = opts.side === 'right' ? x - w : x;
+  ornateFrame(fx, y, w, h, opts);
+  return { x: fx, y, w, h, tx: fx + padX, cy: y + h - 4 };
+}
+
 // Overlay de hitboxes (F3): círculo azul = cuerpo, verde = hurtbox real del jugador
 function drawHitboxes() {
   ctx.save(); ctx.lineWidth = 1;
@@ -2601,8 +2631,11 @@ function drawSpellGlyph(tipo, x, y, col) {
 
 function drawHUD(t) {
   const p = world.player;
-  ctx.fillStyle = 'rgba(10,8,20,0.35)';
-  ctx.fillRect(0, 0, VW, 48);
+  // Velo superior suave (degradado) en vez de barra plana: deja respirar la
+  // escena como en la referencia, manteniendo legible el texto del HUD.
+  const topG = ctx.createLinearGradient(0, 0, 0, 54);
+  topG.addColorStop(0, 'rgba(9,7,18,0.5)'); topG.addColorStop(1, 'rgba(9,7,18,0)');
+  ctx.fillStyle = topG; ctx.fillRect(0, 0, VW, 54);
   const hearts = Math.ceil(p.health.max / 2);
   for (let i = 0; i < hearts; i++) {
     const rest = p.health.hp - i * 2;
@@ -2642,8 +2675,10 @@ function drawHUD(t) {
     font(8); ctx.fillStyle = '#ffe28a'; ctx.textAlign = 'left';
     ctx.fillText('¡F!', 104, 45);
   }
-  ctx.strokeStyle = '#37335c'; ctx.lineWidth = 1;
-  ctx.strokeRect(27.5, 38.5, 73, 6);
+  // Marco dorado biselado de la barra de SP.
+  const spGr = ctx.createLinearGradient(0, 38, 0, 45);
+  spGr.addColorStop(0, '#e9c877'); spGr.addColorStop(1, '#8a6a2c');
+  ctx.strokeStyle = spGr; ctx.lineWidth = 1; ctx.strokeRect(27.5, 38.5, 73, 6);
 
   // Groove/racha (G7c): barra fina bajo el SP, solo si hay racha. Al llenar el
   // umbral late y cambia a rojo-ámbar (buff de daño y velocidad activo).
@@ -2664,8 +2699,10 @@ function drawHUD(t) {
   const comp = DataDB.compas(RunState.compas);
   if (comp) {
     font(8); ctx.textAlign = 'left';
+    const txt = '♪ ' + comp.nombre + ' (C)';
+    const b = hudBanner(txt, 108, 20, { h: 14 });
     ctx.fillStyle = comp.color;
-    ctx.fillText('♪ ' + comp.nombre + ' (C)', 110, 31);
+    ctx.fillText(txt, b.tx, b.cy);
   }
 
   const hch = DataDB.hechizo(RunState.hechizo);
@@ -2694,14 +2731,16 @@ function drawHUD(t) {
     ctx.fillText((it?.nombre ?? '?')[0].toUpperCase(), ix + 5.5, iy + 9);
   });
 
-  // Etiqueta de piso: arriba a la derecha, corta (sin el prefijo de marca) para
-  // no invadir la fila de items/compás del HUD.
-  font(8); ctx.fillStyle = '#6c6193'; ctx.textAlign = 'right';
+  // Cartela de piso ornamentada arriba a la derecha (como "Piso 1 · Entrada").
   const label = {
     inicial: 'entrada', camara: 'cámara', galeria: 'galería', normal: 'sala',
     tesoro: 'tesoro', jefe: 'JEFE', tienda: 'tienda', maldita: 'MALDITA'
   }[cur?.type] ?? '';
-  ctx.fillText('piso ' + RunState.piso + ' · ' + label, VW - 8, 14);
+  font(8); ctx.textAlign = 'left';
+  const flTxt = 'Piso ' + RunState.piso + ' · ' + label;
+  const fb = hudBanner(flTxt, VW - 6, 4, { side: 'right', h: 14 });
+  ctx.fillStyle = '#e4d8b0';
+  ctx.fillText(flTxt, fb.tx, fb.cy);
 
   // Recordatorio de controles (solo teclado): abajo y centrado, unos segundos al
   // entrar a un piso. Antes iba fijo arriba a la derecha en fuente grande y se
