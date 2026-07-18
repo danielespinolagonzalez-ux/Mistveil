@@ -193,6 +193,9 @@
     "nearmiss_factor": 0.35,
     "nearmiss_cooldown_s": 1.6
   },
+  "ui": {
+    "hint_secs": 7
+  },
   "xp": {
     "base_piso": 55,
     "por_piso_extra": 15,

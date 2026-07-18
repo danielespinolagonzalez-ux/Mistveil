@@ -104,6 +104,7 @@ let mode = 'play';
 let showDebug = false;
 let fps = 60, fpsAcc = 0, fpsN = 0;
 let flashMsg = '', flashT = 0, flashSub = '';
+let hudHintT = 0; // recordatorio de controles: se muestra abajo unos segundos al entrar a un piso
 let trapdoorHintCd = 0;
 let freezeT = 0;   // péndulo quieto
 let slowmoT = 0, slowmoFactor = 1, slowmoBlue = false; // arena del tiempo (dorado) y bullet-time G5 (azul)
@@ -192,6 +193,7 @@ function newRun() {
   world.familiares = []; world.trails = []; world.artFx = [];
   pendingUpgrades = null;
   mode = 'play';
+  hudHintT = DataDB.balance.ui?.hint_secs ?? 7;
   placePlayerAtTop();
   floorMap.current.enter(world);
   world.player.onRoomEntered();
@@ -426,7 +428,7 @@ function drawBiomaExtras(t) {
       ctx.fillRect(x - 7, y - 8, 14, 14);
       font(10); ctx.textAlign = 'center';
       ctx.fillStyle = al.used ? '#5a5470' : { corazon: '#e0556b', fusion: '#b678e8', metronomo: '#7ee8e0', apuesta: '#ffd54f' }[al.kind];
-      ctx.fillText({ corazon: '♥', fusion: '⛓', metronomo: '△', apuesta: '◈' }[al.kind], x, y + 3);
+      ctx.fillText({ corazon: '♥', fusion: '◇', metronomo: '△', apuesta: '◈' }[al.kind], x, y + 3);
       if (!al.used && Math.hypot(p.x - al.x, p.y - al.y) < 26) {
         font(7); ctx.fillStyle = '#e9e2f5';
         const label = {
@@ -532,6 +534,7 @@ function descendFloor() {
   floorMap.current.enter(world);
   world.player.onRoomEntered();
   RunState.resetFloorStats();
+  hudHintT = DataDB.balance.ui?.hint_secs ?? 7;
   const bio = biomaDe(RunState.piso);
   if ((RunState.piso - 1) % 3 === 0 && bio) flash(bio.nombre.toUpperCase(), bio.sub);
   else flash('Piso ' + RunState.piso, 'La Torre desciende...');
@@ -626,23 +629,30 @@ function drawBalanceScreen() {
   }
   const steps = pb.rows.length + 2 + (pb.niveles ? 1 : 0);
   if (pb.contrato && pb.reveal > pb.rows.length) {
+    // La recompensa va en su propia línea: junta se salía del ancho de pantalla.
     font(9); ctx.textAlign = 'center';
     ctx.fillStyle = pb.contrato.ok ? '#7ec96b' : '#e0556b';
-    ctx.fillText('CONTRATO ' + (pb.contrato.ok ? 'CUMPLIDO' : 'FALLIDO') + ': ' + pb.contrato.nombre + (pb.contrato.ok ? '  (+1 engranaje, +15 ◆)' : ''), VW / 2, y + 6);
-    y += 16;
+    ctx.fillText('CONTRATO ' + (pb.contrato.ok ? 'CUMPLIDO' : 'FALLIDO') + ': ' + pb.contrato.nombre, VW / 2, y + 6);
+    y += 14;
+    if (pb.contrato.ok) {
+      font(8); ctx.fillStyle = '#7ec96b';
+      ctx.fillText('+1 engranaje · +15 ◆', VW / 2, y + 3);
+      y += 14;
+    }
   }
   if (pb.niveles && pb.reveal >= steps) {
     font(12); ctx.textAlign = 'center'; ctx.fillStyle = '#ffffff';
     ctx.fillText('¡NIVEL ' + pb.nivel + '!  +' + pb.niveles + ' engranaje' + (pb.niveles > 1 ? 's' : ''), VW / 2, y + 4);
     font(8); ctx.fillStyle = '#8d82ad';
-    ctx.fillText('Gástalo en la Esfera del Reloj (Tab)', VW / 2, y + 18);
+    ctx.fillText('Gástalo en la Esfera del Reloj (Tab)', VW / 2, y + 20);
+    y += 34;
     for (const u of pb.unlocks ?? []) {
       const l = etiqueta(u);
       font(9); ctx.fillStyle = '#7ee8e0';
-      ctx.fillText('DESBLOQUEADO: ' + l.titulo, VW / 2, y + 32);
-      y += 13;
+      ctx.fillText('DESBLOQUEADO: ' + l.titulo, VW / 2, y);
+      y += 14;
     }
-    y += 28;
+    y += 12;
   }
   if (pb.reveal >= steps) {
     font(9); ctx.textAlign = 'center';
@@ -1584,6 +1594,7 @@ function update(dt) {
 
   FX.update(dt);
   if (flashT > 0) flashT -= dt;
+  if (hudHintT > 0) hudHintT -= dt;
 }
 
 // ---------- Render ----------
@@ -1643,6 +1654,32 @@ function drawMist(t, strength = 1) {
 let hurtFlashT = 0; // pulso rojo en los bordes al recibir daño
 
 function font(size) { ctx.font = `${size * 2}px VT323, monospace`; }
+
+// Ayudas de texto medido (VT323 no es monoespaciada del todo: medir evita solapes).
+// El mayor tamaño de la lista (descendente) cuyo texto quepa en maxW; fija esa fuente.
+function fitFont(text, maxW, sizes) {
+  for (const s of sizes) { font(s); if (ctx.measureText(text).width <= maxW) return s; }
+  font(sizes[sizes.length - 1]); return sizes[sizes.length - 1];
+}
+// Parte en líneas que quepan en maxW (con la fuente ACTUAL); corta a maxLines.
+function wrapText(text, maxW, maxLines = 3) {
+  const words = String(text).split(' ');
+  const lines = []; let cur = '';
+  for (const w of words) {
+    const test = cur ? cur + ' ' + w : w;
+    if (cur && ctx.measureText(test).width > maxW) { lines.push(cur); cur = w; if (lines.length >= maxLines) return lines; }
+    else cur = test;
+  }
+  if (cur) lines.push(cur);
+  return lines;
+}
+// Recorta con '…' si no cabe en maxW (con la fuente ACTUAL).
+function clipText(text, maxW) {
+  if (ctx.measureText(String(text)).width <= maxW) return String(text);
+  let s = String(text);
+  while (s.length > 1 && ctx.measureText(s + '…').width > maxW) s = s.slice(0, -1);
+  return s + '…';
+}
 
 // Overlay de hitboxes (F3): círculo azul = cuerpo, verde = hurtbox real del jugador
 function drawHitboxes() {
@@ -2657,16 +2694,30 @@ function drawHUD(t) {
     ctx.fillText((it?.nombre ?? '?')[0].toUpperCase(), ix + 5.5, iy + 9);
   });
 
-  font(9); ctx.fillStyle = '#6c6193'; ctx.textAlign = 'right';
+  // Etiqueta de piso: arriba a la derecha, corta (sin el prefijo de marca) para
+  // no invadir la fila de items/compás del HUD.
+  font(8); ctx.fillStyle = '#6c6193'; ctx.textAlign = 'right';
   const label = {
     inicial: 'entrada', camara: 'cámara', galeria: 'galería', normal: 'sala',
     tesoro: 'tesoro', jefe: 'JEFE', tienda: 'tienda', maldita: 'MALDITA'
   }[cur?.type] ?? '';
-  ctx.fillText((PORTRAIT ? 'piso ' : 'MISTVEIL · LA TORRE · piso ') + RunState.piso + ' · ' + label, VW - 10, 16);
-  if (!Input.touchState().enabled) {
-    ctx.fillText(Input.scheme() === 'flechas'
+  ctx.fillText('piso ' + RunState.piso + ' · ' + label, VW - 8, 14);
+
+  // Recordatorio de controles (solo teclado): abajo y centrado, unos segundos al
+  // entrar a un piso. Antes iba fijo arriba a la derecha en fuente grande y se
+  // solapaba con corazones/oro/SP/compás/items (queja de Daniel).
+  if (hudHintT > 0 && !Input.touchState().enabled) {
+    const hint = Input.scheme() === 'flechas'
       ? 'Flechas mover · WASD disparar · E parada · Q arte · Tab equipo'
-      : 'WASD mover · ratón disparar · E parada · Q arte · Tab equipo', VW - 10, 30);
+      : 'WASD mover · clic disparar · E parada · Q arte · Tab equipo';
+    const a = Math.min(1, hudHintT / 1.5);
+    font(7); ctx.textAlign = 'center';
+    const tw = ctx.measureText(hint).width;
+    const hy = VH - 12;
+    ctx.fillStyle = `rgba(10,8,20,${0.5 * a})`;
+    ctx.fillRect(VW / 2 - tw / 2 - 6, hy - 8, tw + 12, 12);
+    ctx.fillStyle = `rgba(159,148,192,${a})`;
+    ctx.fillText(hint, VW / 2, hy);
   }
 
   drawBiomaExtras(t);
@@ -3027,8 +3078,12 @@ function renderPueblo(t) {
   ctx.fillStyle = '#b09be0';
   ctx.fillText('◆ ' + GameState.memoria, 12, 18);
   if (RunState.bendiciones.length) {
-    ctx.fillStyle = '#d8a85c';
-    ctx.fillText('🍞 pan', 12, 32);
+    // Hogaza dibujada (🍞 salía como tofu en VT323).
+    ctx.fillStyle = '#c98a3c';
+    ctx.beginPath(); ctx.ellipse(17, 29, 6, 3.4, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#e6bd84'; ctx.fillRect(14, 27.6, 6, 1.1);
+    ctx.fillStyle = '#d8a85c'; ctx.textAlign = 'left';
+    ctx.fillText('pan', 27, 32);
   }
   font(9); ctx.textAlign = 'right'; ctx.fillStyle = '#6c6193';
   ctx.fillText('EL PUEBLO · la puerta del Reloj espera al este', VW - 10, 16);
@@ -3186,14 +3241,15 @@ function drawOverlay() {
       ctx.strokeRect(x + 1, y + 1, cw - 2, chh - 2);
       font(11); ctx.fillStyle = '#ffd54f';
       ctx.fillText(String(i + 1), x + cw / 2, y + 24);
-      font(10); ctx.fillStyle = '#e9e2f5';
+      // Título: el mayor tamaño que quepa en la tarjeta (antes "Lágrimas afiladas"
+      // se salía por los lados de la carta).
+      fitFont(u.nombre, cw - 12, [10, 9, 8]); ctx.fillStyle = '#e9e2f5';
       ctx.fillText(u.nombre, x + cw / 2, y + (PORTRAIT ? 50 : 52));
+      // Descripción: ajuste por medida real, no por número de caracteres.
       font(8); ctx.fillStyle = '#9c8fc0';
-      const words = u.desc.split(' ');
-      let l1 = '', l2 = '';
-      for (const w of words) { if ((l1 + w).length < (PORTRAIT ? 34 : 22) && !l2) l1 += w + ' '; else l2 += w + ' '; }
-      ctx.fillText(l1.trim(), x + cw / 2, y + (PORTRAIT ? 74 : 76));
-      if (l2) ctx.fillText(l2.trim(), x + cw / 2, y + (PORTRAIT ? 90 : 92));
+      const lines = wrapText(u.desc, cw - 14, PORTRAIT ? 2 : 3);
+      let ly = y + (PORTRAIT ? 74 : 74);
+      for (const ln of lines) { ctx.fillText(ln, x + cw / 2, ly); ly += 11; }
     });
     return;
   }
@@ -3211,7 +3267,7 @@ function drawOverlay() {
       ctx.fillText(um ? '✋ MODO UNA MANO: SÍ' : '✋ MODO UNA MANO: NO', VW / 2, VH / 2 + 60);
     }
   } else if (mode === 'dead') {
-    font(18); ctx.fillStyle = '#e9e2f5';
+    fitFont(t9('ui.muerte'), VW - 40, [18, 16, 14]); ctx.fillStyle = '#e9e2f5';
     ctx.fillText(t9('ui.muerte'), VW / 2, VH / 2 - 12);
     font(11); ctx.fillStyle = '#9c8fc0';
     ctx.fillText(t9('ui.muerte_sub'), VW / 2, VH / 2 + 14);
@@ -3224,7 +3280,7 @@ function drawOverlay() {
       ctx.fillText('La Torre recuerda: +' + lastDeathXP.xp + ' XP' + (lastDeathXP.niveles ? ' · ¡Nivel ' + lastDeathXP.nivel + '! +' + lastDeathXP.niveles + ' engranaje' + (lastDeathXP.niveles > 1 ? 's' : '') : ''), VW / 2, VH / 2 + 84);
     }
   } else if (mode === 'victory') {
-    font(18); ctx.fillStyle = '#ffd54f';
+    fitFont('El Reloj de las Almas se detiene', VW - 40, [18, 16, 14, 13]); ctx.fillStyle = '#ffd54f';
     ctx.fillText('El Reloj de las Almas se detiene', VW / 2, VH / 2 - 12);
     font(11); ctx.fillStyle = '#9c8fc0';
     ctx.fillText('Pip recuerda. Por ahora, es suficiente.', VW / 2, VH / 2 + 14);
@@ -3365,10 +3421,15 @@ function render() {
     ctx.fillRect(0, 0, VW, VH);
   }
 
-  drawHUD(t);
-  tut.draw(ctx, t);
-  drawTouchUI(t);
-  if (Input.touchState().enabled) drawTouchEcos();
+  // HUD, tutorial y controles táctiles SOLO en juego: en 'upgrade/dead/victory/
+  // paused' el overlay oscuro los tapa a medias y se veían corazones/SP/flash
+  // "sangrando" por detrás (queja de textos solapados).
+  if (mode === 'play') {
+    drawHUD(t);
+    tut.draw(ctx, t);
+    drawTouchUI(t);
+    if (Input.touchState().enabled) drawTouchEcos();
+  }
   drawOverlay();
 }
 

@@ -1,3 +1,5 @@
 .DS_Store
 *.tmp
 node_modules/
+# Build autocontenido (se regenera con: node tools/build_artifact.mjs)
+mistveil_bundle.html

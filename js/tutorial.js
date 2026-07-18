@@ -97,6 +97,19 @@ export class Tutorial {
     for (const e of this.d.world.enemies) if (!e.health.dead) e.die();
   }
 
+  // Parte un texto en líneas que quepan en maxW (con la fuente ACTUAL fijada).
+  _wrap(g, text, maxW) {
+    const words = String(text).split(' ');
+    const lines = []; let cur = '';
+    for (const wd of words) {
+      const test = cur ? cur + ' ' + wd : wd;
+      if (cur && g.measureText(test).width > maxW) { lines.push(cur); cur = wd; }
+      else cur = test;
+    }
+    if (cur) lines.push(cur);
+    return lines;
+  }
+
   draw(g, t) {
     if (!this.active) return;
     const { VW, font } = this.d;
@@ -104,16 +117,22 @@ export class Tutorial {
     const f = fases[this.fase];
     if (!f) return;
     const w = Math.min(380, VW - 24), x = VW / 2 - w / 2, y = 34;
-    g.fillStyle = 'rgba(14,10,28,0.88)'; g.fillRect(x, y, w, 44);
+    // El subtítulo se ajusta a varias líneas (antes se salía del cuadro) y la
+    // caja crece según el número de líneas.
+    font(7);
+    const subLines = this._wrap(g, f.sub, w - 16).slice(0, 3);
+    const boxH = 30 + subLines.length * 10 + 12;
+    g.fillStyle = 'rgba(14,10,28,0.88)'; g.fillRect(x, y, w, boxH);
     g.strokeStyle = this.doneT > 0 ? '#7ec96b' : '#5a4fa0'; g.lineWidth = 1.5;
-    g.strokeRect(x + 0.5, y + 0.5, w - 1, 43);
+    g.strokeRect(x + 0.5, y + 0.5, w - 1, boxH - 1);
     font(10); g.textAlign = 'left';
     g.fillStyle = this.doneT > 0 ? '#7ec96b' : '#ffd54f';
     g.fillText((this.doneT > 0 ? '✓ ' : '') + f.titulo, x + 8, y + 15);
     font(7); g.fillStyle = '#b9aee0';
-    g.fillText(f.sub, x + 8, y + 27);
+    let sy = y + 26;
+    for (const ln of subLines) { g.fillText(ln, x + 8, sy); sy += 10; }
     g.fillStyle = '#6c6193';
-    g.fillText('Esc: saltar tutorial', x + 8, y + 38);
+    g.fillText('Esc: saltar tutorial', x + 8, sy + 1);
     // progreso
     g.textAlign = 'right'; font(9); g.fillStyle = '#e9e2f5';
     if (f.cuenta) g.fillText(f.cuenta(), x + w - 8, y + 16);
@@ -121,10 +140,10 @@ export class Tutorial {
       g.fillStyle = '#2a2340'; g.fillRect(x + w - 68, y + 10, 60, 5);
       g.fillStyle = '#7ee8e0'; g.fillRect(x + w - 68, y + 10, 60 * f.prog(), 5);
     }
-    // pips de fases
+    // pips de fases (esquina inferior derecha del cuadro)
     for (let i = 0; i < fases.length; i++) {
       g.fillStyle = i < this.fase ? '#ffd54f' : i === this.fase ? '#7ee8e0' : '#3a3358';
-      g.fillRect(x + w - 8 - (fases.length - i) * 9, y + 33, 6, 4);
+      g.fillRect(x + w - 8 - (fases.length - i) * 9, y + boxH - 9, 6, 4);
     }
   }
 }

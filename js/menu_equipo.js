@@ -162,6 +162,21 @@ export class MenuEquipo {
     g.strokeStyle = '#3a3358'; g.lineWidth = 1; g.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
     if (title) { this.font(8); g.textAlign = 'left'; g.fillStyle = '#8d82ad'; g.fillText(title, x + 6, y + 12); }
   }
+  // Recorta un texto a un ancho máximo (con la fuente ACTUAL ya fijada) añadiendo
+  // '…' si no cabe. Evita solapes cuando un nombre es más largo de lo previsto.
+  _clip(str, maxW) {
+    const g = this.g;
+    if (g.measureText(str).width <= maxW) return str;
+    let s = str;
+    while (s.length > 1 && g.measureText(s + '…').width > maxW) s = s.slice(0, -1);
+    return s + '…';
+  }
+  // Candado dibujado (la fuente VT323 no tiene emoji: 🔒 salía como tofu).
+  _lock(g, x, y, col) {
+    g.fillStyle = col; g.fillRect(x, y - 3, 6, 5);
+    g.strokeStyle = col; g.lineWidth = 1;
+    g.beginPath(); g.arc(x + 3, y - 3, 2, Math.PI, 0); g.stroke();
+  }
 
   // ---------- draw ----------
   draw(t) {
@@ -172,14 +187,21 @@ export class MenuEquipo {
     // cabecera
     this.font(10); g.textAlign = 'left'; g.fillStyle = '#e9e2f5';
     g.fillText('PIP — APRENDIZ DE RELOJERO', 16, 22);
+    // Trío de la cabecera (engranajes · nivel · oro): se coloca de derecha a
+    // izquierda MIDIENDO cada texto, para que nunca se solapen con números grandes.
     g.textAlign = 'right'; this.font(9);
-    this._gear(g, VW - 148, 17, 5, '#ffd54f');
-    g.fillStyle = '#ffd54f'; g.fillText('× ' + GameState.engranajes, VW - 116, 21);
-    g.fillStyle = '#b9aee0'; g.fillText('Nv. ' + GameState.nivel, VW - 70, 21);
-    g.fillStyle = '#c7a266'; g.fillText(RunState.oro + ' oro', VW - 16, 21);
+    let rx = VW - 16;
+    const oro = RunState.oro + ' oro';
+    g.fillStyle = '#c7a266'; g.fillText(oro, rx, 21); rx -= g.measureText(oro).width + 12;
+    const niv = 'Nv. ' + GameState.nivel;
+    g.fillStyle = '#b9aee0'; g.fillText(niv, rx, 21); rx -= g.measureText(niv).width + 12;
+    const eng = '× ' + GameState.engranajes;
+    g.fillStyle = '#ffd54f'; g.fillText(eng, rx, 21); rx -= g.measureText(eng).width + 9;
+    this._gear(g, rx - 5, 17, 5, '#ffd54f');
+    const barL = rx - 12; // la barra de XP arranca a la izquierda del engranaje
     const need = xpParaNivel(GameState.nivel);
-    g.fillStyle = '#2a2340'; g.fillRect(VW - 148, 24, 132, 3);
-    g.fillStyle = '#7a5fd0'; g.fillRect(VW - 148, 24, 132 * Math.min(1, GameState.xp / need), 3);
+    g.fillStyle = '#2a2340'; g.fillRect(barL, 24, VW - 16 - barL, 3);
+    g.fillStyle = '#7a5fd0'; g.fillRect(barL, 24, (VW - 16 - barL) * Math.min(1, GameState.xp / need), 3);
     // pestañas
     for (let i = 0; i < 3; i++) {
       const r = this._tabRect(i);
@@ -241,14 +263,19 @@ export class MenuEquipo {
         g.fillText((eq ? '▶ ' : '') + it.nombre, x + 5, ry + 6);
         this.font(7);
         if (c === 0) {
+          // Elemento a la izda, "Nv · SP" a la dcha: se dibuja primero la dcha,
+          // se mide, y se recorta el nombre del elemento para que no lo pise.
           const el = DataDB.elementos[it.elemento];
-          g.fillStyle = el?.color ?? '#8d82ad'; g.fillText(el?.nombre ?? '', x + 5, ry + 15);
-          g.textAlign = 'right'; g.fillStyle = '#8d82ad';
-          g.fillText('Nv.' + nivelHechizo(it.id) + ' · ' + it.coste_sp + ' SP', x + w - 6, ry + 15);
+          const der = 'Nv.' + nivelHechizo(it.id) + ' · ' + it.coste_sp + ' SP';
+          g.textAlign = 'right'; g.fillStyle = '#8d82ad'; g.fillText(der, x + w - 6, ry + 15);
+          const maxEl = (x + w - 6) - g.measureText(der).width - 8 - (x + 5);
+          g.textAlign = 'left'; g.fillStyle = el?.color ?? '#8d82ad';
+          g.fillText(this._clip(el?.nombre ?? '', maxEl), x + 5, ry + 15);
         } else if (c === 1) {
           const bloqueado = !desbloqueado('compas', it.id);
           if (bloqueado) {
-            g.fillStyle = '#5a5470'; g.fillText('🔒 bloqueado', x + 5, ry + 15);
+            this._lock(g, x + 6, ry + 13, '#5a5470');
+            g.fillStyle = '#5a5470'; g.textAlign = 'left'; g.fillText('bloqueado', x + 15, ry + 15);
             g.textAlign = 'right'; g.fillText('Nv.' + nivelDe('compas', it.id), x + w - 6, ry + 15);
           } else {
             g.fillStyle = it.color ?? '#8d82ad';
@@ -271,7 +298,7 @@ export class MenuEquipo {
     if (it) {
       g.fillStyle = '#e9e2f5'; g.fillText(it.nombre, 22, dy + 11);
       this.font(7); g.fillStyle = '#8d82ad';
-      g.fillText((it.desc ?? it.descripcion ?? '').slice(0, 92), 22, dy + 21);
+      g.fillText(this._clip(it.desc ?? it.descripcion ?? '', VW - 44), 22, dy + 21);
     }
     const syn = this.p?.mods?.sinergias ?? [];
     if (syn.length) { this.font(7); g.textAlign = 'right'; g.fillStyle = '#ffd54f'; g.fillText('SINERGIA: ' + syn.join(' · '), VW - 22, dy + 11); }
@@ -284,8 +311,9 @@ export class MenuEquipo {
     g.beginPath(); g.arc(b.cx, b.cy, b.r2 + 12, 0, 7); g.stroke();
     g.setLineDash([2, 4]); g.beginPath(); g.arc(b.cx, b.cy, b.r1 * 0.55, 0, 7); g.stroke(); g.setLineDash([]);
     this.font(9); g.textAlign = 'center'; g.fillStyle = 'rgba(185,174,224,0.5)';
-    const rom = { 0: 'XII', 3: 'III', 6: 'VI', 9: 'IX' };
-    for (const h of [0, 3, 6, 9]) {
+    // Sin el 'VI' (6 en punto): caería detrás del panel de detalle inferior.
+    const rom = { 0: 'XII', 3: 'III', 9: 'IX' };
+    for (const h of [0, 3, 9]) {
       const a = h / 12 * Math.PI * 2 - Math.PI / 2;
       g.fillText(rom[h], b.cx + Math.cos(a) * (b.r2 + 24), b.cy + Math.sin(a) * (b.r2 + 24) + 3);
     }
@@ -354,7 +382,7 @@ export class MenuEquipo {
     g.fillStyle = CAT_COLOR[n.cat] ?? '#e9e2f5';
     g.fillText(n.nombre, 22, dy + 11);
     this.font(7); g.fillStyle = '#8d82ad';
-    g.fillText(n.desc.slice(0, 92), 22, dy + 21);
+    g.fillText(this._clip(n.desc, this.VW - 44), 22, dy + 21);
     this.font(8); g.textAlign = 'right';
     if (nodoActivado(n.id)) { g.fillStyle = '#ffd54f'; g.fillText('ACTIVADO', this.VW - 22, dy + 11); }
     else if (!nodoDisponible(n.id)) { g.fillStyle = '#5a5470'; g.fillText('fuera de alcance', this.VW - 22, dy + 11); }
@@ -389,7 +417,7 @@ export class MenuEquipo {
       this.font(8); g.textAlign = 'left'; g.fillStyle = '#8d82ad'; g.fillText(r[0], 22, ry);
       g.textAlign = 'right';
       const better = r[3] ? r[2] < r[1] - 1e-9 : r[2] > r[1] + 1e-9;
-      g.fillStyle = '#5a5470'; g.fillText(fmt(r[1]), 16 + w - 54, ry);
+      g.fillStyle = '#5a5470'; g.fillText(fmt(r[1]), 16 + w - 70, ry);
       g.fillStyle = better ? '#7ec96b' : '#e9e2f5'; g.fillText(fmt(r[2]), 16 + w - 8, ry);
     });
     // derecha: niveles de todo
@@ -407,21 +435,25 @@ export class MenuEquipo {
     for (const h of DataDB.hechizos.hechizos) {
       const uso = GameState.usoHechizos[h.id] ?? 0;
       const next = ths.hechizo_niveles.find(x => uso < x);
-      this.font(8); g.textAlign = 'left';
-      g.fillStyle = RunState.tomos.includes(h.id) ? '#e9e2f5' : '#5a5470';
-      g.fillText(h.nombre + '  Nv.' + nivelHechizo(h.id), x2 + 6, ry);
+      // usos a la dcha (se mide), nombre+Nv a la izda recortado para no solaparse.
       this.font(7); g.textAlign = 'right'; g.fillStyle = '#8d82ad';
-      g.fillText(next ? uso + '/' + next + ' usos' : 'MAESTRÍA', x2 + w - 8, ry);
+      const u = next ? uso + '/' + next + ' usos' : 'MAESTRÍA';
+      g.fillText(u, x2 + w - 8, ry);
+      g.textAlign = 'left'; g.fillStyle = RunState.tomos.includes(h.id) ? '#e9e2f5' : '#5a5470';
+      const maxN = (x2 + w - 8) - g.measureText(u).width - 8 - (x2 + 6);
+      g.fillText(this._clip(h.nombre + '  Nv.' + nivelHechizo(h.id), maxN), x2 + 6, ry);
       ry += 12;
     }
     ry += 5;
     for (const c of DataDB.compases.compases) {
       const uso = GameState.usoCompases[c.id] ?? 0;
       const next = ths.compas_niveles.find(x => uso < x);
-      this.font(8); g.textAlign = 'left'; g.fillStyle = '#e9e2f5';
-      g.fillText(c.nombre + '  Nv.' + compasNivel(c.id), x2 + 6, ry);
       this.font(7); g.textAlign = 'right'; g.fillStyle = '#8d82ad';
-      g.fillText(next ? uso + '/' + next + ' perfectos' : 'MAESTRÍA', x2 + w - 8, ry);
+      const u = next ? uso + '/' + next + ' perfectos' : 'MAESTRÍA';
+      g.fillText(u, x2 + w - 8, ry);
+      g.textAlign = 'left'; g.fillStyle = '#e9e2f5';
+      const maxN = (x2 + w - 8) - g.measureText(u).width - 8 - (x2 + 6);
+      g.fillText(this._clip(c.nombre + '  Nv.' + compasNivel(c.id), maxN), x2 + 6, ry);
       ry += 12;
     }
     const fs = RunState.floorStats;

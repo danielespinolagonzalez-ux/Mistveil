@@ -815,12 +815,14 @@ export class RelojBatalla {
       this._hint(g, cmds[this.menuIdx].sub + ' · toca otra vez para confirmar');
       return;
     }
-    const x = 12, y = this.VH - 104, w = 212, h = 76;
+    // Panel más alto (crece hacia arriba, mismo borde inferior) y filas a 14px:
+    // antes las 4 órdenes + sub + postura iban a 12px y se solapaban entre sí.
+    const x = 12, y = this.VH - 118, w = 212, h = 90;
     this._panel(g, x, y, w, h);
     const cmds = this._commands();
     g.textAlign = 'left';
     cmds.forEach((c, i) => {
-      const cy = y + 14 + i * 12;
+      const cy = y + 16 + i * 14;
       const sel = i === this.menuIdx && !dim;
       this.font(9);
       g.fillStyle = c.off ? '#5a5470' : sel ? '#ffd54f' : '#e9e2f5';
@@ -829,9 +831,9 @@ export class RelojBatalla {
     });
     // descripción del comando seleccionado + postura
     this.font(7); g.fillStyle = '#8d82ad';
-    g.fillText(cmds[this.menuIdx].sub, x + 6, y + h - 14);
+    g.fillText(cmds[this.menuIdx].sub, x + 6, y + h - 15);
     g.fillStyle = this.compas.color;
-    g.fillText('Postura [C]: ' + this.compas.nombre, x + 6, y + h - 4);
+    g.fillText('Postura [C]: ' + this.compas.nombre, x + 6, y + h - 5);
   }
 
   _drawSpellMenu(g) {
