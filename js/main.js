@@ -3042,7 +3042,8 @@ function enterPueblo() {
   p.x = PLAZA.x + 40; p.y = PLAZA.y + PLAZA.h * 0.62;
   p.vx = p.vy = 0;
   p.health.hp = Math.max(p.health.hp, 2); // Pip se reenciende
-  cam.x = puebloCamX(); cam.y = PLAZA.y + PLAZA.h / 2 + 30 - (VHz / 2) / KY;
+  // -80 (antes +30): baja a Pip y los NPCs sobre el adoquinado del fondo pintado
+  cam.x = puebloCamX(); cam.y = PLAZA.y + PLAZA.h / 2 - 80 - (VHz / 2) / KY;
   mode = 'pueblo';
 }
 function puebloCamX() {
@@ -3117,34 +3118,37 @@ function nearestNPC() {
   return best;
 }
 function renderPueblo(t) {
-  // Cielo del atardecer perpetuo
-  const sky = ctx.createLinearGradient(0, 0, 0, VH);
-  sky.addColorStop(0, '#141126');
-  sky.addColorStop(0.5, '#231c3e');
-  sky.addColorStop(1, '#3a2c50');
-  ctx.fillStyle = sky;
-  ctx.fillRect(0, 0, VW, VH);
-  // estrellas y luna-engranaje
-  for (let i = 0; i < 30; i++) {
-    const sx2 = ((i * 89) % VW), sy2 = ((i * 53) % Math.floor(VH * 0.5));
-    ctx.fillStyle = `rgba(220,215,240,${0.15 + (i % 4) * 0.08 + Math.sin(t * 2 + i) * 0.05})`;
-    ctx.fillRect(sx2, sy2, 1.5, 1.5);
+  const fondoP = Sprites.get('fondo_pueblo');
+  // Fondo pintado a pantalla completa (estilo FFIX: escenario fijo + sprites
+  // encima); leve parallax horizontal con la cámara. La cámara del pueblo está
+  // ajustada para que Pip y los NPCs caminen sobre el adoquinado inferior.
+  if (fondoP) {
+    const par = (cam.x - puebloCamX()) * 0.06; // parallax sutil
+    // Cubre el lienzo con margen; recorta casas arriba, adoquinado abajo
+    const w = VW * 1.14, h = w * fondoP.height / fondoP.width;
+    ctx.drawImage(fondoP, Math.round((VW - w) / 2 - par), Math.round(VH - h + 6), Math.round(w), Math.round(h));
+  } else {
+    // Cielo del atardecer perpetuo (fallback procedural)
+    const sky = ctx.createLinearGradient(0, 0, 0, VH);
+    sky.addColorStop(0, '#141126');
+    sky.addColorStop(0.5, '#231c3e');
+    sky.addColorStop(1, '#3a2c50');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, VW, VH);
+    for (let i = 0; i < 30; i++) {
+      const sx2 = ((i * 89) % VW), sy2 = ((i * 53) % Math.floor(VH * 0.5));
+      ctx.fillStyle = `rgba(220,215,240,${0.15 + (i % 4) * 0.08 + Math.sin(t * 2 + i) * 0.05})`;
+      ctx.fillRect(sx2, sy2, 1.5, 1.5);
+    }
+    ctx.fillStyle = '#e8dfc8';
+    ctx.beginPath(); ctx.arc(VW * 0.18, 52, 15, 0, 7); ctx.fill();
+    ctx.fillStyle = '#d0c5a8';
+    ctx.beginPath(); ctx.arc(VW * 0.18 - 4, 48, 4, 0, 7); ctx.fill();
   }
-  ctx.fillStyle = '#e8dfc8';
-  ctx.beginPath(); ctx.arc(VW * 0.18, 52, 15, 0, 7); ctx.fill();
-  ctx.fillStyle = '#d0c5a8';
-  ctx.beginPath(); ctx.arc(VW * 0.18 - 4, 48, 4, 0, 7); ctx.fill();
 
   ctx.save();
   ctx.scale(ZOOM, ZOOM);
-  // Fondo pintado del pueblo (estilo FFIX: escenario pintado + sprites encima);
-  // si no existe, el telón y adoquines procedurales de siempre.
-  const fondoP = Sprites.get('fondo_pueblo');
-  if (fondoP) {
-    const x0 = SX(PLAZA.x - 40), x1 = SX(PLAZA.x + PLAZA.w + 40);
-    const w = x1 - x0, h = Math.round(w * fondoP.height / fondoP.width);
-    ctx.drawImage(fondoP, x0, SY(PLAZA.y + PLAZA.h) + 22 - h, w, h);
-  } else {
+  if (!fondoP) {
     drawPuebloBackdrop(ctx, SX, SY, t, VW, VH);
     drawPlazaGround(ctx, SX, SY, KY);
   }
@@ -3211,9 +3215,12 @@ function renderPueblo(t) {
     ctx.fillStyle = `rgba(207,198,232,${Math.min(1, puebloAviso.t)})`;
     ctx.fillText(puebloAviso.sub, VW / 2, 86);
   }
-  // HUD mínimo del pueblo
+  // HUD mínimo del pueblo — velo superior para leer el texto sobre el fondo pintado
+  const puG = ctx.createLinearGradient(0, 0, 0, 30);
+  puG.addColorStop(0, 'rgba(9,7,18,0.6)'); puG.addColorStop(1, 'rgba(9,7,18,0)');
+  ctx.fillStyle = puG; ctx.fillRect(0, 0, VW, 30);
   font(9); ctx.textAlign = 'left';
-  ctx.fillStyle = '#b09be0';
+  ctx.fillStyle = '#d8cef0';
   ctx.fillText('◆ ' + GameState.memoria, 12, 18);
   if (RunState.bendiciones.length) {
     // Hogaza dibujada (🍞 salía como tofu en VT323).
@@ -3223,7 +3230,7 @@ function renderPueblo(t) {
     ctx.fillStyle = '#d8a85c'; ctx.textAlign = 'left';
     ctx.fillText('pan', 27, 32);
   }
-  font(9); ctx.textAlign = 'right'; ctx.fillStyle = '#6c6193';
+  font(9); ctx.textAlign = 'right'; ctx.fillStyle = '#b3a6d6';
   ctx.fillText('EL PUEBLO · la puerta del Reloj espera al este', VW - 10, 16);
 }
 
@@ -3632,6 +3639,13 @@ function paintFatal(err) {
     piso: (n = 4) => { RunState.piso = n - 1; descendFloor(); return 'piso ' + RunState.piso + ' · ' + (floorMap.current?.bioma?.nombre ?? ''); },
     // Sube la racha (pruebas de Groove/buff G7c)
     groove: (n = 100) => { world.player?.addGroove(n); return { groove: Math.round(world.player?.groove ?? 0), buff: world.player?.grooveBuffed }; },
+    // Posiciones en pantalla de Pip y NPCs (ajuste de layout del pueblo)
+    pos: () => {
+      const p = world.player;
+      const r = { pip: p ? [Math.round(SX(p.x)), Math.round(SY(p.y))] : null, vw: VW, vh: VH };
+      if (mode === 'pueblo') r.npcs = NPCS.map(n => [n.id, Math.round(SX(n.x)), Math.round(SY(n.y))]);
+      return r;
+    },
     // Abre el diálogo de un NPC del pueblo por id (pruebas de retratos/diálogos)
     hablar: (id = 'margo') => {
       const npc = NPCS.find(n => n.id === id);

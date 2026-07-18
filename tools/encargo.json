@@ -552,7 +552,8 @@
       "id": "fondo_pueblo",
       "tipo": "textura",
       "maxDim": 1024,
-      "sujeto": "wide painted JRPG town-square backdrop, three-quarter top-down: a cobblestone plaza at perpetual dusk surrounded along the top and sides by crooked timber-and-brass clockmaker houses with warm lit windows and hanging lanterns; a market stall with striped awning at the LEFT; an elegant lamppost terrace upper-middle; a small workshop corner at the RIGHT; the CENTER of the plaza open and empty; NO people, NO animals, no text. 2:1 aspect"
+      "sujeto": "wide painted JRPG town-square backdrop, three-quarter top-down: a cobblestone plaza at perpetual dusk surrounded along the top and sides by crooked timber-and-brass clockmaker houses with warm lit windows and hanging lanterns; a market stall with striped awning at the LEFT; an elegant lamppost terrace upper-middle; a small workshop corner at the RIGHT; the CENTER of the plaza open and empty; NO people, NO animals, no text. 2:1 aspect",
+      "estado": "hecho"
     }
   ]
 }

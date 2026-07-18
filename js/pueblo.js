@@ -23,7 +23,7 @@ export const CONTRATOS = [
 // Cada NPC: lines() → array de {who, text}; onDone() → {accion?} y aplica beneficios.
 export const NPCS = [
   {
-    id: 'margo', nombre: 'Margo', x: P.x + 88, y: P.y + 78, r: 14,
+    id: 'margo', nombre: 'Margo', x: P.x + 150, y: P.y + 168, r: 14,
     lines() {
       const l = [
         { who: 'MARGO', text: t9('dlg.margo.intro.1') },
@@ -44,7 +44,7 @@ export const NPCS = [
     }
   },
   {
-    id: 'vesper', nombre: 'Lady Vesper', x: P.x + 300, y: P.y + 58, r: 14,
+    id: 'vesper', nombre: 'Lady Vesper', x: P.x + 70, y: P.y + 132, r: 14,
     lines() {
       const primera = GameState.stats.muertes === 0;
       return primera ? [
@@ -60,7 +60,7 @@ export const NPCS = [
     onDone() { return { accion: 'santuario' }; }
   },
   {
-    id: 'hermanos', nombre: 'Hermanos Nº7 y Nº12', x: P.x + 424, y: P.y + 96, r: 16,
+    id: 'hermanos', nombre: 'Hermanos Nº7 y Nº12', x: P.x + 470, y: P.y + 176, r: 16,
     lines() {
       const m = GameState.stats.muertes;
       const l = [
@@ -83,7 +83,7 @@ export const NPCS = [
     }
   },
   {
-    id: 'tablon', nombre: 'Tablón', x: P.x + 210, y: P.y + 108, r: 12,
+    id: 'tablon', nombre: 'Tablón', x: P.x + 250, y: P.y + 140, r: 12,
     lines() {
       GameState.flags = GameState.flags ?? {};
       const idx = (GameState.flags.ate_idx ?? 0) % 3;
@@ -109,7 +109,7 @@ export const NPCS = [
     }
   },
   {
-    id: 'redoble', nombre: 'El Redoble', x: P.x + 150, y: P.y + 132, r: 16,
+    id: 'redoble', nombre: 'El Redoble', x: P.x + 360, y: P.y + 150, r: 16,
     lines() {
       const r = GameState.ligaRango ?? 0;
       const rivales = ['"La Mecha"', '"Doce Agujas"', '"El Coro de Sebo"', '"Polvo y Péndulo"', '"Las Gemelas"'];
@@ -124,7 +124,7 @@ export const NPCS = [
     onDone() { return { accion: 'batalla', encuentro: 'liga' }; }
   },
   {
-    id: 'gremio', nombre: 'Tablón del Gremio', x: P.x + 350, y: P.y + 150, r: 14,
+    id: 'gremio', nombre: 'Tablón del Gremio', x: P.x + 300, y: P.y + 178, r: 14,
     lines() {
       if (RunState.contrato) {
         return [
@@ -148,7 +148,7 @@ export const NPCS = [
     }
   },
   {
-    id: 'puerta', nombre: 'Puerta del Reloj', x: P.x + P.w - 34, y: P.y + 64, r: 20,
+    id: 'puerta', nombre: 'Puerta del Reloj', x: P.x + P.w - 24, y: P.y + 120, r: 20,
     lines() {
       return [
         { who: 'PIP', text: 'Si voy a d-detenerme... quiero detenerme habiendo servido de algo.' },

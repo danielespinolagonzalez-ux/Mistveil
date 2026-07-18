@@ -148,5 +148,10 @@
   "w": 121,
   "h": 160,
   "face": "left"
+ },
+ "fondo_pueblo": {
+  "w": 1024,
+  "h": 512,
+  "tipo": "textura"
  }
 }

@@ -189,8 +189,8 @@ export const Input = {
           } else if (scheme === 'una_mano' && dt < 240 && disp < 14) {
             // UNA MANO: tap seco en cualquier parte = golpe de Cadencia; doble-tap = Ignición
             const now = performance.now();
-            if (now - lastTapEnd < 300) { just.add('TouchDouble'); lastTapEnd = 0; eco(x, y, 'ignicion'); vib([18, 40, 18]); }
-            else { just.add('TouchA'); lastTapEnd = now; eco(x, y, 'golpe'); vib(8); }
+            if (now - lastTapEnd < 300) { just.add('TouchDouble'); lastTapEnd = 0; eco(st.lx, st.ly, 'ignicion'); vib([18, 40, 18]); }
+            else { just.add('TouchA'); lastTapEnd = now; eco(st.lx, st.ly, 'golpe'); vib(8); }
           }
           if (longPressT) { clearTimeout(longPressT); longPressT = null; }
           holdInfo = null;
