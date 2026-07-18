@@ -3137,8 +3137,17 @@ function renderPueblo(t) {
 
   ctx.save();
   ctx.scale(ZOOM, ZOOM);
-  drawPuebloBackdrop(ctx, SX, SY, t, VW, VH);
-  drawPlazaGround(ctx, SX, SY, KY);
+  // Fondo pintado del pueblo (estilo FFIX: escenario pintado + sprites encima);
+  // si no existe, el telón y adoquines procedurales de siempre.
+  const fondoP = Sprites.get('fondo_pueblo');
+  if (fondoP) {
+    const x0 = SX(PLAZA.x - 40), x1 = SX(PLAZA.x + PLAZA.w + 40);
+    const w = x1 - x0, h = Math.round(w * fondoP.height / fondoP.width);
+    ctx.drawImage(fondoP, x0, SY(PLAZA.y + PLAZA.h) + 22 - h, w, h);
+  } else {
+    drawPuebloBackdrop(ctx, SX, SY, t, VW, VH);
+    drawPlazaGround(ctx, SX, SY, KY);
+  }
   // NPCs + Pip con y-sorting
   const sortables = NPCS.map(n => ({ y: n.y, draw: () => drawNPC(ctx, n, SX, SY, t) }));
   sortables.push({ y: world.player.y + 10, draw: () => drawPlayer(world.player, t) });
