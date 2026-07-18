@@ -59,8 +59,10 @@ Valores en balance.cadencia (F5).
 - [x] G3 El ritmo premia la movilidad: cada golpe perfecto recorta el enfriamiento del dash (`perfect_dash_refund_s`); `move_damp_in_combo` subido 0.35→0.5 (más libertad para reposicionar).
 - [x] G4 I-frames breves en el lunge de cada golpe: al CONECTAR (perfect > good, fallar no da nada) Pip es intocable un instante — atacar es también esquivar. Halo dorado como aviso. (Balance: `lunge_iframes_s`, `lunge_iframes_perfect_s`.)
 - [x] G6 Curva de dificultad temprana más suave (a petición de Daniel: "cuesta progresar"): presupuesto de enemigos por sala 6→4 con incremento por piso data-driven (2→2.25, el piso 9 queda casi igual); escalado de vida 0.35→0.30; XP por piso 40→55 y primer nivel 80→65 XP (engranajes de la Esfera antes = poder permanente antes).
-- [ ] G5 (idea aparcada de G4) Bullet-time al esquivar por los pelos (micro slow-mo). Pendiente de decidir con Daniel.
-- [ ] G7 (aprobadas por Daniel, para más adelante) Dash direccional que reposiciona el objetivo del combo · cancelar disparando entre golpes · barra de "groove"/racha con buff por encadenar sin recibir daño.
+- [x] G5 Bullet-time al esquivar por los pelos: si durante el dash una bala pasa rozándote Y venía hacia ti, micro slow-mo azul (`game_feel.nearmiss_*`, con cooldown anti-spam).
+- [x] G7a Dash direccional reposiciona el objetivo del combo: dashear hacia otro enemigo cambia a quién sigues sin perder el ritmo (`cadencia.dash_retarget`).
+- [x] G7b Cancelar disparando entre golpes: durante el combo puedes soltar lágrimas (mezclar melé y tiro) sin romperlo (`cadencia.shoot_during_combo`).
+- [x] G7c Barra de "Groove"/racha: sube con perfectos/buenos/paradas/bajas y decae con el tiempo; al llegar al umbral, buff de daño y velocidad; recibir daño la desploma. Barra en HUD + aura de fuego (`balance.groove`).
 
 **Criterio:** se puede tejer esquivas dentro de un combo sin que "te inflen"; el combate fluye contra grupos.
 

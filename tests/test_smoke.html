@@ -299,6 +299,32 @@ cadI._start(cadIP, objI);
 cadI._landHit('fail', cadIP, [objI]);
 assert('fallar NO da i-frames (sin refugio)', cadIP.comboIframeT === 0);
 
+// G7a — dash-retarget: elige al enemigo en la dirección del dash
+const cadN = new Cadencia(); cadN.getSolids = () => [];
+const npl = new Player(100, 100);
+const eDer = new Enemy('cera_andante', 170, 100);
+const eIzq = new Enemy('cera_andante', 30, 100);
+assert('dash-retarget apunta al enemigo hacia donde dasheas',
+  cadN._nearestInDir(npl, [eDer, eIzq], [1, 0], 200) === eDer);
+assert('dash-retarget ignora al que está a tu espalda',
+  cadN._nearestInDir(npl, [eIzq], [1, 0], 200) === null);
+
+// G7c — Groove/racha: sube encadenando, buff al umbral, se pierde al recibir daño
+const gp = new Player(0, 0);
+const meleeBase = gp.stats.melee_damage, speedBase = gp.stats.move_speed;
+gp.addGroove(DataDB.balance.groove.umbral_buff);
+assert('groove: cruzar el umbral enciende el buff', gp.grooveBuffed === true);
+assert('groove: el buff sube daño y velocidad',
+  gp.stats.melee_damage > meleeBase && gp.stats.move_speed > speedBase);
+gp.hurt(1, 100, 100);
+assert('groove: recibir daño rompe la racha (buff off)',
+  gp.grooveBuffed === false && gp.groove < DataDB.balance.groove.umbral_buff);
+
+// G5 / G7b — parámetros presentes (comportamiento se prueba en juego)
+assert('G5: parámetros de bullet-time en balance',
+  typeof DataDB.balance.game_feel.nearmiss_radius_px === 'number' && DataDB.balance.game_feel.nearmiss_factor < 1);
+assert('G7b: flag shoot_during_combo activo', DataDB.balance.cadencia.shoot_during_combo === true);
+
 // A4 — Firmas visuales de habilidad: spawn, caducidad y numeral romano
 const artFx = [];
 spawnArt(artFx, 'corona_tinta', 0, 0, { tmax: 0.1 });

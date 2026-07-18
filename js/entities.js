@@ -65,6 +65,7 @@ export class Player {
     this.trail = [];
     this.dashT = 0; this.dashCd = 0; this.dashDir = [1, 0]; this.dashElapsed = 0;
     this.comboIframeT = 0; // i-frames breves al conectar un golpe de Cadencia (G4)
+    this.groove = 0; this.grooveBuffed = false; // racha (G7c): sube encadenando, cae al recibir
     this.parryCd = 0;
     this.ignicionT = 0; this._igDur = 1; // transformación Ignición (F con SP lleno)
     this.attackAnim = null; // {t, tmax, dir, finisher} — lo setea main en cadencia_hit
@@ -115,6 +116,13 @@ export class Player {
       s.tear_damage *= I.damage_mult;
       s.melee_damage *= I.damage_mult;
     }
+    // Groove/racha (G7c): con la barra alta, Pip pega y corre más (recompensa la agresividad)
+    if (this.grooveBuffed) {
+      const G = DataDB.balance.groove;
+      s.move_speed *= (G?.buff_speed_mult ?? 1);
+      s.tear_damage *= (G?.buff_dano_mult ?? 1);
+      s.melee_damage *= (G?.buff_dano_mult ?? 1);
+    }
     this.stats = s;
     if (this.health) {
       this.health.max = s.max_hp;
@@ -126,6 +134,23 @@ export class Player {
     this.armor = this.mods.armorPerRoom;
     this.autoParryCharges = this.mods.autoParryPerRoom;
   }
+
+  // Groove (G7c): sumar racha. Al cruzar el umbral se enciende el buff (recompute).
+  addGroove(amount) {
+    const G = DataDB.balance.groove; if (!G) return;
+    this.groove = Math.min(G.max, this.groove + amount);
+    this._checkGrooveBuff();
+  }
+  _checkGrooveBuff() {
+    const G = DataDB.balance.groove; if (!G) return;
+    const buffed = this.groove >= (G.umbral_buff ?? 60);
+    if (buffed !== this.grooveBuffed) {
+      this.grooveBuffed = buffed;
+      this.recomputeStats();
+      EventBus.emit('groove_buff', buffed);
+    }
+  }
+  get grooveFrac() { return this.groove / (DataDB.balance.groove?.max ?? 100); }
   get invulnerable() { return this.health.invuln > 0 || this.comboIframeT > 0 || (this.dashT > 0 && this.dashElapsed < this.b.dash_iframes_s); }
   // Hurtbox del jugador: más pequeña que el cuerpo (justicia bullet-hell: solo cuentan los golpes claros)
   get hurtR() { return this.r * 0.7; }
@@ -150,6 +175,11 @@ export class Player {
     this.health.update(dt);
     if (this.dashCd > 0) this.dashCd -= dt;
     if (this.comboIframeT > 0) this.comboIframeT -= dt;
+    // La racha (groove) se enfría poco a poco si dejas de encadenar
+    if (this.groove > 0) {
+      this.groove = Math.max(0, this.groove - (DataDB.balance.groove?.decay_por_s ?? 6) * dt);
+      this._checkGrooveBuff();
+    }
     if (this.parryCd > 0) this.parryCd -= dt;
     // Ignición: consume el Espíritu como combustible
     if (this.ignicionT > 0) {
@@ -246,8 +276,11 @@ export class Player {
     this.aim = a;
     this.fireCd -= dt;
     const shooting = input.shooting() || autoFire;
-    if ((!shooting || this.comboLock) && this.fireCd < 0) this.fireCd = 0; // el remanente solo cuenta en fuego sostenido
-    if (!this.comboLock && shooting && this.fireCd <= 0) {
+    // G7b — cancelar disparando entre golpes: durante el combo SÍ puedes tirar
+    // (mezclar melé y tiro) si shoot_during_combo está activo.
+    const tiroBloqueado = this.comboLock && !(DataDB.balance.cadencia?.shoot_during_combo);
+    if ((!shooting || tiroBloqueado) && this.fireCd < 0) this.fireCd = 0; // el remanente solo cuenta en fuego sostenido
+    if (!tiroBloqueado && shooting && this.fireCd <= 0) {
       this.fireCd += 1 / b.tear_rate_per_s; // conserva el remanente: cadencia exacta de la spec
       const heavy = this.mods.tearFlags.has('heavy');
       const opts = { elemento: this.mods.tearElement ?? 'neutro', flags: this.mods.tearFlags, r: heavy ? 5 : 3.5 };
@@ -277,6 +310,8 @@ export class Player {
       return false;
     }
     if (!this.health.takeDamage(amount, this.b.hurt_iframes_s)) return false;
+    // Recibir daño rompe la racha (groove): el flow premia NO ser tocado
+    if (this.groove > 0) { this.groove = Math.max(0, this.groove - (DataDB.balance.groove?.perdida_al_recibir ?? 45)); this._checkGrooveBuff(); }
     const dx = this.x - fromX, dy = this.y - fromY;
     const l = Math.hypot(dx, dy) || 1;
     const kb = this.b.hurt_knockback_px_s;

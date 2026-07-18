@@ -60,7 +60,9 @@
     "chain_on_kill": true,
     "perfect_dash_refund_s": 0.12,
     "lunge_iframes_s": 0.14,
-    "lunge_iframes_perfect_s": 0.22
+    "lunge_iframes_perfect_s": 0.22,
+    "shoot_during_combo": true,
+    "dash_retarget": true
   },
   "ignicion": {
     "sp_max": 100,
@@ -185,7 +187,11 @@
     "magnet_accel": 950,
     "cam_lookahead_aim_px": 14,
     "cam_lookahead_vel_s": 0.05,
-    "enemy_separation": 0.6
+    "enemy_separation": 0.6,
+    "nearmiss_radius_px": 15,
+    "nearmiss_slowmo_s": 0.45,
+    "nearmiss_factor": 0.35,
+    "nearmiss_cooldown_s": 1.6
   },
   "xp": {
     "base_piso": 55,
@@ -303,5 +309,17 @@
     "grade_screen": "#ffe9c9",
     "grade_screen_alpha": 0.07,
     "niebla": "255,224,196"
+  },
+  "groove": {
+    "max": 100,
+    "por_perfect": 14,
+    "por_good": 7,
+    "por_parry": 16,
+    "por_kill": 5,
+    "decay_por_s": 6,
+    "umbral_buff": 60,
+    "buff_dano_mult": 1.25,
+    "buff_speed_mult": 1.12,
+    "perdida_al_recibir": 45
   }
 }

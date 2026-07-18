@@ -56,6 +56,22 @@ export class Cadencia {
     return best;
   }
 
+  // Enemigo vivo más cercano en la DIRECCIÓN del dash (para reposicionar el combo, G7a)
+  _nearestInDir(player, enemies, dir, range) {
+    const dl = Math.hypot(dir[0], dir[1]) || 1;
+    const dx0 = dir[0] / dl, dy0 = dir[1] / dl;
+    let best = null, bd = range;
+    for (const e of enemies) {
+      if (e.health.dead) continue;
+      const ex = e.x - player.x, ey = e.y - player.y;
+      const d = Math.hypot(ex, ey) || 1;
+      if (d > range) continue;
+      if ((ex / d) * dx0 + (ey / d) * dy0 < 0.35) continue; // debe caer hacia donde dasheas
+      if (d < bd && this._lineaLibre(player, e)) { bd = d; best = e; }
+    }
+    return best;
+  }
+
   // ¿Segmento jugador→enemigo sin muros? (evita fijar bichos al otro lado de una pared)
   _lineaLibre(player, e) {
     const solids = this.getSolids?.() ?? [];
@@ -99,7 +115,15 @@ export class Cadencia {
     if (dist > keepRange) { this._end('range'); return; }
 
     player.comboLock = true;
-    if (player.dashT > 0) return; // el anillo se detiene mientras esquivas
+    if (player.dashT > 0) {
+      // G7a — dashear HACIA otro enemigo reposiciona el objetivo del combo:
+      // eliges a quién sigues sin perder el ritmo (el anillo sigue congelado).
+      if (cfg.dash_retarget && player.dashDir) {
+        const nuevo = this._nearestInDir(player, enemies, player.dashDir, keepRange);
+        if (nuevo && nuevo !== target) { this.target = nuevo; EventBus.emit('cadencia_chain', nuevo); }
+      }
+      return; // el anillo se detiene mientras esquivas
+    }
     this.t += dt * 1000;
     const alignT = cfg.ring_contract_ms * this.compas.ritmo_mult;
     const wscale = (player.mods?.cadencia.window_scale ?? 1)

@@ -106,7 +106,8 @@ let fps = 60, fpsAcc = 0, fpsN = 0;
 let flashMsg = '', flashT = 0, flashSub = '';
 let trapdoorHintCd = 0;
 let freezeT = 0;   // péndulo quieto
-let slowmoT = 0, slowmoFactor = 1; // arena del tiempo (objeto activo)
+let slowmoT = 0, slowmoFactor = 1, slowmoBlue = false; // arena del tiempo (dorado) y bullet-time G5 (azul)
+let nearmissCd = 0; // anti-spam del bullet-time por esquivar por los pelos
 let ignicionFlashT = 0; // fogonazo dorado del estallido de Ignición
 let hitStopT = 0;  // micro-pausa en golpes perfectos (juice)
 let pendingUpgrades = null; // 3 mejoras ofrecidas al descender
@@ -187,7 +188,7 @@ function newRun() {
   world.shockwaves = [];
   world.tears.clear(); world.bullets.clear();
   cad.reset();
-  freezeT = 0; hitStopT = 0; slowmoT = 0;
+  freezeT = 0; hitStopT = 0; slowmoT = 0; nearmissCd = 0;
   world.familiares = []; world.trails = []; world.artFx = [];
   pendingUpgrades = null;
   mode = 'play';
@@ -663,6 +664,7 @@ const TAG_COLORS = {
   ignicion: '#b678e8', movilidad: '#7ee8e0', activo: '#ff9c3a'
 };
 EventBus.on('enemy_died', (e) => {
+  if (world.player) world.player.addGroove(DataDB.balance.groove?.por_kill ?? 0); // racha (G7c)
   const pal = PALETTES[e.id] ?? ['#9E9E9E', '#666', '#fff'];
   FX.burst(e.x, e.y, { n: 16, color: pal[0], speed: 130, life: 0.6, size: 3, gravity: 180 });
   FX.burst(e.x, e.y, { n: 8, color: pal[2], speed: 70, life: 0.4, size: 2, glow: true });
@@ -813,6 +815,9 @@ EventBus.on('cadencia_hit', ({ x, y, quality, dmg, finisher, hitIndex }) => {
   if (dmg > 0) pushPopup(x + 10, y - 10, String(dmg), '#f4f0e6');
   FX.burst(x, y, { n: conf.n, color: conf.col, speed: 90, life: 0.4, size: 2, glow: quality === 'perfect' });
   if (quality === 'perfect') { FX.addShake(1); hitStopT = Math.max(hitStopT, 0.045); }
+  // Groove/racha (G7c): encadenar buenos golpes sube la barra
+  const gg = DataDB.balance.groove;
+  if (gg && world.player) world.player.addGroove(quality === 'perfect' ? gg.por_perfect : quality === 'good' ? gg.por_good : 0);
   if (finisher) {
     pushPopup(x, y - 34, t9('ui.finisher'), '#ff9c3a', 12);
     world.shockwaves.push({ x, y, r0: 8, r1: DataDB.balance.cadencia.finisher_aoe_radius_px, t: 0.28, tmax: 0.28, color: '#ffd54f' });
@@ -844,6 +849,7 @@ EventBus.on('cadencia_counter_started', (e) => {
 EventBus.on('cadencia_parried', (e) => {
   Input.vibrar?.([10, 20, 30]);
   freezeT = Math.max(freezeT, 0.07);
+  if (world.player) world.player.addGroove(DataDB.balance.groove?.por_parry ?? 0); // racha (G7c)
   pushPopup(e.x, e.y - 26, t9('ui.cad_parry'), '#7ee8e0', 11);
   spawnArt(world.artFx, 'campana_cristal', e.x, e.y, { tmax: 0.4, r: 32, color: '#aef4ec' });
 });
@@ -1202,6 +1208,33 @@ function update(dt) {
   world.tears.update(dt, bb);
   if (freezeT <= 0) world.bullets.update(dtMundo, bb);
 
+  // G5 — BULLET-TIME al esquivar por los pelos: si durante el dash una bala pasa
+  // rozándote Y venía hacia ti, el mundo se ralentiza un instante (dramático).
+  if (nearmissCd > 0) nearmissCd -= dt;
+  if (p.dashT > 0 && nearmissCd <= 0 && slowmoT <= 0) {
+    const G = DataDB.balance.game_feel;
+    const rr = G.nearmiss_radius_px ?? 15;
+    let roce = null;
+    world.bullets.forEach(bl => {
+      if (roce) return;
+      const dx = p.x - bl.x, dy = p.y - bl.y;
+      if (Math.hypot(dx, dy) > rr + p.r) return;
+      // ¿venía hacia ti? (producto escalar velocidad · dirección al jugador)
+      if (bl.vx * dx + bl.vy * dy > 0) roce = bl;
+    });
+    if (roce) {
+      slowmoT = G.nearmiss_slowmo_s ?? 0.45;
+      slowmoFactor = G.nearmiss_factor ?? 0.35;
+      slowmoBlue = true;
+      nearmissCd = G.nearmiss_cooldown_s ?? 1.6;
+      AudioManager.beep(1200, 0.06, 'sine', 0.03, -400);
+      AudioManager.beep(300, 0.4, 'sine', 0.05, 120);
+      FX.addShake(1.5);
+      pushPopup(p.x, p.y - 22, '¡POR LOS PELOS!', '#5ad1ff', 10);
+      EventBus.emit('nearmiss', p.x, p.y);
+    }
+  }
+
   const alive = world.enemies.filter(e => !e.health.dead);
   if (freezeT > 0) freezeT -= dt;
   else {
@@ -1222,6 +1255,7 @@ function update(dt) {
     if (p.mods.activo.accion === 'global_slowmo') {
       slowmoT = p.mods.activo.duracion_s;
       slowmoFactor = p.mods.activo.factor;
+      slowmoBlue = false;
       AudioManager.beep(320, 0.5, 'sine', 0.06, -180);
       flash('El tiempo se espesa...');
     }
@@ -1317,6 +1351,7 @@ function update(dt) {
     if (parried) {
       RunState.sp = Math.min(DataDB.balance.ignicion.sp_max, RunState.sp + DataDB.balance.parry.sp_gain);
       EventBus.emit('sp_changed', RunState.sp);
+      p.addGroove(DataDB.balance.groove?.por_parry ?? 0); // racha (G7c)
       AudioManager.sfx('parry');
       hitStopT = Math.max(hitStopT, 0.06);
       FX.addShake(1.5);
@@ -2059,6 +2094,17 @@ function drawPlayer(p, t) {
   ctx.globalAlpha = 1;
 
   if (p.health.invuln > 0 && p.dashT <= 0 && Math.floor(performance.now() / 60) % 2 === 0) return;
+  // G7c — aura de racha: mientras el buff está activo, Pip late en fuego
+  if (p.grooveBuffed) {
+    const px = SX(p.x), py = SY(p.y) - 8;
+    const pul = 16 + Math.sin(t * 9) * 3;
+    const g = ctx.createRadialGradient(px, py, 4, px, py, pul);
+    g.addColorStop(0, 'rgba(255,122,46,0)');
+    g.addColorStop(0.7, 'rgba(255,122,46,0.18)');
+    g.addColorStop(1, 'rgba(255,122,46,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(px, py, pul, 0, 7); ctx.fill();
+  }
   // G4 — halo dorado breve mientras los i-frames del golpe protegen a Pip
   if (p.comboIframeT > 0) {
     const px = SX(p.x), py = SY(p.y) - 8;
@@ -2561,6 +2607,22 @@ function drawHUD(t) {
   }
   ctx.strokeStyle = '#37335c'; ctx.lineWidth = 1;
   ctx.strokeRect(27.5, 38.5, 73, 6);
+
+  // Groove/racha (G7c): barra fina bajo el SP, solo si hay racha. Al llenar el
+  // umbral late y cambia a rojo-ámbar (buff de daño y velocidad activo).
+  const gv = world.player.grooveFrac;
+  if (gv > 0.01) {
+    const buffed = world.player.grooveBuffed;
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillRect(28, 46, 72, 3);
+    const pulse = buffed ? (Math.floor(t * 8) % 2 ? '#ff7a2e' : '#ffd54f') : '#c86bd8';
+    ctx.fillStyle = pulse;
+    ctx.fillRect(28, 46, Math.round(72 * gv), 3);
+    if (buffed) {
+      font(7); ctx.fillStyle = '#ffd54f'; ctx.textAlign = 'left';
+      ctx.fillText('¡RACHA!', 104, 49);
+    }
+  }
 
   const comp = DataDB.compas(RunState.compas);
   if (comp) {
@@ -3290,8 +3352,8 @@ function render() {
     ctx.fillRect(0, 0, VW, VH);
   }
   if (slowmoT > 0) {
-    // Arena del tiempo: velo dorado sutil mientras el mundo va lento
-    ctx.fillStyle = 'rgba(232,197,101,0.06)';
+    // Velo del tiempo lento: azul en el bullet-time (G5), dorado en la arena
+    ctx.fillStyle = slowmoBlue ? 'rgba(90,209,255,0.08)' : 'rgba(232,197,101,0.06)';
     ctx.fillRect(0, 0, VW, VH);
   }
   if (hurtFlashT > 0) {
@@ -3368,6 +3430,8 @@ function paintFatal(err) {
     sp: (n = 100) => { RunState.sp = Math.min(DataDB.balance.ignicion.sp_max, n); return RunState.sp; },
     // Salta al piso n (pruebas de biomas)
     piso: (n = 4) => { RunState.piso = n - 1; descendFloor(); return 'piso ' + RunState.piso + ' · ' + (floorMap.current?.bioma?.nombre ?? ''); },
+    // Sube la racha (pruebas de Groove/buff G7c)
+    groove: (n = 100) => { world.player?.addGroove(n); return { groove: Math.round(world.player?.groove ?? 0), buff: world.player?.grooveBuffed }; },
     unaMano: (on = true) => {
       Input.setScheme(on ? 'una_mano' : 'raton');
       if (on) Input.forceTouch();
