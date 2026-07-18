@@ -145,6 +145,56 @@
       "estado": "hecho"
     },
     {
+      "id": "enemigo_badajo_errante",
+      "tipo": "sprite",
+      "clase": "enemy",
+      "targetH": 64,
+      "face": "left",
+      "largestOnly": true,
+      "sujeto": "a heavy loose bronze bell-clapper creature: a thick tarnished bronze rod ending in a massive round striker head with two small glowing amber eyes, a broken iron suspension ring at the top, faint violet electric sparks arcing off it, menacing",
+      "estado": "hecho"
+    },
+    {
+      "id": "enemigo_girandula",
+      "tipo": "sprite",
+      "clase": "enemy",
+      "targetH": 60,
+      "face": "left",
+      "largestOnly": true,
+      "sujeto": "a brass whirligig weathervane creature: an ornate four-bladed spinning pinwheel of aged brass mounted on a central hub with a single glowing eye, thin wind streaks curling around it, elegant and eerie",
+      "estado": "hecho"
+    },
+    {
+      "id": "enemigo_remora_de_tinta",
+      "tipo": "sprite",
+      "clase": "enemy",
+      "targetH": 52,
+      "face": "left",
+      "largestOnly": true,
+      "sujeto": "a living ink remora fish gliding just above the floor, sleek body of glossy indigo-black ink with a long wispy dissolving tail, one pale glowing eye, droplets of ink dripping beneath it",
+      "estado": "hecho"
+    },
+    {
+      "id": "enemigo_peon_de_sebo",
+      "tipo": "sprite",
+      "clase": "enemy",
+      "targetH": 46,
+      "face": "left",
+      "largestOnly": true,
+      "sujeto": "a tiny tallow pawn minion: a small squat rounded lump of amber candle wax with a little unlit black wick on top and two stubby feet, simple vacant face, humble",
+      "estado": "hecho"
+    },
+    {
+      "id": "enemigo_cimbalo",
+      "tipo": "sprite",
+      "clase": "enemy",
+      "targetH": 54,
+      "face": "left",
+      "largestOnly": true,
+      "sujeto": "a bronze crash-cymbal sentinel anchored on a short iron stand: a tilted round hammered brass disc with a domed central boss, crackling with violet electric arcs along its rim, ominous",
+      "estado": "hecho"
+    },
+    {
       "id": "enemigo_campanero",
       "tipo": "sprite",
       "clase": "enemy",

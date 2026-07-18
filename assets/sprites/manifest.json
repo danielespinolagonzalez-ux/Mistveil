@@ -212,5 +212,30 @@
   "w": 50,
   "h": 68,
   "face": "right"
+ },
+ "enemigo_badajo_errante": {
+  "w": 26,
+  "h": 64,
+  "face": "left"
+ },
+ "enemigo_cimbalo": {
+  "w": 61,
+  "h": 54,
+  "face": "left"
+ },
+ "enemigo_girandula": {
+  "w": 62,
+  "h": 60,
+  "face": "left"
+ },
+ "enemigo_peon_de_sebo": {
+  "w": 49,
+  "h": 46,
+  "face": "left"
+ },
+ "enemigo_remora_de_tinta": {
+  "w": 63,
+  "h": 52,
+  "face": "left"
  }
 }
