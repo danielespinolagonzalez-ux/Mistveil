@@ -403,12 +403,14 @@
     {
       "id": "suelo_pendulos",
       "tipo": "textura",
-      "sujeto": "large amber stone flagstones with honey veins, dark joints, centuries of wear, a tiny gear embedded here and there"
+      "sujeto": "large amber stone flagstones with honey veins, dark joints, centuries of wear, a tiny gear embedded here and there",
+      "estado": "hecho"
     },
     {
       "id": "muro_pendulos",
       "tipo": "textura",
-      "sujeto": "warm ashlar stone masonry with brass moldings, horizontal band seen front-on"
+      "sujeto": "warm ashlar stone masonry with brass moldings, horizontal band seen front-on",
+      "estado": "hecho"
     },
     {
       "id": "suelo_archivo",
@@ -458,12 +460,32 @@
       "id": "hoja_botones_tactiles",
       "tipo": "hoja",
       "rejilla": "2x3",
-      "lista": "six circular medallion UI buttons of forged gold with a central gem, each with a different symbol: sword; musical note; bell; fountain pen; flame; open hand"
+      "lista": "six circular medallion UI buttons of forged gold with a central gem, each with a different symbol: sword; musical note; bell; fountain pen; flame; open hand",
+      "estado": "hecho",
+      "targetH": 56,
+      "nombres": [
+        "boton_campana",
+        "boton_nota",
+        "boton_pluma",
+        "boton_cartas",
+        "boton_reloj",
+        "boton_frasco"
+      ],
+      "nota": "orden real de la hoja generada: campana, nota, pluma, cartas(sin uso), reloj de bolsillo, frasco(sin uso)"
     },
     {
       "id": "portada_titulo",
       "tipo": "pantalla",
       "sujeto": "the Mistveil Clock-Tower rising through golden mist at dusk, monumental and melancholic, tiny Pip from behind before the gate, romanticist small-figure-before-the-sublime composition, clear space in upper third for a title, 16:9"
+    },
+    {
+      "id": "boton_llama",
+      "tipo": "sprite",
+      "clase": "ui medallion",
+      "estado": "hecho",
+      "targetH": 56,
+      "face": "right",
+      "sujeto": "single gold medallion button with a glowing flame lantern symbol (generado suelto: la hoja no incluyó la llama)"
     }
   ]
 }

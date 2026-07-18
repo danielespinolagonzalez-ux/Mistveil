@@ -33,5 +33,50 @@
   "w": 55,
   "h": 68,
   "face": "left"
+ },
+ "boton_llama": {
+  "w": 55,
+  "h": 56,
+  "face": "right"
+ },
+ "boton_campana": {
+  "w": 56,
+  "h": 56,
+  "face": "right"
+ },
+ "boton_nota": {
+  "w": 57,
+  "h": 56,
+  "face": "right"
+ },
+ "boton_pluma": {
+  "w": 57,
+  "h": 56,
+  "face": "right"
+ },
+ "boton_cartas": {
+  "w": 58,
+  "h": 56,
+  "face": "right"
+ },
+ "boton_reloj": {
+  "w": 57,
+  "h": 56,
+  "face": "right"
+ },
+ "boton_frasco": {
+  "w": 56,
+  "h": 56,
+  "face": "right"
+ },
+ "muro_pendulos": {
+  "w": 256,
+  "h": 128,
+  "tipo": "textura"
+ },
+ "suelo_pendulos": {
+  "w": 256,
+  "h": 256,
+  "tipo": "textura"
  }
 }

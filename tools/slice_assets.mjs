@@ -40,14 +40,16 @@ const OUT = resolve(ROOT, 'assets/sprites');
 async function main() {
   const { chromium } = findPlaywright();
   mkdirSync(OUT, { recursive: true });
-  // Config por id desde el catálogo (las texturas/hojas se saltan: van por otro camino)
+  // Config por id desde el catálogo. Tipos: sprite (recorte+reescala), textura
+  // (solo reescala, sin tocar alfa), hoja (multi-recorte por componentes con
+  // nombres del catálogo). Las pantallas (portada) se saltan.
   const encargo = JSON.parse(readFileSync(resolve(ROOT, 'tools/encargo.json'), 'utf8'));
-  const CONFIG = {}, NO_SPRITE = new Set();
+  const CONFIG = {}, SKIP = new Set();
   for (const a of encargo.assets) {
-    if (a.tipo === 'sprite') CONFIG[a.id] = a;
-    else NO_SPRITE.add(a.id);
+    if (a.tipo === 'sprite' || a.tipo === 'textura' || a.tipo === 'hoja') CONFIG[a.id] = a;
+    else SKIP.add(a.id);
   }
-  const files = readdirSync(SRC).filter(f => f.endsWith('.png') && !NO_SPRITE.has(basename(f, '.png')));
+  const files = readdirSync(SRC).filter(f => f.endsWith('.png') && !SKIP.has(basename(f, '.png')));
   if (!files.length) { console.log('assets/src vacío — nada que trocear'); return; }
   const browser = await chromium.launch({
     executablePath: process.env.CHROMIUM_PATH ?? '/opt/pw-browsers/chromium',
@@ -61,11 +63,28 @@ async function main() {
     const id = basename(f, '.png');
     const cfg = { ...DEFAULTS, ...(CONFIG[id] ?? {}) };
     const dataUrl = 'data:image/png;base64,' + readFileSync(resolve(SRC, f)).toString('base64');
-    const res = await page.evaluate(procesar, { dataUrl, targetH: cfg.targetH, largestOnly: !!cfg.largestOnly });
-    if (res.error) { console.log(`✗ ${id}: ${res.error}`); continue; }
-    writeFileSync(resolve(OUT, id + '.png'), Buffer.from(res.png.split(',')[1], 'base64'));
-    manifest[id] = { w: res.w, h: res.h, face: cfg.face };
-    console.log(`✓ ${id}: ${res.modo} → ${res.w}×${res.h}`);
+    if (cfg.tipo === 'textura') {
+      const res = await page.evaluate(procesarTextura, { dataUrl, maxDim: cfg.maxDim ?? 256 });
+      if (res.error) { console.log(`✗ ${id}: ${res.error}`); continue; }
+      writeFileSync(resolve(OUT, id + '.png'), Buffer.from(res.png.split(',')[1], 'base64'));
+      manifest[id] = { w: res.w, h: res.h, tipo: 'textura' };
+      console.log(`✓ ${id}: textura → ${res.w}×${res.h}`);
+    } else if (cfg.tipo === 'hoja') {
+      const res = await page.evaluate(procesarHoja, { dataUrl, targetH: cfg.targetH ?? 56, nombres: cfg.nombres ?? [] });
+      if (res.error) { console.log(`✗ ${id}: ${res.error}`); continue; }
+      res.piezas.forEach((p, i) => {
+        const pid = cfg.nombres?.[i] ?? `${id}_${i + 1}`;
+        writeFileSync(resolve(OUT, pid + '.png'), Buffer.from(p.png.split(',')[1], 'base64'));
+        manifest[pid] = { w: p.w, h: p.h, face: 'right' };
+        console.log(`✓ ${pid}: pieza ${i + 1}/${res.piezas.length} → ${p.w}×${p.h}`);
+      });
+    } else {
+      const res = await page.evaluate(procesar, { dataUrl, targetH: cfg.targetH, largestOnly: !!cfg.largestOnly });
+      if (res.error) { console.log(`✗ ${id}: ${res.error}`); continue; }
+      writeFileSync(resolve(OUT, id + '.png'), Buffer.from(res.png.split(',')[1], 'base64'));
+      manifest[id] = { w: res.w, h: res.h, face: cfg.face };
+      console.log(`✓ ${id}: ${res.modo} → ${res.w}×${res.h}`);
+    }
   }
   writeFileSync(resolve(OUT, 'manifest.json'), JSON.stringify(manifest, null, 1));
   await browser.close();
@@ -225,6 +244,84 @@ async function procesar({ dataUrl, targetH, largestOnly }) {
   const fg = fin.getContext('2d'); fg.imageSmoothingQuality = 'high';
   fg.drawImage(cur, 0, 0, fw, targetH);
   return { png: fin.toDataURL('image/png'), w: fw, h: targetH, modo };
+}
+
+// Textura repetible: NO se toca el alfa ni se recorta — solo reescalar.
+async function procesarTextura({ dataUrl, maxDim }) {
+  const img = new Image();
+  await new Promise((ok, ko) => { img.onload = ok; img.onerror = () => ko(new Error('png ilegible')); img.src = dataUrl; });
+  let cw = img.width, ch = img.height;
+  let cur = document.createElement('canvas'); cur.width = cw; cur.height = ch;
+  cur.getContext('2d').drawImage(img, 0, 0);
+  while (Math.max(cw, ch) / 2 >= maxDim) {
+    const half = document.createElement('canvas');
+    half.width = Math.round(cw / 2); half.height = Math.round(ch / 2);
+    const hg = half.getContext('2d'); hg.imageSmoothingQuality = 'high';
+    hg.drawImage(cur, 0, 0, half.width, half.height);
+    cur = half; cw = half.width; ch = half.height;
+  }
+  const k = maxDim / Math.max(cw, ch);
+  const fw = Math.max(1, Math.round(cw * k)), fh = Math.max(1, Math.round(ch * k));
+  const fin = document.createElement('canvas'); fin.width = fw; fin.height = fh;
+  const fg = fin.getContext('2d'); fg.imageSmoothingQuality = 'high';
+  fg.drawImage(cur, 0, 0, fw, fh);
+  return { png: fin.toDataURL('image/png'), w: fw, h: fh };
+}
+
+// Hoja de piezas (ya SIN fondo, p.ej. tras remove_background de Recraft):
+// encuentra los componentes conexos grandes, los ordena por filas de rejilla
+// (y luego x) y devuelve cada pieza recortada y reescalada a targetH.
+async function procesarHoja({ dataUrl, targetH, nombres }) {
+  const img = new Image();
+  await new Promise((ok, ko) => { img.onload = ok; img.onerror = () => ko(new Error('png ilegible')); img.src = dataUrl; });
+  const W = img.width, H = img.height;
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const g = cv.getContext('2d', { willReadFrequently: true });
+  g.drawImage(img, 0, 0);
+  const d = g.getImageData(0, 0, W, H).data;
+  const lab = new Int32Array(W * H).fill(-1);
+  const comps = [];
+  const pila = [];
+  for (let p0 = 0; p0 < W * H; p0++) {
+    if (lab[p0] >= 0 || d[p0 * 4 + 3] <= 12) continue;
+    const c = { n: 0, x0: W, y0: H, x1: 0, y1: 0 };
+    pila.push(p0); lab[p0] = comps.length;
+    while (pila.length) {
+      const p = pila.pop(); c.n++;
+      const x = p % W, y = (p / W) | 0;
+      if (x < c.x0) c.x0 = x; if (x > c.x1) c.x1 = x;
+      if (y < c.y0) c.y0 = y; if (y > c.y1) c.y1 = y;
+      for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+        const nx = x + dx, ny = y + dy;
+        if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
+        const q = ny * W + nx;
+        if (lab[q] < 0 && d[q * 4 + 3] > 12) { lab[q] = comps.length; pila.push(q); }
+      }
+    }
+    comps.push(c);
+  }
+  const grandes = comps.filter(c => c.n > (W * H) / 400);
+  if (!grandes.length) return { error: 'sin piezas grandes en la hoja' };
+  // Orden de lectura: agrupar en filas por solape vertical y ordenar por x
+  grandes.sort((a, b) => a.y0 - b.y0);
+  const filas = [];
+  for (const c of grandes) {
+    const fila = filas.find(f => c.y0 < f.yMax - (c.y1 - c.y0) * 0.3);
+    if (fila) { fila.items.push(c); fila.yMax = Math.max(fila.yMax, c.y1); }
+    else filas.push({ items: [c], yMax: c.y1 });
+  }
+  const orden = [];
+  for (const f of filas) { f.items.sort((a, b) => a.x0 - b.x0); orden.push(...f.items); }
+  const piezas = [];
+  for (const c of orden) {
+    const cw = c.x1 - c.x0 + 5, ch = c.y1 - c.y0 + 5;
+    const fw = Math.max(1, Math.round(cw * targetH / ch));
+    const fin = document.createElement('canvas'); fin.width = fw; fin.height = targetH;
+    const fg = fin.getContext('2d'); fg.imageSmoothingQuality = 'high';
+    fg.drawImage(cv, c.x0 - 2, c.y0 - 2, cw, ch, 0, 0, fw, targetH);
+    piezas.push({ png: fin.toDataURL('image/png'), w: fw, h: targetH });
+  }
+  return { piezas };
 }
 
 main().catch(e => { console.error('FATAL', e.message); process.exit(1); });

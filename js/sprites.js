@@ -9,15 +9,19 @@ export const Sprites = {
 
   async load(base = 'assets/sprites/') {
     // Build de un solo archivo: los sprites vienen incrustados en base64
+    // Se espera a que TODAS decodifiquen (o fallen): el horneado de salas usa
+    // las texturas en cuanto arranca la primera run. Un png roto → get() null.
+    const waits = [];
     const emb = typeof window !== 'undefined' ? window.__MISTVEIL_SPRITES__ : null;
     if (emb) {
       this.meta = emb.manifest;
       for (const [id, dataUrl] of Object.entries(emb.png)) {
         const img = new Image();
         img.src = dataUrl;
-        img.decode?.().catch(() => {});
+        waits.push(img.decode?.().catch(() => {}));
         this._imgs.set(id, img);
       }
+      await Promise.allSettled(waits);
       return;
     }
     try {
@@ -27,9 +31,10 @@ export const Sprites = {
       for (const id of Object.keys(this.meta)) {
         const img = new Image();
         img.src = base + id + '.png';
-        img.decode?.().catch(() => {}); // si un png falla, su get() dará null
+        waits.push(img.decode?.().catch(() => {}));
         this._imgs.set(id, img);
       }
+      await Promise.allSettled(waits);
     } catch { /* offline o sin carpeta: fallback silencioso */ }
   },
 

@@ -5,6 +5,7 @@ import { EventBus } from './event_bus.js';
 import { AudioManager, GameState, RunState } from './state.js';
 import { Enemy } from './entities.js';
 import { rollItem } from './items.js';
+import { Sprites } from './sprites.js';
 
 export const TILE = 32, RW = 13, RH = 7, WALL = 16;
 export const BLOCK_W = RW * TILE + WALL * 2;   // 448
@@ -424,22 +425,39 @@ export class Room {
     g.fillRect(0, faceTop - CAP, BLOCK_W, CAP); // tapa
     g.fillStyle = 'rgba(255,255,255,0.08)';
     g.fillRect(0, faceTop - CAP, BLOCK_W, 2);
-    const grad = g.createLinearGradient(0, faceTop, 0, floorTop);
-    grad.addColorStop(0, '#413761');
-    grad.addColorStop(0.7, '#332a4f');
-    grad.addColorStop(1, '#241f3a');
-    g.fillStyle = grad;
-    g.fillRect(0, faceTop, BLOCK_W, WALL_H);
-    // Hiladas de ladrillo en la cara
-    g.strokeStyle = 'rgba(12,9,24,0.55)'; g.lineWidth = 1;
-    for (let row = 0; row < 4; row++) {
-      const yy = faceTop + 6 + row * 10;
-      g.beginPath(); g.moveTo(0, yy); g.lineTo(BLOCK_W, yy); g.stroke();
-      for (let x = (row % 2) * 12; x < BLOCK_W; x += 24) {
-        g.beginPath(); g.moveTo(x, yy); g.lineTo(x, Math.min(yy + 10, floorTop)); g.stroke();
-        if (hash(x + seed, row) > 0.8) {
-          g.fillStyle = 'rgba(255,255,255,0.05)';
-          g.fillRect(x + 1, yy + 1, 10, 4);
+    // Cara del muro: textura pintada del bioma si existe; si no, el gradiente
+    // procedural con hiladas de siempre (fallback obligatorio).
+    const texM = Sprites.get('muro_' + (this.bioma?.id ?? ''));
+    if (texM) {
+      const sM = WALL_H / texM.height; // la banda ocupa la altura exacta de la cara
+      const patM = g.createPattern(texM, 'repeat');
+      patM.setTransform?.(new DOMMatrix([sM, 0, 0, sM, 0, faceTop]));
+      g.fillStyle = patM;
+      g.fillRect(0, faceTop, BLOCK_W, WALL_H);
+      // Veladura: asienta la piedra clara en la penumbra y oscurece hacia el suelo
+      const vel = g.createLinearGradient(0, faceTop, 0, floorTop);
+      vel.addColorStop(0, 'rgba(24,17,44,0.35)');
+      vel.addColorStop(1, 'rgba(12,8,24,0.6)');
+      g.fillStyle = vel;
+      g.fillRect(0, faceTop, BLOCK_W, WALL_H);
+    } else {
+      const grad = g.createLinearGradient(0, faceTop, 0, floorTop);
+      grad.addColorStop(0, '#413761');
+      grad.addColorStop(0.7, '#332a4f');
+      grad.addColorStop(1, '#241f3a');
+      g.fillStyle = grad;
+      g.fillRect(0, faceTop, BLOCK_W, WALL_H);
+      // Hiladas de ladrillo en la cara
+      g.strokeStyle = 'rgba(12,9,24,0.55)'; g.lineWidth = 1;
+      for (let row = 0; row < 4; row++) {
+        const yy = faceTop + 6 + row * 10;
+        g.beginPath(); g.moveTo(0, yy); g.lineTo(BLOCK_W, yy); g.stroke();
+        for (let x = (row % 2) * 12; x < BLOCK_W; x += 24) {
+          g.beginPath(); g.moveTo(x, yy); g.lineTo(x, Math.min(yy + 10, floorTop)); g.stroke();
+          if (hash(x + seed, row) > 0.8) {
+            g.fillStyle = 'rgba(255,255,255,0.05)';
+            g.fillRect(x + 1, yy + 1, 10, 4);
+          }
         }
       }
     }
@@ -458,7 +476,27 @@ export class Room {
       g.stroke();
     }
 
-    // --- Suelo: losas achatadas con variación ---
+    // --- Suelo: textura pintada del bioma (achatada en Y por la 2.5D) o las
+    // losas procedurales de siempre (fallback) ---
+    const texF = Sprites.get('suelo_' + (this.bioma?.id ?? ''));
+    if (texF) {
+      const rep = 116; // px de mundo por repetición del patrón (≈3.6 losas)
+      const sx = rep / texF.width, sy = (rep * (TILE_SY / TILE)) / texF.height;
+      const patF = g.createPattern(texF, 'repeat');
+      patF.setTransform?.(new DOMMatrix([sx, 0, 0, sy, WALL, floorTop]));
+      g.fillStyle = patF;
+      g.fillRect(WALL, floorTop, RW * TILE, RH * TILE_SY);
+      // Veladura oscura general (la textura llega luminosa) + código de color
+      // del tipo de sala, que antes iba en el tinte de las losas
+      g.fillStyle = 'rgba(16,11,32,0.38)';
+      g.fillRect(WALL, floorTop, RW * TILE, RH * TILE_SY);
+      const velTipo = {
+        jefe: 'rgba(255,90,60,0.08)', tesoro: 'rgba(232,197,101,0.09)',
+        tienda: 'rgba(150,220,140,0.06)', maldita: 'rgba(170,90,255,0.09)',
+        galeria: 'rgba(120,140,255,0.06)'
+      }[this.type];
+      if (velTipo) { g.fillStyle = velTipo; g.fillRect(WALL, floorTop, RW * TILE, RH * TILE_SY); }
+    } else {
     for (let ty = 0; ty < RH; ty++) {
       for (let tx = 0; tx < RW; tx++) {
         const x = WALL + tx * TILE, y = floorTop + ty * TILE_SY;
@@ -485,6 +523,7 @@ export class Room {
           g.stroke();
         }
       }
+    }
     }
     // Sombra de contacto del muro norte sobre el suelo
     const ao = g.createLinearGradient(0, floorTop, 0, floorTop + 14);

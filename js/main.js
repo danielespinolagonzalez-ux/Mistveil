@@ -2989,6 +2989,24 @@ function drawTouchUI(t) {
     // Depresión visual: 160ms de pulso al tocar (input→respuesta visible)
     const pk = b.pressT ? Math.max(0, 1 - (performance.now() - b.pressT) / 160) : 0;
     const rr = b.r * (1 - pk * 0.12);
+    // Medallón pintado si existe para este botón (pausa y ≡ siguen por código)
+    const MEDALLONES = { TouchB: 'boton_campana', TouchC: 'boton_nota', TouchQ: 'boton_pluma', TouchF: 'boton_llama', TouchX: 'boton_reloj' };
+    const med = Sprites.get(MEDALLONES[b.code]);
+    if (med) {
+      ctx.globalAlpha = b.pressed ? 1 : on ? 0.62 + pk * 0.3 : 0.22;
+      ctx.drawImage(med, b.x - rr, b.y - rr, rr * 2, rr * 2);
+      if (pk > 0) { // onda que sale del medallón
+        ctx.globalAlpha = pk * 0.5;
+        ctx.strokeStyle = col; ctx.lineWidth = 2 + pk * 1.5;
+        ctx.beginPath(); ctx.arc(b.x, b.y, b.r + (1 - pk) * 12, 0, 7); ctx.stroke();
+      }
+      if (b.r > 20) { // etiqueta pequeña bajo el medallón grande (claridad)
+        ctx.globalAlpha = 0.75;
+        font(6); ctx.textAlign = 'center'; ctx.fillStyle = col;
+        ctx.fillText(b.label, b.x, b.y + rr + 8);
+      }
+      continue;
+    }
     ctx.globalAlpha = b.pressed ? 0.95 : on ? 0.45 + pk * 0.4 : 0.18;
     ctx.fillStyle = pk > 0 ? '#241f3a' : '#141120';
     ctx.beginPath(); ctx.arc(b.x, b.y, rr, 0, 7); ctx.fill();
@@ -3564,7 +3582,7 @@ function paintFatal(err) {
     return;
   }
   SaveManager.load();
-  Sprites.load(); // arte pintado opcional: sin await — el fallback cubre mientras carga
+  await Sprites.load(); // arte pintado opcional; el bake de salas usa las texturas
   Input.init(canvas, toWorld);
   if (GameState.opciones.esquema_control) Input.setScheme(GameState.opciones.esquema_control);
   Input.setTouchButtons(TOUCH_BTNS_PLAY);
