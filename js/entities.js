@@ -67,6 +67,7 @@ export class Player {
     this.comboIframeT = 0; // i-frames breves al conectar un golpe de Cadencia (G4)
     this.groove = 0; this.grooveBuffed = false; // racha (G7c): sube encadenando, cae al recibir
     this.parryCd = 0;
+    this.castT = 0; this.parryAnimT = 0; // ventanas de POSE de sprite (arte/parada); solo visual
     this.ignicionT = 0; this._igDur = 1; // transformación Ignición (F con SP lleno)
     this.attackAnim = null; // {t, tmax, dir, finisher} — lo setea main en cadencia_hit
     this.comboLock = false; // lo controla el sistema de Cadencia
@@ -181,6 +182,8 @@ export class Player {
       this._checkGrooveBuff();
     }
     if (this.parryCd > 0) this.parryCd -= dt;
+    if (this.castT > 0) this.castT -= dt;        // pose de Arte (visual)
+    if (this.parryAnimT > 0) this.parryAnimT -= dt; // pose de Parada (visual)
     // Ignición: consume el Espíritu como combustible
     if (this.ignicionT > 0) {
       this.ignicionT -= dt;

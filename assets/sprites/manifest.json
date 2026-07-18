@@ -1,18 +1,18 @@
 {
  "pip_ataque": {
-  "w": 90,
+  "w": 56,
   "h": 68,
-  "face": "left"
+  "face": "right"
  },
  "pip_idle": {
-  "w": 44,
+  "w": 49,
   "h": 68,
   "face": "right"
  },
  "pip_paso": {
-  "w": 50,
+  "w": 53,
   "h": 68,
-  "face": "left"
+  "face": "right"
  },
  "enemigo_cera_andante": {
   "w": 38,
@@ -187,5 +187,30 @@
   "w": 50,
   "h": 60,
   "face": "left"
+ },
+ "pip_arte": {
+  "w": 61,
+  "h": 68,
+  "face": "right"
+ },
+ "pip_dash": {
+  "w": 74,
+  "h": 68,
+  "face": "right"
+ },
+ "pip_ignicion": {
+  "w": 67,
+  "h": 68,
+  "face": "right"
+ },
+ "pip_parada": {
+  "w": 55,
+  "h": 68,
+  "face": "right"
+ },
+ "pip_paso_b": {
+  "w": 50,
+  "h": 68,
+  "face": "right"
  }
 }

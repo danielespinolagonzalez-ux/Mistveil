@@ -70,6 +70,12 @@ const x0 = p.x;
 for (let i = 0; i < 30; i++) p.update(1 / 60, fakeInput, roomCtx, world);
 assert('Player acelera hacia la derecha con input', p.x > x0 + 10);
 
+// R-Assets — Pip poses: ventanas visuales de arte/parada que el motor decrementa
+assert('Pip arranca sin ventana de pose arte/parada', p.castT === 0 && p.parryAnimT === 0);
+p.castT = 0.3; p.parryAnimT = 0.3;
+p.update(1 / 60, fakeInput, roomCtx, world);
+assert('las ventanas de pose (arte/parada) caducan solas', p.castT < 0.3 && p.parryAnimT < 0.3);
+
 // Pool de lágrimas: spawn, avance y expiración por alcance
 const tp = new TearPool();
 tp.spawn(50, 50, 200, 0, 100, 3.5);

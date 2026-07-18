@@ -27,8 +27,8 @@
       "clase": "hero character",
       "estado": "hecho",
       "targetH": 68,
-      "face": "left",
-      "sujeto": "the same Pip automaton mid-walking-step, right leg forward, cape slightly flowing"
+      "face": "right",
+      "sujeto": "the same Pip automaton mid-walking-step to the right, LEFT leg forward, cape swaying (i2i desde la referencia de Daniel — frame A del ciclo de caminar)"
     },
     {
       "id": "pip_ataque",
@@ -36,16 +36,55 @@
       "clase": "hero character",
       "estado": "hecho",
       "targetH": 68,
-      "face": "left",
-      "sujeto": "the same Pip automaton lunging in an attack with a small golden wrench-hammer, cape sweeping"
+      "face": "right",
+      "sujeto": "the same Pip automaton lunging in an attack to the right with a small golden wrench-hammer, cape sweeping (i2i desde la referencia)"
     },
     {
       "id": "pip_dash",
       "tipo": "sprite",
       "clase": "hero character",
+      "estado": "hecho",
       "targetH": 68,
-      "face": "left",
-      "sujeto": "the same Pip automaton in an explosive dash, body tilted forward, cape fully horizontal, faint spectral gear trail"
+      "face": "right",
+      "sujeto": "the same Pip automaton in an explosive dash to the right, body tilted forward almost horizontal, cape streaming horizontal (i2i desde la referencia)"
+    },
+    {
+      "id": "pip_paso_b",
+      "tipo": "sprite",
+      "clase": "hero character",
+      "estado": "hecho",
+      "targetH": 68,
+      "face": "right",
+      "sujeto": "the same Pip automaton mid-walking-step to the right, RIGHT leg forward (the opposite step), cape swaying (i2i desde la referencia — frame B del ciclo de caminar)"
+    },
+    {
+      "id": "pip_arte",
+      "tipo": "sprite",
+      "clase": "hero character",
+      "estado": "hecho",
+      "targetH": 68,
+      "face": "right",
+      "largestOnly": true,
+      "sujeto": "the same Pip automaton casting a spell, one brass hand raised, channeling swirling indigo ink magic (i2i desde la referencia — el motor añade el FX de la corona de tinta)"
+    },
+    {
+      "id": "pip_ignicion",
+      "tipo": "sprite",
+      "clase": "hero character",
+      "estado": "hecho",
+      "targetH": 68,
+      "face": "right",
+      "largestOnly": true,
+      "sujeto": "the same Pip automaton in IGNITION overdrive, blazing white-gold eyes, body glowing hot, hooded cape flaring upward with rising embers (i2i desde la referencia — el motor añade el aura ámbar)"
+    },
+    {
+      "id": "pip_parada",
+      "tipo": "sprite",
+      "clase": "hero character",
+      "estado": "hecho",
+      "targetH": 68,
+      "face": "right",
+      "sujeto": "the same Pip automaton in a defensive parry stance, one arm raised guarding behind a shimmering golden clockwork gear-shield of light (i2i desde la referencia)"
     },
     {
       "id": "tuerca_mascota",

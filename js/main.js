@@ -883,6 +883,7 @@ EventBus.on('armor_absorbed', (p) => {
 EventBus.on('item_equipado', (it) => flash(it.nombre, it.descripcion));
 EventBus.on('sinergia_activada', (syn) => flash('SINERGIA: ' + syn.nombre, syn.regla));
 EventBus.on('hechizo_lanzado', (h, x, y) => {
+  if (world.player) world.player.castT = 0.34; // pose de Arte mientras canaliza (visual)
   // A4 — cada Arte tiene su firma dibujada, reconocible de un vistazo
   const color = DataDB.elementos[h.elemento]?.color ?? '#bcd0ff';
   const aim = Math.atan2(world.player.aim.y, world.player.aim.x);
@@ -1349,6 +1350,7 @@ function update(dt) {
   if (bufInput.justPressed('parry') && !(cad.active && cad.counter) && p.parryCd <= 0) {
     bufInput.consume('parry');
     p.parryCd = DataDB.balance.parry.cooldown_s;
+    p.parryAnimT = 0.28; // pose de Parada (visual)
     let parried = false;
     for (const e of alive) {
       const d = Math.hypot(e.x - p.x, e.y - p.y);
@@ -2151,6 +2153,14 @@ function drawLight(t, rooms) {
   ctx.globalCompositeOperation = 'source-over';
 }
 
+// Alto de dibujo por pose de Pip (px). Las poses con capa/efecto que se extienden
+// (dash, ignición, arte, parada) se agrandan para que el CUERPO de Pip conserve el
+// mismo tamaño que en idle/andar: la IA no sabe de escalas, la fija el motor. 34 =
+// alto base (sprites guardados a 2×, dibujados a la mitad). Afinable a ojo con captura.
+const POSE_DRAWH = { pip_dash: 40, pip_ataque: 34, pip_parada: 38, pip_arte: 44, pip_ignicion: 50 };
+// Ajuste vertical fino por pose (px): 0 = pies en el suelo; negativo sube (poses aéreas).
+const POSE_DY = { pip_dash: -2, pip_arte: -1, pip_ignicion: -1 };
+
 function drawPlayer(p, t) {
   // A4 — estela de dash: engranajes espectrales que giran y se desvanecen
   for (const tr of p.trail) {
@@ -2230,18 +2240,32 @@ function drawPlayer(p, t) {
 
   // Sprite pintado si está cargado (hereda embestida/squash del transform de
   // arriba); si no, el Pip vectorial de siempre — fallback obligatorio.
-  const poseId = aa ? 'pip_ataque' : moving && Math.sin(t * 13) > 0 ? 'pip_paso' : 'pip_idle';
-  const spr = Sprites.get(poseId);
+  // Pose por estado (prioridad: dash > ataque > parada > arte > ignición > andar > idle).
+  // El motor añade el resto del movimiento: bob, embestida, squash, volteo y estelas.
+  // Andar alterna dos fotogramas (paso/paso_b) = ciclo real, no un swap con idle.
+  const walkFrame = Math.sin(t * 13) > 0 ? 'pip_paso' : 'pip_paso_b';
+  const poseId =
+      p.dashT > 0 ? 'pip_dash'
+    : aa ? 'pip_ataque'
+    : p.parryAnimT > 0 ? 'pip_parada'
+    : p.castT > 0 ? 'pip_arte'
+    : p.ignicionT > 0 ? 'pip_ignicion'
+    : moving ? walkFrame
+    : 'pip_idle';
+  let spr = Sprites.get(poseId);
+  // Si la pose de ese estado aún no cargó, cae a idle (y si tampoco, al vector).
+  if (!spr && poseId !== 'pip_idle') spr = Sprites.get('pip_idle');
   if (spr) {
-    const inf = Sprites.info(poseId);
-    const dh = 34, dw = Math.round(inf.w * dh / inf.h); // guardado a 2×, dibujado a la mitad
+    const inf = Sprites.info(Sprites.get(poseId) ? poseId : 'pip_idle');
+    const drawH = POSE_DRAWH[poseId] ?? 34;             // alto por pose (cuerpo constante)
+    const dw = Math.round(inf.w * drawH / inf.h);       // guardado a 2×, dibujado a la mitad
     const faceRight = (aa ? aa.dir[0] : p.aim.x) >= 0;
     const flip = (inf.face === 'right') !== faceRight;
     ctx.save();
-    ctx.translate(x, y + 11);
+    ctx.translate(x, y + 11 + (POSE_DY[poseId] ?? 0));
     if (flip) ctx.scale(-1, 1);
     if (p.dashT > 0) ctx.globalAlpha = 0.8; // esquiva: cuerpo espectral
-    ctx.drawImage(spr, Math.round(-dw / 2), -dh, dw, dh);
+    ctx.drawImage(spr, Math.round(-dw / 2), -drawH, dw, drawH);
     ctx.restore();
   } else {
   const ig = p.ignicionT > 0;
