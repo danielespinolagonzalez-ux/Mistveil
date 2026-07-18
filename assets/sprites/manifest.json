@@ -93,5 +93,60 @@
   "w": 41,
   "h": 88,
   "face": "right"
+ },
+ "npc_gremio": {
+  "w": 63,
+  "h": 64,
+  "face": "right"
+ },
+ "npc_hermanos": {
+  "w": 65,
+  "h": 64,
+  "face": "right"
+ },
+ "npc_margo": {
+  "w": 61,
+  "h": 68,
+  "face": "right"
+ },
+ "npc_puerta": {
+  "w": 110,
+  "h": 110,
+  "face": "right"
+ },
+ "npc_redoble": {
+  "w": 79,
+  "h": 88,
+  "face": "right"
+ },
+ "npc_tablon": {
+  "w": 56,
+  "h": 64,
+  "face": "right"
+ },
+ "npc_vesper": {
+  "w": 75,
+  "h": 72,
+  "face": "right"
+ },
+ "retrato_hermanos": {
+  "w": 171,
+  "h": 160,
+  "face": "left"
+ },
+ "retrato_margo": {
+  "w": 167,
+  "h": 160,
+  "face": "left"
+ },
+ "retrato_vesper": {
+  "w": 152,
+  "h": 160,
+  "face": "left"
+ },
+ "retrato_pip": {
+  "w": 121,
+  "h": 160,
+  "face": "left"
  }
 }

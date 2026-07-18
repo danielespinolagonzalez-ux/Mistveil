@@ -190,7 +190,8 @@
       "clase": "npc",
       "targetH": 68,
       "face": "right",
-      "sujeto": "Margo, a stout cheerful shopkeeper with a bonnet, apron full of gears and vials, small scale in hand"
+      "sujeto": "Margo, a stout cheerful shopkeeper with a bonnet, apron full of gears and vials, small scale in hand",
+      "estado": "hecho"
     },
     {
       "id": "npc_vesper",
@@ -198,7 +199,8 @@
       "clase": "npc",
       "targetH": 72,
       "face": "right",
-      "sujeto": "Lady Vesper, an aristocratic enigmatic lady in a twilight gown with a veil, fan made of clock hands"
+      "sujeto": "Lady Vesper, an aristocratic enigmatic lady in a twilight gown with a veil, fan made of clock hands",
+      "estado": "hecho"
     },
     {
       "id": "npc_hermanos",
@@ -206,7 +208,8 @@
       "clase": "npc",
       "targetH": 64,
       "face": "right",
-      "sujeto": "Brothers No.7 and No.12: two small twin automatons side by side, one neat and polished, the other scruffy and dented"
+      "sujeto": "Brothers No.7 and No.12: two small twin automatons side by side, one neat and polished, the other scruffy and dented",
+      "estado": "hecho"
     },
     {
       "id": "npc_templanza",
@@ -247,7 +250,8 @@
       "clase": "dialogue portrait bust",
       "targetH": 160,
       "face": "left",
-      "sujeto": "bust portrait of Pip the clockwork apprentice automaton, brass and porcelain, indigo hood, warm glowing eyes, shoulders-up, three-quarter view looking slightly left, expressive"
+      "sujeto": "bust portrait of Pip the clockwork apprentice automaton, brass and porcelain, indigo hood, warm glowing eyes, shoulders-up, three-quarter view looking slightly left, expressive",
+      "estado": "hecho"
     },
     {
       "id": "retrato_ferran",
@@ -263,7 +267,8 @@
       "clase": "dialogue portrait bust",
       "targetH": 160,
       "face": "left",
-      "sujeto": "bust portrait of Margo the cheerful shopkeeper, bonnet, rosy cheeks, shoulders-up, three-quarter view looking slightly left"
+      "sujeto": "bust portrait of Margo the cheerful shopkeeper, bonnet, rosy cheeks, shoulders-up, three-quarter view looking slightly left",
+      "estado": "hecho"
     },
     {
       "id": "retrato_vesper",
@@ -271,7 +276,8 @@
       "clase": "dialogue portrait bust",
       "targetH": 160,
       "face": "left",
-      "sujeto": "bust portrait of Lady Vesper, twilight veil, knowing gaze, shoulders-up, three-quarter view looking slightly left"
+      "sujeto": "bust portrait of Lady Vesper, twilight veil, knowing gaze, shoulders-up, three-quarter view looking slightly left",
+      "estado": "hecho"
     },
     {
       "id": "retrato_hermanos",
@@ -279,7 +285,8 @@
       "clase": "dialogue portrait bust",
       "targetH": 160,
       "face": "left",
-      "sujeto": "bust portrait of twin automatons No.7 and No.12 together, one neat one scruffy, shoulders-up"
+      "sujeto": "bust portrait of twin automatons No.7 and No.12 together, one neat one scruffy, shoulders-up",
+      "estado": "hecho"
     },
     {
       "id": "retrato_templanza",
@@ -511,7 +518,8 @@
       "clase": "prop",
       "targetH": 64,
       "face": "right",
-      "sujeto": "a wooden notice board on a post, parchment contracts pinned to it, one fluttering, small bronze bell on top"
+      "sujeto": "a wooden notice board on a post, parchment contracts pinned to it, one fluttering, small bronze bell on top",
+      "estado": "hecho"
     },
     {
       "id": "npc_gremio",
@@ -519,7 +527,8 @@
       "clase": "prop",
       "targetH": 64,
       "face": "right",
-      "sujeto": "a guild notice board of dark oak with brass corners, wanted-poster parchments and a wax-sealed ledger hanging by a chain"
+      "sujeto": "a guild notice board of dark oak with brass corners, wanted-poster parchments and a wax-sealed ledger hanging by a chain",
+      "estado": "hecho"
     },
     {
       "id": "npc_redoble",
@@ -527,7 +536,8 @@
       "clase": "large prop",
       "targetH": 88,
       "face": "right",
-      "sujeto": "a small open-air battle pavilion: a great bronze bell hanging from a wooden gallows-frame over a drum podium, banners"
+      "sujeto": "a small open-air battle pavilion: a great bronze bell hanging from a wooden gallows-frame over a drum podium, banners",
+      "estado": "hecho"
     },
     {
       "id": "npc_puerta",
@@ -535,7 +545,8 @@
       "clase": "large prop",
       "targetH": 110,
       "face": "right",
-      "sujeto": "the Clock Gate: a monumental double door with an inlaid clock face, roman numerals, gold on dark oak, slightly ajar with warm light leaking"
+      "sujeto": "the Clock Gate: a monumental double door with an inlaid clock face, roman numerals, gold on dark oak, slightly ajar with warm light leaking",
+      "estado": "hecho"
     }
   ]
 }

@@ -3164,8 +3164,10 @@ function renderPueblo(t) {
   // el busto asoma por encima del marco a la izquierda)
   if (dlg) {
     const line = dlg.lines[Math.min(dlg.i, dlg.lines.length - 1)];
-    const bh = 64, by = VH - bh - 12;
-    const ret = Sprites.get('retrato_' + dlg.npc.id);
+    const bh = 78, by = VH - bh - 12; // 3 líneas: el retrato roba ancho al texto
+    // El retrato es del que HABLA: las líneas de Pip muestran a Pip, no al NPC
+    const habla = (line.who ?? '').toLowerCase() === 'pip' ? 'pip' : dlg.npc.id;
+    const ret = Sprites.get('retrato_' + habla);
     ctx.fillStyle = 'rgba(13,10,26,0.92)';
     ctx.fillRect(20, by, VW - 40, bh);
     ctx.strokeStyle = '#6b5a36'; ctx.lineWidth = 2;
@@ -3183,8 +3185,8 @@ function renderPueblo(t) {
       ctx.fillText(line.who, tx, by + 18);
     }
     font(9); ctx.fillStyle = '#e9e2f5';
-    // texto en 2 líneas ajustadas al ancho REAL disponible
-    const lines = wrapText(line.text, VW - 40 - tx - 14, 2);
+    // texto en hasta 3 líneas ajustadas al ancho REAL disponible
+    const lines = wrapText(line.text, VW - 40 - tx - 14, 3);
     let ly = by + (line.who ? 34 : 26);
     for (const ln of lines) { ctx.fillText(ln, tx, ly); ly += 14; }
     font(8); ctx.textAlign = 'right';
@@ -3621,6 +3623,13 @@ function paintFatal(err) {
     piso: (n = 4) => { RunState.piso = n - 1; descendFloor(); return 'piso ' + RunState.piso + ' · ' + (floorMap.current?.bioma?.nombre ?? ''); },
     // Sube la racha (pruebas de Groove/buff G7c)
     groove: (n = 100) => { world.player?.addGroove(n); return { groove: Math.round(world.player?.groove ?? 0), buff: world.player?.grooveBuffed }; },
+    // Abre el diálogo de un NPC del pueblo por id (pruebas de retratos/diálogos)
+    hablar: (id = 'margo') => {
+      const npc = NPCS.find(n => n.id === id);
+      if (!npc || mode !== 'pueblo') return 'requiere modo pueblo y un id válido';
+      dlg = { npc, lines: npc.lines(), i: 0 };
+      return npc.nombre;
+    },
     // Brota n enemigos por id junto al jugador (pruebas de sprites/IA)
     spawn: (id = 'cera_andante', n = 1) => {
       const p = world.player; if (!p) return 'sin jugador';
