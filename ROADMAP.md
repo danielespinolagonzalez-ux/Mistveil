@@ -66,6 +66,19 @@ Valores en balance.cadencia (F5).
 
 **Criterio:** se puede tejer esquivas dentro de un combo sin que "te inflen"; el combate fluye contra grupos.
 
+## Pulido UI/UX (a petición de Daniel: "texto descuadrado o cosas que se solapan")
+Auditoría con capturas de TODAS las pantallas; causa raíz: `font(size)` pinta a `size*2` px y varios layouts contaban con el tamaño sin doblar.
+- [x] U1 HUD: barra de controles movida abajo, centrada y temporizada (`balance.ui.hint_secs`); etiqueta de piso corta. Se acabó el solape superior (queja directa).
+- [x] U2 Menú de equipo: cabecera mide y separa engranajes/nivel/oro; Crónica separa columnas de valores y recorta nombres largos ("…"); sin numeral 'VI' tras el panel de la Esfera; nombre de elemento recortado.
+- [x] U3 El Redoble: menú de órdenes a 14px (panel más alto).
+- [x] U4 Balance: contrato en 2 líneas; más aire en subida de nivel.
+- [x] U5 Tutorial: subtítulo ajustado a varias líneas.
+- [x] U6 Muerte/Victoria: título auto-encoge; tarjetas de mejora sin desbordar; HUD/tutorial/táctil solo en modo 'play' (no "sangran" bajo los overlays).
+- [x] U7 Emojis tofu de VT323 (🔒/🍞/⛓) dibujados a mano.
+- [x] U8 Ayudas de texto medido reutilizables: `fitFont`/`wrapText`/`clipText` (main) y `_clip`/`_lock`/`_wrap` (menús/tutorial).
+
+**Criterio:** ninguna pantalla muestra texto solapado o cortado a 640×360 ni en móvil; verificado con capturas headless.
+
 ## Fase R4 — Refactor sostenible (sin cambiar comportamiento; smoke como red)
 - [ ] R4.1 Trocear `main.js`: `js/scenes/` (un módulo por modo con `{enter, update, render}`), `js/render/` (dibujo 2.5D, HUD, minimapa), `js/signals.js` (los ~40 listeners centralizados; hoy hay señales suscritas en 2-3 sitios).
 - [ ] R4.2 Extraer `AudioManager` de `state.js` a `js/audio.js`.
