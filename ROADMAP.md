@@ -59,7 +59,10 @@ Estilo: romanticismo pictórico + fantasía FFIX/FFXIV. Daniel genera con ChatGP
 - [x] AS2 Cargador `js/sprites.js` con fallback por-código; en el bundle los PNG van incrustados en base64 (`__MISTVEIL_SPRITES__`).
 - [ ] AS3 Integración del lote de validación — HECHO Pip (idle/paso/ataque, volteo por dirección, hereda embestida/squash del motor); FALTAN 3 enemigos + suelo/muro Péndulos + iconos reliquias (esperando imágenes de Daniel).
   - [ ] AS3b Campo `sprite` en `data/enemigos.json` + integración en `drawEnemy` cuando lleguen los enemigos.
-- [ ] AS4 Resto de lotes según lleguen (jefes, pueblo+retratos, biomas 2-3, iconos UI, botones táctiles, portada, marcos).
+- [ ] AS4 Producción por lotes vía Recraft MCP según `docs/pipeline_recraft.md` y `tools/encargo.json` (lotes A→I con aprobación de Daniel entre lotes; ~250 créditos estimados).
+  - [ ] AS4a Reintentar `create_style` (500 el 2026-07-18); si funciona, control A/B con un asset aprobado y adoptar `style_id`.
+  - [ ] AS4b Modo multi-recorte por celdas en el troceador para las hojas de iconos.
+  - [ ] AS4c Integración de texturas de suelo/muro como patrón en `room.canvas` (camino distinto al de sprites).
 - [ ] AS5 Peso del bundle vigilado (<8 MB) y divulgación de IA en itch.io (enlaza con R5.5).
 
 **Criterio:** el piso 1 se ve "vestido" con el estilo de la llave; quitar cualquier PNG no rompe nada (fallback); Daniel aprueba el look en su iPhone.

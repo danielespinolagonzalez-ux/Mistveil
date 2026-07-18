@@ -29,17 +29,8 @@ function findPlaywright() {
   throw new Error('playwright no encontrado: npm i playwright --no-save en el scratchpad');
 }
 
-// Config por asset: altura final en px del canvas del juego ×2 (se guarda a 2×
-// y el motor dibuja a la mitad: nitidez al reducir y margen para menús).
-// face: hacia dónde mira el arte original (para que el motor sepa cuándo voltear).
-const CONFIG = {
-  pip_idle:   { targetH: 68, face: 'right' },
-  pip_paso:   { targetH: 68, face: 'left' },
-  pip_ataque: { targetH: 68, face: 'left' },
-  // largestOnly: descarta props sueltos (velas, charcos aparte…) y se queda
-  // con el componente conexo más grande — para sprites de UN sujeto.
-  enemigo_cera_andante: { targetH: 68, face: 'left', largestOnly: true },
-};
+// La config por asset (targetH ×2, face, largestOnly) vive en tools/encargo.json
+// — una sola fuente de verdad para catálogo, prompts y troceado.
 const DEFAULTS = { targetH: 68, face: 'right' };
 
 const ROOT = resolve(new URL('.', import.meta.url).pathname, '..');
@@ -49,7 +40,14 @@ const OUT = resolve(ROOT, 'assets/sprites');
 async function main() {
   const { chromium } = findPlaywright();
   mkdirSync(OUT, { recursive: true });
-  const files = readdirSync(SRC).filter(f => f.endsWith('.png'));
+  // Config por id desde el catálogo (las texturas/hojas se saltan: van por otro camino)
+  const encargo = JSON.parse(readFileSync(resolve(ROOT, 'tools/encargo.json'), 'utf8'));
+  const CONFIG = {}, NO_SPRITE = new Set();
+  for (const a of encargo.assets) {
+    if (a.tipo === 'sprite') CONFIG[a.id] = a;
+    else NO_SPRITE.add(a.id);
+  }
+  const files = readdirSync(SRC).filter(f => f.endsWith('.png') && !NO_SPRITE.has(basename(f, '.png')));
   if (!files.length) { console.log('assets/src vacío — nada que trocear'); return; }
   const browser = await chromium.launch({
     executablePath: process.env.CHROMIUM_PATH ?? '/opt/pw-browsers/chromium',

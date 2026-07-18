@@ -1,0 +1,80 @@
+{
+  "_doc": "Catálogo de assets para producción con Recraft (ver docs/pipeline_recraft.md). El troceador (slice_assets.mjs) lee de aquí targetH/face/largestOnly por id. Los prompts van en inglés: Recraft los sigue mejor (validado en la prueba de la cera andante).",
+
+  "plantilla_sprite": "Video game {CLASE} sprite in the painting style of Final Fantasy IX concept art: {SUJETO}. Three-quarter top-down JRPG view. CRITICAL STYLE: dark romanticist OIL PAINTING with dramatic chiaroscuro — rich impasto brushwork, deep violet-indigo shadow tones, glowing amber and aged-brass highlights, melancholic gothic clockwork atmosphere, golden-hour rim light from upper left. The background must be a plain very dark muted violet, almost black. NOT cute, NOT pastel, NOT watercolor, NOT children's book illustration, NOT white background. Single subject centered, clear readable silhouette, no text, no watermark.",
+
+  "plantilla_textura": "Seamless tileable {TIPO} texture for a video game, top-down view: {SUJETO}. CRITICAL STYLE: dark romanticist oil painting, muted warm palette of amber, honey and aged brass over deep violet-indigo, painterly but with even lighting and NO vignette so the tile repeats invisibly. The image must tile seamlessly on all edges. No text, no watermark, no single focal object.",
+
+  "plantilla_hoja": "Icon sheet for a video game: a {REJILLA} grid of same-size icons, generously spaced, each icon centered in its cell, on a plain very dark muted violet background. CRITICAL STYLE: miniature romanticist oil paintings with a subtle luminous rim, deep violet shadows, glowing amber/brass accents, Final Fantasy IX fantasy charm. Icons in reading order: {LISTA}. No text, no watermark.",
+
+  "flujo": ["generate_image n=2 con la plantilla", "elegir candidata", "remove_background de Recraft SIEMPRE (los umbrales locales fallan con sujeto oscuro)", "descargar a assets/src/<id>.png", "node tools/slice_assets.mjs", "integrar + captura para Daniel"],
+
+  "assets": [
+    { "id": "pip_idle", "tipo": "sprite", "clase": "hero character", "estado": "hecho", "targetH": 68, "face": "right", "sujeto": "Pip, a small clockwork automaton apprentice with a brass and porcelain body, indigo hooded cape with gold trim, a golden wind-up key on his back, two warm glowing eyes; standing relaxed, seen three-quarter facing lower-right" },
+    { "id": "pip_paso", "tipo": "sprite", "clase": "hero character", "estado": "hecho", "targetH": 68, "face": "left", "sujeto": "the same Pip automaton mid-walking-step, right leg forward, cape slightly flowing" },
+    { "id": "pip_ataque", "tipo": "sprite", "clase": "hero character", "estado": "hecho", "targetH": 68, "face": "left", "sujeto": "the same Pip automaton lunging in an attack with a small golden wrench-hammer, cape sweeping" },
+    { "id": "pip_dash", "tipo": "sprite", "clase": "hero character", "targetH": 68, "face": "left", "sujeto": "the same Pip automaton in an explosive dash, body tilted forward, cape fully horizontal, faint spectral gear trail" },
+    { "id": "tuerca_mascota", "tipo": "sprite", "clase": "pet companion", "targetH": 48, "face": "right", "sujeto": "Tuerca, a tiny adorable pet: a single brass gear with two big warm glowing eyes and stubby little feet, curious expression" },
+
+    { "id": "enemigo_cera_andante", "tipo": "sprite", "clase": "enemy", "estado": "hecho", "targetH": 68, "face": "left", "largestOnly": true, "sujeto": "a small walking pile of warm amber melted wax, faint candle flame for a head, wax droplets dripping, vacant haunting expression, stubby feet" },
+    { "id": "enemigo_velon_inestable", "tipo": "sprite", "clase": "enemy", "targetH": 68, "face": "left", "largestOnly": true, "sujeto": "a fat unstable votive candle creature, nervous sputtering flame, incandescent cracks glowing through its wax body, about to explode" },
+    { "id": "enemigo_cerero_errante", "tipo": "sprite", "clase": "enemy", "targetH": 72, "face": "left", "largestOnly": true, "sujeto": "a hunched hooded figure made of wax pouring burning wax from a lantern-ladle, leaving melted footprints" },
+    { "id": "enemigo_tejedor_horas", "tipo": "sprite", "clase": "enemy", "targetH": 64, "face": "left", "largestOnly": true, "sujeto": "a mechanical brass spider whose legs are clock hands, abdomen is a clock face, trailing bronze thread" },
+    { "id": "enemigo_engranaje_errante", "tipo": "sprite", "clase": "enemy", "targetH": 60, "face": "left", "largestOnly": true, "sujeto": "a large rolling brass gear with a single mechanical eye at its axis, worn teeth" },
+    { "id": "enemigo_campanero", "tipo": "sprite", "clase": "enemy", "targetH": 68, "face": "left", "largestOnly": true, "sujeto": "a stout bronze bell creature with powerful arms, its clapper poking out like a fist, wooden yoke as shoulder pads" },
+    { "id": "enemigo_cuco_de_cuerda", "tipo": "sprite", "clase": "enemy", "targetH": 60, "face": "left", "largestOnly": true, "sujeto": "a mechanical cuckoo bird of painted wood and brass, springing from a coiled spring, wide crazed eyes" },
+    { "id": "enemigo_minutero_gemelo", "tipo": "sprite", "clase": "enemy", "targetH": 72, "face": "left", "largestOnly": true, "sujeto": "a slender fencer made of two twin minute-hands, in en-garde pose, elegant and razor-sharp" },
+    { "id": "enemigo_polilla_del_polvo", "tipo": "sprite", "clase": "enemy", "targetH": 60, "face": "left", "largestOnly": true, "sujeto": "a grey-lavender moth of lunar dust, wings patterned like clock faces, spring antennae, halo of dust motes" },
+    { "id": "enemigo_afinador", "tipo": "sprite", "clase": "enemy", "targetH": 72, "face": "left", "largestOnly": true, "sujeto": "an ethereal figure of compacted dust holding a large vibrating tuning fork, serene unsettling face" },
+
+    { "id": "jefe_campanero_mayor", "tipo": "sprite", "clase": "boss", "targetH": 96, "face": "left", "largestOnly": true, "sujeto": "the Great Bellkeeper: an enormous ceremonial engraved bronze bell with mighty arms, a crown of lit candles, broken chains hanging, imposing presence" },
+    { "id": "jefe_archivera_anegada", "tipo": "sprite", "clase": "boss", "targetH": 96, "face": "left", "largestOnly": true, "sujeto": "the Drowned Archivist: a great moth-librarian soaked in indigo ink, wings like dissolving wet pages, tiny spectacles, loose pages and ink drops floating around her" },
+    { "id": "jefe_primer_relojero", "tipo": "sprite", "clase": "boss", "targetH": 96, "face": "left", "largestOnly": true, "sujeto": "the First Clockmaker: a venerable broken automaton, majestic and sorrowful, open chest revealing golden gears still turning, beard of copper shavings, clock-hand staff, romanticist tragedy aura" },
+
+    { "id": "npc_ferran", "tipo": "sprite", "clase": "npc", "targetH": 68, "face": "right", "sujeto": "Ferran, an elderly kind master clockmaker: leather apron, jeweler's loupe on his forehead, patched brass hands" },
+    { "id": "npc_margo", "tipo": "sprite", "clase": "npc", "targetH": 68, "face": "right", "sujeto": "Margo, a stout cheerful shopkeeper with a bonnet, apron full of gears and vials, small scale in hand" },
+    { "id": "npc_vesper", "tipo": "sprite", "clase": "npc", "targetH": 72, "face": "right", "sujeto": "Lady Vesper, an aristocratic enigmatic lady in a twilight gown with a veil, fan made of clock hands" },
+    { "id": "npc_hermanos", "tipo": "sprite", "clase": "npc", "targetH": 64, "face": "right", "sujeto": "Brothers No.7 and No.12: two small twin automatons side by side, one neat and polished, the other scruffy and dented" },
+    { "id": "npc_templanza", "tipo": "sprite", "clase": "npc", "targetH": 72, "face": "right", "sujeto": "a shrine statue of Temperance: a praying figure of marble and brass holding a stilled pendulum" },
+    { "id": "npc_virtuoso", "tipo": "sprite", "clase": "npc", "targetH": 72, "face": "right", "sujeto": "a shrine statue of Virtuosity: a dancing figure of marble and brass with small bells" },
+    { "id": "npc_eco_bronce", "tipo": "sprite", "clase": "npc", "targetH": 60, "face": "right", "sujeto": "the Bronze Echo: an ancient singing bronze bust, mouth open, subtle carved sound waves" },
+    { "id": "prop_puerta_reloj", "tipo": "sprite", "clase": "large prop", "targetH": 120, "face": "right", "sujeto": "the Clock Gate: a monumental double door with an inlaid clock face, roman numerals, gold on dark oak" },
+
+    { "id": "retrato_pip", "tipo": "sprite", "clase": "dialogue portrait bust", "targetH": 160, "face": "left", "sujeto": "bust portrait of Pip the clockwork apprentice automaton, brass and porcelain, indigo hood, warm glowing eyes, shoulders-up, three-quarter view looking slightly left, expressive" },
+    { "id": "retrato_ferran", "tipo": "sprite", "clase": "dialogue portrait bust", "targetH": 160, "face": "left", "sujeto": "bust portrait of Ferran the elderly master clockmaker, jeweler's loupe, kind tired eyes, shoulders-up, three-quarter view looking slightly left" },
+    { "id": "retrato_margo", "tipo": "sprite", "clase": "dialogue portrait bust", "targetH": 160, "face": "left", "sujeto": "bust portrait of Margo the cheerful shopkeeper, bonnet, rosy cheeks, shoulders-up, three-quarter view looking slightly left" },
+    { "id": "retrato_vesper", "tipo": "sprite", "clase": "dialogue portrait bust", "targetH": 160, "face": "left", "sujeto": "bust portrait of Lady Vesper, twilight veil, knowing gaze, shoulders-up, three-quarter view looking slightly left" },
+    { "id": "retrato_hermanos", "tipo": "sprite", "clase": "dialogue portrait bust", "targetH": 160, "face": "left", "sujeto": "bust portrait of twin automatons No.7 and No.12 together, one neat one scruffy, shoulders-up" },
+    { "id": "retrato_templanza", "tipo": "sprite", "clase": "dialogue portrait bust", "targetH": 160, "face": "left", "sujeto": "bust portrait of the Temperance shrine statue, marble and brass, serene closed eyes" },
+    { "id": "retrato_virtuoso", "tipo": "sprite", "clase": "dialogue portrait bust", "targetH": 160, "face": "left", "sujeto": "bust portrait of the Virtuosity shrine statue, marble and brass, joyful mid-song expression" },
+    { "id": "retrato_eco", "tipo": "sprite", "clase": "dialogue portrait bust", "targetH": 160, "face": "left", "sujeto": "bust portrait of the Bronze Echo singing bust, ancient patina, mouth open in song" },
+
+    { "id": "prop_pendulo_colgante", "tipo": "sprite", "clase": "prop", "targetH": 96, "face": "right", "sujeto": "a great bronze pendulum on a chain, seen hanging" },
+    { "id": "prop_candelabro", "tipo": "sprite", "clase": "prop", "targetH": 80, "face": "right", "sujeto": "a standing three-armed candelabrum with lit dripping candles" },
+    { "id": "prop_estandarte", "tipo": "sprite", "clase": "prop", "targetH": 88, "face": "right", "sujeto": "a hanging purple banner embroidered with a golden clock emblem, frayed lower edge" },
+    { "id": "prop_estanteria_tinta", "tipo": "sprite", "clase": "prop", "targetH": 96, "face": "right", "sujeto": "a tall bookshelf overflowing with old books dripping indigo ink" },
+    { "id": "prop_pila_libros", "tipo": "sprite", "clase": "prop", "targetH": 56, "face": "right", "sujeto": "an unstable pile of ancient books with an inkwell on top" },
+    { "id": "prop_engranaje_flotante", "tipo": "sprite", "clase": "prop", "targetH": 72, "face": "right", "sujeto": "a large copper gear floating in the air, slightly ghostly" },
+    { "id": "prop_reloj_derretido", "tipo": "sprite", "clase": "prop", "targetH": 72, "face": "right", "sujeto": "a wall clock melting like wax in homage to Dali, numerals dripping" },
+    { "id": "prop_trampilla", "tipo": "sprite", "clase": "prop", "targetH": 64, "face": "right", "sujeto": "a circular wood-and-brass trapdoor engraved with a clock face, ajar into darkness" },
+    { "id": "prop_pedestal", "tipo": "sprite", "clase": "prop", "targetH": 56, "face": "right", "sujeto": "a stone and brass pedestal with an empty velvet cushion" },
+    { "id": "prop_mostrador_tienda", "tipo": "sprite", "clase": "prop", "targetH": 72, "face": "right", "sujeto": "a wooden shop counter with a small purple-and-gold striped awning" },
+    { "id": "prop_roca", "tipo": "sprite", "clase": "prop", "targetH": 48, "face": "right", "sujeto": "a mossy amber stone boulder, obstacle-sized" },
+    { "id": "prop_bloque_cera", "tipo": "sprite", "clase": "prop", "targetH": 48, "face": "right", "sujeto": "a cubic block of translucent amber wax with an unlit wick, breakable" },
+
+    { "id": "suelo_pendulos", "tipo": "textura", "sujeto": "large amber stone flagstones with honey veins, dark joints, centuries of wear, a tiny gear embedded here and there" },
+    { "id": "muro_pendulos", "tipo": "textura", "sujeto": "warm ashlar stone masonry with brass moldings, horizontal band seen front-on" },
+    { "id": "suelo_archivo", "tipo": "textura", "sujeto": "noble ink-stained wooden floorboards, thin puddles of indigo ink, loose stuck pages" },
+    { "id": "muro_archivo", "tipo": "textura", "sujeto": "built-in oak shelving with books dripping ink, horizontal band seen front-on" },
+    { "id": "suelo_invertida", "tipo": "textura", "sujeto": "copper and twilight-enamel tiles with reliefs of melted clock faces" },
+    { "id": "muro_invertida", "tipo": "textura", "sujeto": "exposed mechanism wall: copper and lavender gears set in stone, horizontal band seen front-on" },
+
+    { "id": "hoja_iconos_reliquias", "tipo": "hoja", "rejilla": "4x5", "lista": "split inkwell; melted candle hugging a vial; huge crystal teardrop; loose spinning second hand; coiled clock spring; broken sharpened clock hand; pocket metronome; stilled pendulum in a glass bell; torn bell; conch shell with a clock face; battery of soul vials; cracked wax seal; glass eye; drop of black oil; twin mirrored teardrops; living ink drop with eyes; silver lunar moth; loose pages tied with string; tin heart with rivets; golden hourglass" },
+    { "id": "hoja_iconos_artes", "tipo": "hoja", "rejilla": "1x3", "lista": "bursting crown of indigo ink; crescent of turquoise foam; fan of burning embers" },
+    { "id": "hoja_iconos_sellos", "tipo": "hoja", "rejilla": "2x4", "lista": "wax seal with flame; wax seal with wave; wax seal with wind gust; wax seal with teardrop; wax seal with rising sun; wax seal with setting sun; wax seal with lightning bolt; translucent colorless wax seal" },
+    { "id": "hoja_iconos_ui", "tipo": "hoja", "rejilla": "2x4", "lista": "full wax heart; half wax heart; empty extinguished wax heart; golden gear-coin; silver gear; luminous blue-violet spirit droplet; purple streak gem rhombus; small hourglass" },
+    { "id": "hoja_botones_tactiles", "tipo": "hoja", "rejilla": "2x3", "lista": "six circular medallion UI buttons of forged gold with a central gem, each with a different symbol: sword; musical note; bell; fountain pen; flame; open hand" },
+
+    { "id": "portada_titulo", "tipo": "pantalla", "sujeto": "the Mistveil Clock-Tower rising through golden mist at dusk, monumental and melancholic, tiny Pip from behind before the gate, romanticist small-figure-before-the-sublime composition, clear space in upper third for a title, 16:9" }
+  ]
+}
