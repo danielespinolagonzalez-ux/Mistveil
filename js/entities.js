@@ -715,6 +715,62 @@ export class Enemy {
         }
         break;
       }
+      case 'blink': {
+        // Saltahoras: cada period se TELETRANSPORTA a un flanco del jugador y dispara.
+        // No lo persigues: reaccionas a dónde reaparece. Vuela.
+        const Bk = def.blink ?? {};
+        if (this._blinkT === undefined) this._blinkT = Bk.period_s ?? 2.2;
+        this.vx = this.vy = 0;
+        this._blinkTele = this._blinkT < (Bk.telegraph_s ?? 0.4); // aviso: parpadea antes de saltar
+        this._blinkT -= dt;
+        if (this._blinkT <= 0) {
+          this._blinkT = Bk.period_s ?? 2.2;
+          EventBus.emit('enemy_blink', this.x, this.y); // poof en el origen
+          const a = Math.atan2(dy, dx) + (Math.random() - 0.5) * (Bk.spread ?? 2.6);
+          const r = Bk.dist_px ?? 92;
+          this.x = player.x - Math.cos(a) * r;
+          this.y = player.y - Math.sin(a) * r;
+          EventBus.emit('enemy_blink', this.x, this.y); // poof en destino
+          if (def.proyectil) {
+            const bd = Math.hypot(player.x - this.x, player.y - this.y) || 1;
+            world.bullets.spawn({ x: this.x, y: this.y, vx: (player.x - this.x) / bd * def.proyectil.velocidad, vy: (player.y - this.y) / bd * def.proyectil.velocidad, damage: def.proyectil.dano, color: this.elementColor });
+          }
+          AudioManager.beep(1500, 0.06, 'sine', 0.04, -500);
+        }
+        break;
+      }
+      case 'shielder': {
+        // Broquel: persigue de frente pero el escudo gira DESPACIO → flanquéalo.
+        // El bloqueo frontal se resuelve en takeDamage con this._faceAng.
+        if (this._faceAng === undefined) this._faceAng = Math.atan2(dy, dx);
+        const objetivo = Math.atan2(dy, dx);
+        let da = objetivo - this._faceAng; while (da > Math.PI) da -= Math.PI * 2; while (da < -Math.PI) da += Math.PI * 2;
+        const turn = (def.escudo?.giro ?? 2.4) * dt;
+        this._faceAng += Math.max(-turn, Math.min(turn, da));
+        this.vx = dx / dist * def.velocidad;
+        this.vy = dy / dist * def.velocidad;
+        break;
+      }
+      case 'healer': {
+        // Restaurador: se aparta y CURA a los enemigos heridos cercanos. Mátalo primero.
+        this.vx = -dx / dist * def.velocidad * 0.55;
+        this.vy = -dy / dist * def.velocidad * 0.55;
+        this.fireCd -= dt;
+        if (this.fireCd <= 0) {
+          this.fireCd = def.cura?.cadencia_s ?? 1.6;
+          let curado = false;
+          for (const o of (world.enemies ?? [])) {
+            if (o === this || o.health.dead) continue;
+            if (Math.hypot(o.x - this.x, o.y - this.y) < (def.cura?.radio_px ?? 96) && o.health.hp < o.health.max) {
+              o.health.hp = Math.min(o.health.max, o.health.hp + (def.cura?.cantidad ?? 2));
+              curado = true;
+              EventBus.emit('enemy_curado', o.x, o.y);
+            }
+          }
+          if (curado) AudioManager.beep(680, 0.1, 'sine', 0.04, 140);
+        }
+        break;
+      }
       default: this.vx = this.vy = 0;
     }
 
@@ -753,6 +809,15 @@ export class Enemy {
 
   // Devuelve el daño aplicado (0 si no)
   takeDamage(base, fromX, fromY, kbMult = 1) {
+    // Broquel: los golpes que entran por el ARCO frontal del escudo casi no hacen daño
+    if (this.def.escudo && this._faceAng !== undefined) {
+      const hitAng = Math.atan2(fromY - this.y, fromX - this.x); // de dónde viene el golpe
+      let da = hitAng - this._faceAng; while (da > Math.PI) da -= Math.PI * 2; while (da < -Math.PI) da += Math.PI * 2;
+      if (Math.abs(da) < (this.def.escudo.arco ?? 1.0)) {
+        base *= (this.def.escudo.mult ?? 0.15);
+        EventBus.emit('escudo_bloqueo', this.x + Math.cos(this._faceAng) * this.r, this.y + Math.sin(this._faceAng) * this.r);
+      }
+    }
     // Gemelos vinculados: mientras ambos viven, se protegen (mitad de daño)
     if (this.def.gemelo && this.twin && !this.twin.health.dead) base *= 0.5;
     const dmg = Math.max(1, Math.round(base)); // redondeo final, mínimo 1

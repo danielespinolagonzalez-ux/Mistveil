@@ -272,6 +272,68 @@
       "coste_dificultad": 2,
       "desc": "Platillo de bronce anclado que descarga chispazos al jugador con cada golpe.",
       "familia": "laton"
+    },
+    {
+      "id": "saltahoras",
+      "nombre": "Saltahoras",
+      "pisos": [4, 7, 10, 12],
+      "hp": 8,
+      "velocidad": 0,
+      "dano_contacto": 1,
+      "elemento": "oscuridad",
+      "comportamiento": "blink",
+      "vuela": true,
+      "blink": { "period_s": 2.0, "telegraph_s": 0.4, "dist_px": 96, "spread": 2.6 },
+      "proyectil": { "dano": 1, "velocidad": 175, "cadencia_s": 2.0 },
+      "counter_chance": 0.0,
+      "coste_dificultad": 3,
+      "desc": "Espectro de cuarzo que se TELETRANSPORTA a tu flanco y dispara. No lo persigas: reacciona a dónde reaparece.",
+      "familia": "polvo"
+    },
+    {
+      "id": "broquel",
+      "nombre": "Broquel de Bronce",
+      "pisos": [1, 3, 7, 10],
+      "hp": 20,
+      "velocidad": 72,
+      "dano_contacto": 1,
+      "elemento": "tierra",
+      "comportamiento": "shielder",
+      "escudo": { "arco": 1.05, "mult": 0.15, "giro": 2.3 },
+      "counter_chance": 0.0,
+      "coste_dificultad": 3,
+      "desc": "Guardián con un broquel de bronce: los golpes frontales rebotan. Su escudo gira despacio: FLANQUÉALO.",
+      "familia": "laton"
+    },
+    {
+      "id": "cumulo_de_sebo",
+      "nombre": "Cúmulo de Sebo",
+      "pisos": [1, 3, 4],
+      "hp": 12,
+      "velocidad": 88,
+      "dano_contacto": 1,
+      "elemento": "fuego",
+      "comportamiento": "chase",
+      "divide": { "hijo": "peon_de_sebo", "n": 2, "hp": 4 },
+      "counter_chance": 0.0,
+      "coste_dificultad": 3,
+      "desc": "Masa de sebo que al morir se PARTE en dos peones. Mátalo y prepárate para la multitud.",
+      "familia": "cera"
+    },
+    {
+      "id": "restaurador",
+      "nombre": "Restaurador",
+      "pisos": [4, 6, 10, 12],
+      "hp": 9,
+      "velocidad": 110,
+      "dano_contacto": 0,
+      "elemento": "luz",
+      "comportamiento": "healer",
+      "cura": { "cadencia_s": 1.5, "radio_px": 96, "cantidad": 2 },
+      "counter_chance": 0.0,
+      "coste_dificultad": 2,
+      "desc": "Fuelle de luz que huye y CURA a los enemigos heridos cercanos. No ataca: mátalo PRIMERO.",
+      "familia": "polvo"
     }
   ],
   "jefes": [
@@ -317,7 +379,9 @@
       "campanero",
       "cuco_de_cuerda",
       "minutero_gemelo",
-      "peon_de_sebo"
+      "peon_de_sebo",
+      "broquel",
+      "cumulo_de_sebo"
     ],
     "bioma_archivo": [
       "cera_andante",
@@ -331,7 +395,10 @@
       "minutero_gemelo",
       "remora_de_tinta",
       "girandula",
-      "peon_de_sebo"
+      "peon_de_sebo",
+      "saltahoras",
+      "cumulo_de_sebo",
+      "restaurador"
     ],
     "bioma_invertida": [
       "cera_andante",
@@ -344,7 +411,10 @@
       "afinador",
       "minutero_gemelo",
       "badajo_errante",
-      "cimbalo"
+      "cimbalo",
+      "saltahoras",
+      "broquel",
+      "restaurador"
     ],
     "bioma_truenos": [
       "campanero",
@@ -355,7 +425,10 @@
       "remora_de_tinta",
       "badajo_errante",
       "girandula",
-      "cimbalo"
+      "cimbalo",
+      "saltahoras",
+      "broquel",
+      "restaurador"
     ]
   }
 }

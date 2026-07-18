@@ -176,6 +176,27 @@ const gir = new Enemy('girandula', 300, 200, {});
 for (let i = 0; i < 140; i++) gir.update(1 / 60, ep, ctxE, girWorld);
 assert('spiral_shooter: dispara balas en espiral', girFired.length >= 6);
 
+// Mecánicas variadas nuevas (blink / shielder / divide / healer)
+for (const id of ['saltahoras', 'broquel', 'cumulo_de_sebo', 'restaurador'])
+  assert('mecánica nueva existe: ' + id, !!DataDB.enemigo(id));
+const ctxM = { bounds: room, groundSolids: () => [] };
+const emptyW = { tears: new TearPool(), bullets: { spawn() {} }, corpses: [], enemies: [] };
+const blk = new Enemy('saltahoras', 40, 40, {});
+for (let i = 0; i < 150; i++) blk.update(1 / 60, ep, ctxM, emptyW);
+assert('blink: se teletransporta (deja su origen)', Math.hypot(blk.x - 40, blk.y - 40) > 60);
+const shd = new Enemy('broquel', ep.x - 40, ep.y, { hp: 999 });
+shd.update(1 / 60, ep, ctxM, emptyW); // fija _faceAng hacia el jugador (a la derecha)
+const dFront = shd.takeDamage(10, ep.x, ep.y, 0);          // golpe frontal (arco del escudo)
+const dBack = shd.takeDamage(10, shd.x - 40, shd.y, 0);    // golpe por la espalda
+assert('shielder: el escudo frontal absorbe (frente << espalda)', dFront < dBack);
+assert('divide: la cría del Cúmulo es un enemigo válido', !!DataDB.enemigo(DataDB.enemigo('cumulo_de_sebo').divide.hijo));
+const heal = new Enemy('restaurador', ep.x, ep.y + 40, {});
+const ally = new Enemy('cera_andante', ep.x, ep.y + 90, {});
+ally.health.hp = 1;
+const healW = { tears: new TearPool(), bullets: { spawn() {} }, corpses: [], enemies: [heal, ally] };
+for (let i = 0; i < 150; i++) heal.update(1 / 60, ep, ctxM, healW);
+assert('healer: cura a un aliado herido cercano', ally.health.hp > 1);
+
 // R0.2 — escalado de daño por piso (danoMult en overrides)
 const eScaled = new Enemy('tejedor_horas', 0, 0, { danoMult: 1.5 });
 assert('danoMult escala el proyectil (1 → 2)', eScaled.def.proyectil.dano === 2);

@@ -727,7 +727,11 @@ const PALETTES = {
   girandula: ['#c9a24d', '#77603f', '#8fdc8f'],
   remora_de_tinta: ['#3949AB', '#20204a', '#8f98e0'],
   peon_de_sebo: ['#e8d5a3', '#b7a578', '#ff9c6a'],
-  cimbalo: ['#c9a24d', '#6d5636', '#c99cf0']
+  cimbalo: ['#c9a24d', '#6d5636', '#c99cf0'],
+  saltahoras: ['#6a5a9a', '#2a2450', '#c9a0f0'],
+  broquel: ['#b08d57', '#6d5636', '#d8b877'],
+  cumulo_de_sebo: ['#e8d5a3', '#b7a578', '#ff9c6a'],
+  restaurador: ['#cfe8b0', '#8fb070', '#e0ffc8']
 };
 const TAG_COLORS = {
   lagrimas: '#7f96d8', stats: '#7ec98f', cadencia: '#ffd54f',
@@ -744,9 +748,23 @@ EventBus.on('enemy_died', (e) => {
   if (e.room?.type === 'galeria' && Math.random() < 0.4) spawnPickup('coin', e.x, e.y);
   // Los caídos dejan mecha: el Cerero Errante puede reavivarlos
   if (!e.def.jefe) world.corpses.push({ id: e.id, x: e.x, y: e.y, hp: e.def.hp, t: 11 });
+  // Núcleos que se DIVIDEN: al morir sueltan crías (gestión de multitud)
+  if (e.def.divide && world.enemies) {
+    const { hijo, n = 2, hp } = e.def.divide;
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2 + 0.6;
+      const c = new Enemy(hijo, e.x + Math.cos(a) * 12, e.y + Math.sin(a) * 12, hp ? { hp } : {});
+      c.room = e.room; world.enemies.push(c);
+    }
+    EventBus.emit('enemy_spawned', e.x, e.y);
+  }
 });
 EventBus.on('gemelo_enfurecido', () => flash('¡El gemelo superviviente enloquece!'));
 EventBus.on('enemigo_reavivado', (rev) => flash('El Cerero reaviva a ' + rev.def.nombre, 'Mátalo primero...'));
+// Firmas de las mecánicas nuevas
+EventBus.on('enemy_blink', (x, y) => FX.burst(x, y, { n: 10, color: '#b98fd0', speed: 90, life: 0.3, size: 2, glow: true }));
+EventBus.on('escudo_bloqueo', (x, y) => { FX.burst(x, y, { n: 5, color: '#e8e2c8', speed: 70, life: 0.2, size: 1.5, spread: 1.2 }); AudioManager.beep(300, 0.05, 'square', 0.025); });
+EventBus.on('enemy_curado', (x, y) => FX.burst(x, y - 4, { n: 4, color: '#8fdc8f', speed: 40, life: 0.5, size: 1.5, glow: true, gravity: -60 }));
 EventBus.on('sinergia', (a, b) => flash('SINERGIA: ' + a, b));
 // El Primer Relojero: roba tu compás en su primera campanada; se recupera con su derrota
 EventBus.on('boss_campanada', (e) => {
@@ -2697,6 +2715,55 @@ function drawEnemy(e, t) {
         ctx.strokeStyle = 'rgba(171,71,188,0.85)'; ctx.lineWidth = 1.5;
         ctx.beginPath(); ctx.moveTo(5, -3); ctx.lineTo(9, -8); ctx.lineTo(7, -4); ctx.lineTo(12, -7); ctx.stroke();
       }
+      break;
+    }
+    case 'saltahoras': {
+      ctx.globalAlpha = e._blinkTele ? (0.35 + 0.45 * Math.abs(Math.sin(t * 30))) : 0.85;
+      const g = ctx.createRadialGradient(0, 0, 1, 0, 0, e.r + 1);
+      g.addColorStop(0, flash ? white : '#c9a0f0'); g.addColorStop(1, 'rgba(60,40,90,0.15)');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.ellipse(0, 0, e.r * 0.9, e.r * 1.1, 0, 0, 7); ctx.fill();
+      ctx.strokeStyle = 'rgba(240,220,255,0.75)'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(-4, -5); ctx.lineTo(4, -5); ctx.lineTo(-4, 5); ctx.lineTo(4, 5); ctx.closePath(); ctx.stroke();
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(0, -2, 1.4, 0, 7); ctx.fill();
+      ctx.globalAlpha = 1;
+      break;
+    }
+    case 'broquel': {
+      const fa = e._faceAng ?? 0;
+      ctx.fillStyle = flash ? white : '#7a5f38';
+      ctx.beginPath(); ctx.ellipse(0, 2, 7, 9, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = flash ? white : '#2b2214'; ctx.fillRect(-3, -3, 2, 2); ctx.fillRect(1, -3, 2, 2);
+      ctx.save();
+      ctx.translate(Math.cos(fa) * 9, Math.sin(fa) * 9 * 0.6); ctx.rotate(fa);
+      const gs = ctx.createLinearGradient(-4, 0, 4, 0);
+      gs.addColorStop(0, flash ? white : '#d8b877'); gs.addColorStop(1, flash ? white : '#8a6c3e');
+      ctx.fillStyle = gs;
+      ctx.beginPath(); ctx.ellipse(0, 0, 4, 8, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#5c4a2e'; ctx.beginPath(); ctx.arc(0, 0, 2, 0, 7); ctx.fill();
+      ctx.restore();
+      break;
+    }
+    case 'cumulo_de_sebo': {
+      const wob = Math.sin(t * 5 + e.x) * 1.2;
+      ctx.fillStyle = flash ? white : '#d3bd88';
+      ctx.beginPath(); ctx.ellipse(0, 2, 11, 12 + wob * 0.3, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = flash ? white : '#efe0b8';
+      ctx.beginPath(); ctx.ellipse(-2, -1, 4, 5, 0, 0, 7); ctx.fill();
+      ctx.strokeStyle = 'rgba(90,70,40,0.6)'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(0, -10); ctx.lineTo(2, -2); ctx.lineTo(-2, 4); ctx.lineTo(1, 11); ctx.stroke();
+      ctx.fillStyle = '#3a3226'; ctx.fillRect(-5, -2, 2, 3); ctx.fillRect(3, -2, 2, 3);
+      break;
+    }
+    case 'restaurador': {
+      const pul = Math.sin(t * 3) * 0.15;
+      const g = ctx.createRadialGradient(0, 0, 2, 0, 0, e.r + 4);
+      g.addColorStop(0, 'rgba(143,220,143,0.35)'); g.addColorStop(1, 'rgba(143,220,143,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, e.r + 4, 0, 7); ctx.fill();
+      ctx.fillStyle = flash ? white : '#c8c090';
+      ctx.beginPath(); ctx.ellipse(0, 0, 6, 8, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = flash ? white : '#fff2c8'; ctx.fillRect(-2, -3, 4, 6);
+      ctx.fillStyle = '#8fdc8f'; ctx.beginPath(); ctx.arc(0, 0, 2 + pul, 0, 7); ctx.fill();
       break;
     }
     default: {
