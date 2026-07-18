@@ -52,6 +52,17 @@ Se intercala con R3; los valores viven en balance.arte / biomas.json (F5).
 
 **Criterio:** capturas de los 3 biomas se distinguen a golpe de vista; cada habilidad se reconoce sin leer texto; la Ignición "se siente potente, fuerte, épica" (palabras de Daniel).
 
+## Fase R-Assets — Arte pintado por IA (decisión Daniel 2026-07-18: rompe la regla "cero assets")
+Estilo: romanticismo pictórico + fantasía FFIX/FFXIV. Daniel genera con ChatGPT según `docs/encargo_arte.md`; Claude trocea e integra SIEMPRE con fallback al dibujo por código.
+- [x] AS0 Encargo completo redactado: listado de ~55 assets con prompts exactos, llave de estilo, plantillas y orden de producción (`docs/encargo_arte.md`).
+- [ ] AS1 `tools/slice_assets.mjs`: troceado automático (componentes de transparencia vía Chromium headless) + `assets/manifest.json`; chroma-key magenta como plan B.
+- [ ] AS2 Cargador de sprites en runtime con fallback por-código; campo opcional `sprite` en `data/*.json`; F5 recarga también sprites.
+- [ ] AS3 Integración del lote de validación (Pip + 3 enemigos + suelo/muro Péndulos + iconos reliquias) y captura comparativa para Daniel.
+- [ ] AS4 Resto de lotes según lleguen (jefes, pueblo+retratos, biomas 2-3, iconos UI, botones táctiles, portada, marcos).
+- [ ] AS5 Peso del bundle vigilado (<8 MB) y divulgación de IA en itch.io (enlaza con R5.5).
+
+**Criterio:** el piso 1 se ve "vestido" con el estilo de la llave; quitar cualquier PNG no rompe nada (fallback); Daniel aprueba el look en su iPhone.
+
 ## Mejoras de game feel (a petición de Daniel: "combate muy dinámico")
 Valores en balance.cadencia (F5).
 - [x] G1 Esquiva en Cadencia: el dash ya NO rompe el combo. Mientras dura el dash (+ gracia `dash_grace_s`) el anillo se CONGELA y el rango de mantener objetivo se ensancha (`dash_range_mult`): esquivas balas sin perder el ritmo. Anillo cian punteado como aviso.
