@@ -18,5 +18,20 @@
   "w": 38,
   "h": 68,
   "face": "left"
+ },
+ "enemigo_campanero": {
+  "w": 70,
+  "h": 68,
+  "face": "left"
+ },
+ "enemigo_tejedor_horas": {
+  "w": 63,
+  "h": 64,
+  "face": "left"
+ },
+ "enemigo_velon_inestable": {
+  "w": 55,
+  "h": 68,
+  "face": "left"
  }
 }
