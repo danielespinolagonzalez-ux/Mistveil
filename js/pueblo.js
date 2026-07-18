@@ -171,9 +171,18 @@ export function drawNPC(g, npc, SX, SY, t) {
   const spr = Sprites.get('npc_' + npc.id);
   if (spr) {
     const inf = Sprites.info('npc_' + npc.id);
-    const dh = Math.max(30, Math.round(npc.r * 2.3));
+    // Altura visual por IDENTIDAD, no por radio de colisión: los adultos sacan
+    // una cabeza a Pip (~34px), las estructuras imponen y la Puerta es monumental.
+    const ALTURAS = { margo: 42, vesper: 46, hermanos: 38, tablon: 42, gremio: 46, redoble: 78, puerta: 94 };
+    const dh = ALTURAS[npc.id] ?? Math.max(30, Math.round(npc.r * 2.3));
     const dw = Math.round(inf.w * dh / inf.h);
-    const sway = Math.sin(t * 1.7 + npc.x * 0.13) * 0.02;
+    // Estructuras grandes: quietas y con sombra acorde; personajes: respiran
+    const esGrande = dh >= 60;
+    if (esGrande) {
+      g.fillStyle = 'rgba(0,0,0,0.3)';
+      g.beginPath(); g.ellipse(x, y + 5, dw * 0.42, dw * 0.13, 0, 0, 7); g.fill();
+    }
+    const sway = esGrande ? 0 : Math.sin(t * 1.7 + npc.x * 0.13) * 0.02;
     g.save();
     g.translate(x, y + 6);
     g.scale(1 + sway, 1 - sway);
