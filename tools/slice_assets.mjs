@@ -12,7 +12,7 @@
 // Si playwright no está en NODE_PATH, se busca en el scratchpad de la sesión.
 
 import { createRequire } from 'module';
-import { readFileSync, writeFileSync, readdirSync, mkdirSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, readdirSync, mkdirSync, existsSync, unlinkSync } from 'fs';
 import { resolve, basename } from 'path';
 
 // --- localizar playwright (herramienta externa, nunca parte del juego) ---
@@ -64,11 +64,15 @@ async function main() {
     const cfg = { ...DEFAULTS, ...(CONFIG[id] ?? {}) };
     const dataUrl = 'data:image/png;base64,' + readFileSync(resolve(SRC, f)).toString('base64');
     if (cfg.tipo === 'textura') {
-      const res = await page.evaluate(procesarTextura, { dataUrl, maxDim: cfg.maxDim ?? 256 });
+      // Fondos opacos (formato: 'jpeg') → JPEG: sin alfa, ~1/5 del peso del PNG.
+      const jpeg = cfg.formato === 'jpeg';
+      const res = await page.evaluate(procesarTextura, { dataUrl, maxDim: cfg.maxDim ?? 256, jpeg });
       if (res.error) { console.log(`✗ ${id}: ${res.error}`); continue; }
-      writeFileSync(resolve(OUT, id + '.png'), Buffer.from(res.png.split(',')[1], 'base64'));
-      manifest[id] = { w: res.w, h: res.h, tipo: 'textura' };
-      console.log(`✓ ${id}: textura → ${res.w}×${res.h}`);
+      const ext = jpeg ? 'jpg' : 'png';
+      writeFileSync(resolve(OUT, id + '.' + ext), Buffer.from(res.png.split(',')[1], 'base64'));
+      if (jpeg && existsSync(resolve(OUT, id + '.png'))) unlinkSync(resolve(OUT, id + '.png')); // limpia el PNG viejo
+      manifest[id] = { w: res.w, h: res.h, tipo: 'textura', ext };
+      console.log(`✓ ${id}: textura ${ext} → ${res.w}×${res.h}`);
     } else if (cfg.tipo === 'hoja') {
       const res = await page.evaluate(procesarHoja, { dataUrl, targetH: cfg.targetH ?? 56, nombres: cfg.nombres ?? [] });
       if (res.error) { console.log(`✗ ${id}: ${res.error}`); continue; }
@@ -247,7 +251,7 @@ async function procesar({ dataUrl, targetH, largestOnly }) {
 }
 
 // Textura repetible: NO se toca el alfa ni se recorta — solo reescalar.
-async function procesarTextura({ dataUrl, maxDim }) {
+async function procesarTextura({ dataUrl, maxDim, jpeg }) {
   const img = new Image();
   await new Promise((ok, ko) => { img.onload = ok; img.onerror = () => ko(new Error('png ilegible')); img.src = dataUrl; });
   let cw = img.width, ch = img.height;
@@ -265,7 +269,8 @@ async function procesarTextura({ dataUrl, maxDim }) {
   const fin = document.createElement('canvas'); fin.width = fw; fin.height = fh;
   const fg = fin.getContext('2d'); fg.imageSmoothingQuality = 'high';
   fg.drawImage(cur, 0, 0, fw, fh);
-  return { png: fin.toDataURL('image/png'), w: fw, h: fh };
+  const url = jpeg ? fin.toDataURL('image/jpeg', 0.82) : fin.toDataURL('image/png');
+  return { png: url, w: fw, h: fh };
 }
 
 // Hoja de piezas (ya SIN fondo, p.ej. tras remove_background de Recraft):

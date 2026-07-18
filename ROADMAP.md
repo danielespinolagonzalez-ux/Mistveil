@@ -57,7 +57,7 @@ Se intercala con R3; los valores viven en balance.arte / biomas.json (F5).
 Estilo: romanticismo pictórico + fantasía FFIX/FFXIV. Daniel genera con ChatGPT según `docs/encargo_arte.md`; Claude trocea e integra SIEMPRE con fallback al dibujo por código.
 > **REPLANTEO de la auditoría IA (`docs/auditoria_diseno.md`), 2026-07-18:**
 > - AS-N1 **Biblia de estilo:** set fijo de 3-4 referencias (Pip + un enemigo + una textura) que se adjunta/usa como entrada i2i en cada generación; control A/B al abrir cada lote (evita deriva de estilo sin el `create_style`).
-> - AS-N2 **Presupuesto de fondos pintados:** recurso escaso (~2 MB c/u, meta bundle < 8 MB). Reservar para escenas fijas de alto impacto: pueblo ✅, victoria, El Redoble, y como mucho 1 plano por bioma. Salas de la Torre siguen procedurales.
+> - AS-N2 **Peso de fondos (NO hay límite duro — corrección de Daniel).** Ambición ALTO: pueblo ✅, victoria, Redoble, cámaras y 1 plano por bioma. Fondos en **JPEG** (opacos, ~1/5 del peso, siempre mejor para carga/RAM) + **carga diferida por bioma** cuando el arte crezca (respuesta correcta a "arte sin límite"; ver R5.7). Salas de la Torre procedurales por gameplay.
 > - AS-N3 **El Redoble pintado:** telón + sprites de enemigo + retratos (técnica del pueblo). Mayor subida de calidad barata pendiente.
 > - AS-N4 **Poses extra de Pip** (vida barata, lo pidió Daniel): celebrar / herido / canalizar / sentarse. Piezas + hooks de código; NADA de sprite sheets.
 > - AS-N5 **Vecinos pintados como estilo:** los figurantes que la IA cuela en escenas = ambiente (solo lo interactuable es sprite). Intención, no accidente.
@@ -117,6 +117,7 @@ Auditoría con capturas de TODAS las pantallas; causa raíz: `font(size)` pinta 
 - [ ] R5.4 QA móvil real: iOS Safari + Android Chrome, modo Una Mano, rendimiento (partículas/luz), háptica.
 - [ ] R5.5 Página de itch.io: subida HTML, capturas, texto, **divulgación de IA generativa** marcada.
 - [ ] R5.6 Ronda de balance final con Daniel usando F5 + playground (documento corto de valores tocados).
+- [ ] R5.7 (auditoría IA) **Carga diferida de arte por bioma/escena** cuando el volumen lo pida: no cargar todos los fondos/sprites de golpe en el arranque, sino el arte de cada bioma al entrar. Es lo que permite "arte sin límite" sin penalizar la primera carga (Daniel: no hay tope de peso). Fondos ya en JPEG (opacos, ~1/5 del peso). Adelantable si el bundle se hace lento de arrancar.
 
 **Criterio:** un desconocido lo juega en su móvil desde itch.io sin instrucciones y sin conexión tras la primera carga.
 

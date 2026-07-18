@@ -83,8 +83,10 @@ try {
   spritesObj = { manifest, png: {} };
   let peso = 0;
   for (const id of Object.keys(manifest)) {
-    const buf = readFileSync(join(sdir, id + '.png'));
-    spritesObj.png[id] = 'data:image/png;base64,' + buf.toString('base64');
+    const ext = manifest[id].ext || 'png'; // fondos opacos = jpg
+    const mime = ext === 'jpg' ? 'image/jpeg' : 'image/png';
+    const buf = readFileSync(join(sdir, id + '.' + ext));
+    spritesObj.png[id] = `data:${mime};base64,` + buf.toString('base64');
     peso += buf.length;
   }
   console.log(`sprites incrustados: ${Object.keys(manifest).length} (${Math.round(peso / 1024)} KB)`);

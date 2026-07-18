@@ -72,17 +72,20 @@
  "muro_pendulos": {
   "w": 256,
   "h": 32,
-  "tipo": "textura"
+  "tipo": "textura",
+  "ext": "png"
  },
  "suelo_pendulos": {
   "w": 256,
   "h": 97,
-  "tipo": "textura"
+  "tipo": "textura",
+  "ext": "png"
  },
  "emblema_suelo": {
   "w": 320,
   "h": 300,
-  "tipo": "textura"
+  "tipo": "textura",
+  "ext": "png"
  },
  "prop_candelabro_pared": {
   "w": 34,
@@ -152,6 +155,7 @@
  "fondo_pueblo": {
   "w": 1024,
   "h": 512,
-  "tipo": "textura"
+  "tipo": "textura",
+  "ext": "jpg"
  }
 }

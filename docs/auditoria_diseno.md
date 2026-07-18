@@ -55,12 +55,26 @@ mantener una **"biblia de estilo"** = un set fijo de 3-4 imágenes-referencia
 generación; y un **control A/B** al empezar cada lote (regenerar una pieza ya
 aprobada y comparar). Barato y evita el drift.
 
-### R-E. Presupuesto de fondos pintados (peso del bundle)
-Cada escena pintada ≈ 2 MB. Meta itch.io < 8 MB. **Replanteo (restricción de
-diseño explícita):** los fondos pintados son un recurso ESCASO — reservarlos
-para escenas fijas de alto impacto (pueblo ✅, victoria, Redoble, y como mucho 1
-"plano de establecimiento" por bioma). Las salas de la Torre siguen procedurales
-(peso ~0). Si hiciera falta, reescalar/comprimir con Magnific antes de lanzar.
+### R-E. Peso de los fondos (NO hay límite duro; sí hay coste real)
+> Corrección (Daniel, 2026-07-18): NO existe un límite de 8 MB. itch.io acepta
+> juegos web grandes. El "presupuesto" era una cautela mía excesiva.
+
+Lo que SÍ importa de verdad, y hay que gestionar:
+1. **Tiempo de PRIMERA carga**, sobre todo en móvil con datos: hoy TODO va en un
+   único HTML que se descarga entero antes de jugar. Cuanto más pese, más tarda
+   ese primer arranque (luego el service worker lo cachea, R5.2).
+2. **Memoria en móviles modestos:** muchas fotos grandes decodificadas a la vez
+   consumen RAM.
+3. **El cuello real es la arquitectura de "todo en un archivo"**, no un número.
+**Replanteos (que SÍ dan libertad de arte, sin límite artificial):**
+- **Fondos en JPEG** (son opacos, no necesitan alfa): ~1/5 del peso de un PNG,
+  sin pérdida visible. Esto es *siempre* mejor (carga más rápido, menos RAM),
+  haya o no límite. Ya implementado en el pipeline.
+- **Carga diferida (lazy load) cuando el arte crezca:** cargar el arte de cada
+  bioma SOLO al entrar en él, no todo de golpe. Así se pueden tener 200 imágenes
+  sin que la primera carga sea eterna. → nueva tarea para R5 (o antes si hace
+  falta). Es la respuesta correcta a "arte sin límite".
+- Las salas de la Torre siguen procedurales (peso ~0) por gameplay, no por peso.
 
 ### R-F. Refactor (R4) ANTES, no después — al menos `js/escenas.js`
 El estudio lo dejó claro: meter código de integración de arte en el god-file
@@ -114,13 +128,24 @@ sprite sheets.
 5. Lo demás del ROADMAP (salas procedurales, sellos, PWA…) queda **validado**
    por el estudio; no se toca.
 
-## Bifurcaciones que decides TÚ (Daniel)
-1. **Ambición de fondos pintados** (belleza ↔ peso): ¿solo pueblo + victoria, o
-   también Redoble + cámaras + un plano por bioma?
-2. **¿Cuánta narrativa?** ¿Invertimos en alma (viñetas, arcos, final pintado) o
-   priorizamos completar contenido/jefes primero?
-3. **Orden del arte restante:** ¿cerrar la Torre (enemigos + biomas + jefes) o
-   abrir el frente de escenas (Redoble, viñetas)?
+## Bifurcaciones — DECIDIDAS por Daniel (2026-07-18)
+1. **Ambición de fondos pintados → ALTO.** Pueblo + victoria + Redoble + cámaras
+   especiales + 1 plano por bioma. *No hay límite de peso* (corrección de Daniel).
+   Aun así, los fondos pasan a **JPEG** (opacos, sin alfa): ~1/5 del peso, sin
+   pérdida visible → carga más rápido y usa menos RAM. Y cuando el arte crezca,
+   carga diferida por bioma. Libertad de arte, con arranque ágil.
+2. **Narrativa → A TOPE.** Viñetas de bioma + arcos de NPC entre runs + secuencia
+   final elaborada. Requiere escritura de guion además de arte.
+3. **Orden del arte → CERRAR LA TORRE PRIMERO.** Lote B de enemigos + biomas
+   Archivo/Invertida + los 3 jefes; luego el frente de escenas.
+
+### Plan de ejecución derivado
+- **R4.0 `js/escenas.js`** es prerequisito de TODO el frente de escenas (que
+  ahora es grande por elegir "Alto"): se hace antes de pintar Redoble/viñetas/
+  cámaras, pero puede ir en paralelo a cerrar la Torre.
+- Cerrar la Torre (enemigos+biomas+jefes) depende del conector de Recraft;
+  la escritura del guion (narrativa) y `escenas.js` NO dependen del conector.
+- Fondos siempre en JPEG; presupuesto de peso vigilado por lote.
 
 ## Conclusión
 El diseño de Mistveil está, en su mayoría, **ya alineado** con lo que la IA hace

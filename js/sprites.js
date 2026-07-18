@@ -30,7 +30,7 @@ export const Sprites = {
       this.meta = await res.json();
       for (const id of Object.keys(this.meta)) {
         const img = new Image();
-        img.src = base + id + '.png';
+        img.src = base + id + '.' + (this.meta[id].ext || 'png'); // fondos opacos = .jpg
         waits.push(img.decode?.().catch(() => {}));
         this._imgs.set(id, img);
       }
