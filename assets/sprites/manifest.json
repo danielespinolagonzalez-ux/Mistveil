@@ -157,5 +157,35 @@
   "h": 512,
   "tipo": "textura",
   "ext": "jpg"
+ },
+ "enemigo_afinador": {
+  "w": 62,
+  "h": 72,
+  "face": "left"
+ },
+ "enemigo_cerero_errante": {
+  "w": 54,
+  "h": 72,
+  "face": "left"
+ },
+ "enemigo_cuco_de_cuerda": {
+  "w": 53,
+  "h": 60,
+  "face": "left"
+ },
+ "enemigo_engranaje_errante": {
+  "w": 61,
+  "h": 60,
+  "face": "left"
+ },
+ "enemigo_minutero_gemelo": {
+  "w": 64,
+  "h": 72,
+  "face": "left"
+ },
+ "enemigo_polilla_del_polvo": {
+  "w": 50,
+  "h": 60,
+  "face": "left"
  }
 }

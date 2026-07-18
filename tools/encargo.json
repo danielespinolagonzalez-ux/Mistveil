@@ -82,7 +82,8 @@
       "targetH": 72,
       "face": "left",
       "largestOnly": true,
-      "sujeto": "a hunched hooded figure made of wax pouring burning wax from a lantern-ladle, leaving melted footprints"
+      "sujeto": "a hunched hooded figure made of wax pouring burning wax from a lantern-ladle, leaving melted footprints",
+      "estado": "hecho"
     },
     {
       "id": "enemigo_tejedor_horas",
@@ -101,7 +102,8 @@
       "targetH": 60,
       "face": "left",
       "largestOnly": true,
-      "sujeto": "a large rolling brass gear with a single mechanical eye at its axis, worn teeth"
+      "sujeto": "a large rolling brass gear with a single mechanical eye at its axis, worn teeth",
+      "estado": "hecho"
     },
     {
       "id": "enemigo_campanero",
@@ -120,7 +122,8 @@
       "targetH": 60,
       "face": "left",
       "largestOnly": true,
-      "sujeto": "a mechanical cuckoo bird of painted wood and brass, springing from a coiled spring, wide crazed eyes"
+      "sujeto": "a mechanical cuckoo bird of painted wood and brass, springing from a coiled spring, wide crazed eyes",
+      "estado": "hecho"
     },
     {
       "id": "enemigo_minutero_gemelo",
@@ -129,7 +132,8 @@
       "targetH": 72,
       "face": "left",
       "largestOnly": true,
-      "sujeto": "a slender fencer made of two twin minute-hands, in en-garde pose, elegant and razor-sharp"
+      "sujeto": "a slender fencer made of two twin minute-hands, in en-garde pose, elegant and razor-sharp",
+      "estado": "hecho"
     },
     {
       "id": "enemigo_polilla_del_polvo",
@@ -138,7 +142,8 @@
       "targetH": 60,
       "face": "left",
       "largestOnly": true,
-      "sujeto": "a grey-lavender moth of lunar dust, wings patterned like clock faces, spring antennae, halo of dust motes"
+      "sujeto": "a grey-lavender moth of lunar dust, wings patterned like clock faces, spring antennae, halo of dust motes",
+      "estado": "hecho"
     },
     {
       "id": "enemigo_afinador",
@@ -147,7 +152,8 @@
       "targetH": 72,
       "face": "left",
       "largestOnly": true,
-      "sujeto": "an ethereal figure of compacted dust holding a large vibrating tuning fork, serene unsettling face"
+      "sujeto": "an ethereal figure of compacted dust holding a large vibrating tuning fork, serene unsettling face",
+      "estado": "hecho"
     },
     {
       "id": "jefe_campanero_mayor",
