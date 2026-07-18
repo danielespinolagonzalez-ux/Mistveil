@@ -326,7 +326,8 @@
       "clase": "prop",
       "targetH": 88,
       "face": "right",
-      "sujeto": "a hanging purple banner embroidered with a golden clock emblem, frayed lower edge"
+      "sujeto": "a hanging purple banner embroidered with a golden clock emblem, frayed lower edge",
+      "estado": "hecho"
     },
     {
       "id": "prop_estanteria_tinta",
@@ -486,6 +487,22 @@
       "targetH": 56,
       "face": "right",
       "sujeto": "single gold medallion button with a glowing flame lantern symbol (generado suelto: la hoja no incluyó la llama)"
+    },
+    {
+      "id": "prop_candelabro_pared",
+      "tipo": "sprite",
+      "clase": "prop",
+      "estado": "hecho",
+      "targetH": 40,
+      "face": "right",
+      "sujeto": "wall-mounted bronze candle sconce with two lit dripping candles, front-on"
+    },
+    {
+      "id": "emblema_suelo",
+      "tipo": "textura",
+      "estado": "hecho",
+      "maxDim": 320,
+      "sujeto": "engraved compass-star clock emblem decal (i2i desde la referencia de Daniel); se estampa con máscara radial en salas inicial/jefe"
     }
   ]
 }

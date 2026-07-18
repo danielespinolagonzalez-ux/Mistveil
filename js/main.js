@@ -2085,14 +2085,22 @@ function drawBiomaDecor(room, t) {
 }
 
 function drawCandles(room, t) {
+  const sconce = Sprites.get('prop_candelabro_pared');
   room.candles().forEach((cd, i) => {
     const { x, y } = candleScreen(room, cd);
-    ctx.fillStyle = '#4a3b28';
-    ctx.fillRect(x - 3, y + 6, 6, 3);
-    ctx.fillStyle = '#6b563a';
-    ctx.fillRect(x - 2, y + 1, 4, 6);
-    ctx.fillStyle = '#e8dfc8';
-    ctx.fillRect(x - 1.5, y - 5, 3, 7);
+    if (sconce) {
+      // Candelabro de bronce pintado; la llama procedural sigue encima (parpadeo)
+      const inf = Sprites.info('prop_candelabro_pared');
+      const sh = 22, sw = Math.round(inf.w * sh / inf.h);
+      ctx.drawImage(sconce, Math.round(x - sw / 2), Math.round(y - 13), sw, sh);
+    } else {
+      ctx.fillStyle = '#4a3b28';
+      ctx.fillRect(x - 3, y + 6, 6, 3);
+      ctx.fillStyle = '#6b563a';
+      ctx.fillRect(x - 2, y + 1, 4, 6);
+      ctx.fillStyle = '#e8dfc8';
+      ctx.fillRect(x - 1.5, y - 5, 3, 7);
+    }
     const fl = Math.sin(t * 11 + i * 2.4 + room.gx + room.gy) * 0.8 + Math.sin(t * 23 + i) * 0.5;
     ctx.fillStyle = '#ff9c3a';
     ctx.beginPath(); ctx.ellipse(x + fl * 0.6, y - 9, 2, 4 + fl * 0.5, 0, 0, 7); ctx.fill();

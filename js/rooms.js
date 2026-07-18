@@ -440,6 +440,15 @@ export class Room {
       vel.addColorStop(1, 'rgba(12,8,24,0.6)');
       g.fillStyle = vel;
       g.fillRect(0, faceTop, BLOCK_W, WALL_H);
+      // Estandartes púrpura colgando de la cara norte (como la referencia),
+      // flanqueando la puerta central; no en todas las salas (variedad por semilla)
+      const ban = Sprites.get('prop_estandarte');
+      if (ban && hash(seed, 7) > 0.3) {
+        const bh = WALL_H + 12, bw = Math.round(bh * ban.width / ban.height);
+        for (const fx of hash(seed, 11) > 0.5 ? [0.28, 0.72] : [0.20, 0.80]) {
+          g.drawImage(ban, Math.round(BLOCK_W * fx - bw / 2), faceTop - 3, bw, bh);
+        }
+      }
     } else {
       const grad = g.createLinearGradient(0, faceTop, 0, floorTop);
       grad.addColorStop(0, '#413761');
@@ -566,8 +575,35 @@ export class Room {
     }
     g.restore();
 
-    // Grabado del reloj (inicial y jefe) — elipse por la perspectiva
-    if (this.type === 'inicial' || this.type === 'jefe') {
+    // Grabado del suelo (inicial y jefe): emblema pintado (rosa-estrella sacada
+    // de la referencia de Daniel) estampado con máscara radial; si no hay
+    // imagen, la elipse de reloj vectorial de siempre.
+    const emb = Sprites.get('emblema_suelo');
+    if (emb && (this.type === 'inicial' || this.type === 'jefe')) {
+      const ccx = BLOCK_W / 2, ccy = (floorTop + floorBot) / 2;
+      const ew = 176, eh = Math.min(112, RH * TILE_SY - 10);
+      // Offscreen: emblema + desvanecido radial para fundirlo con el suelo
+      const oc = document.createElement('canvas'); oc.width = ew; oc.height = eh;
+      const og = oc.getContext('2d');
+      og.drawImage(emb, 0, 0, ew, eh);
+      og.globalCompositeOperation = 'destination-in';
+      const rg = og.createRadialGradient(ew / 2, eh / 2, 0, ew / 2, eh / 2, ew / 2);
+      rg.addColorStop(0, 'rgba(0,0,0,1)');
+      rg.addColorStop(0.58, 'rgba(0,0,0,0.95)');
+      rg.addColorStop(0.82, 'rgba(0,0,0,0.45)');
+      rg.addColorStop(1, 'rgba(0,0,0,0)');
+      og.fillStyle = rg;
+      og.fillRect(0, 0, ew, eh);
+      g.globalAlpha = 0.8;
+      g.drawImage(oc, Math.round(ccx - ew / 2), Math.round(ccy - eh / 2));
+      g.globalAlpha = 1;
+      if (this.type === 'jefe') { // caldeo rojizo del emblema en la sala del jefe
+        g.globalCompositeOperation = 'overlay';
+        g.fillStyle = 'rgba(255,90,60,0.18)';
+        g.beginPath(); g.ellipse(ccx, ccy, ew / 2, eh / 2, 0, 0, 7); g.fill();
+        g.globalCompositeOperation = 'source-over';
+      }
+    } else if (this.type === 'inicial' || this.type === 'jefe') {
       const ccx = BLOCK_W / 2, ccy = (floorTop + floorBot) / 2;
       g.strokeStyle = this.type === 'jefe' ? 'rgba(255,120,90,0.12)' : 'rgba(190,170,255,0.10)';
       g.lineWidth = 2;

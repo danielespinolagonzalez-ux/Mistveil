@@ -78,5 +78,20 @@
   "w": 256,
   "h": 97,
   "tipo": "textura"
+ },
+ "emblema_suelo": {
+  "w": 320,
+  "h": 300,
+  "tipo": "textura"
+ },
+ "prop_candelabro_pared": {
+  "w": 34,
+  "h": 40,
+  "face": "right"
+ },
+ "prop_estandarte": {
+  "w": 41,
+  "h": 88,
+  "face": "right"
  }
 }
