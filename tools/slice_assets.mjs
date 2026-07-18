@@ -36,6 +36,9 @@ const CONFIG = {
   pip_idle:   { targetH: 68, face: 'right' },
   pip_paso:   { targetH: 68, face: 'left' },
   pip_ataque: { targetH: 68, face: 'left' },
+  // largestOnly: descarta props sueltos (velas, charcos aparte…) y se queda
+  // con el componente conexo más grande — para sprites de UN sujeto.
+  enemigo_cera_andante: { targetH: 68, face: 'left', largestOnly: true },
 };
 const DEFAULTS = { targetH: 68, face: 'right' };
 
@@ -60,7 +63,7 @@ async function main() {
     const id = basename(f, '.png');
     const cfg = { ...DEFAULTS, ...(CONFIG[id] ?? {}) };
     const dataUrl = 'data:image/png;base64,' + readFileSync(resolve(SRC, f)).toString('base64');
-    const res = await page.evaluate(procesar, { dataUrl, targetH: cfg.targetH });
+    const res = await page.evaluate(procesar, { dataUrl, targetH: cfg.targetH, largestOnly: !!cfg.largestOnly });
     if (res.error) { console.log(`✗ ${id}: ${res.error}`); continue; }
     writeFileSync(resolve(OUT, id + '.png'), Buffer.from(res.png.split(',')[1], 'base64'));
     manifest[id] = { w: res.w, h: res.h, face: cfg.face };
@@ -72,7 +75,7 @@ async function main() {
 }
 
 // ---- Se ejecuta DENTRO del navegador ----
-async function procesar({ dataUrl, targetH }) {
+async function procesar({ dataUrl, targetH, largestOnly }) {
   const img = new Image();
   await new Promise((ok, ko) => { img.onload = ok; img.onerror = () => ko(new Error('png ilegible')); img.src = dataUrl; });
   const W = img.width, H = img.height;
@@ -161,6 +164,34 @@ async function procesar({ dataUrl, targetH }) {
       if (borde) d[p * 4 + 3] = Math.min(d[p * 4 + 3], 150);
     }
     g.putImageData(im, 0, 0);
+  }
+
+  // --- 2b. largestOnly: conservar solo el componente conexo mayor ---
+  if (largestOnly) {
+    const imL = g.getImageData(0, 0, W, H);
+    const dl = imL.data;
+    const lab = new Int32Array(W * H).fill(-1);
+    let mejor = -1, mejorN = 0, nLab = 0;
+    const pila = [];
+    for (let p0 = 0; p0 < W * H; p0++) {
+      if (lab[p0] >= 0 || dl[p0 * 4 + 3] <= 12) continue;
+      let n = 0; pila.push(p0); lab[p0] = nLab;
+      while (pila.length) {
+        const p = pila.pop(); n++;
+        const x = p % W, y = (p / W) | 0;
+        // 8-conexión con salto de 2px: puentea goteos casi separados
+        for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+          const nx = x + dx, ny = y + dy;
+          if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
+          const q = ny * W + nx;
+          if (lab[q] < 0 && dl[q * 4 + 3] > 12) { lab[q] = nLab; pila.push(q); }
+        }
+      }
+      if (n > mejorN) { mejorN = n; mejor = nLab; }
+      nLab++;
+    }
+    for (let p = 0; p < W * H; p++) if (dl[p * 4 + 3] > 12 && lab[p] !== mejor) dl[p * 4 + 3] = 0;
+    g.putImageData(imL, 0, 0);
   }
 
   // --- 3. Recortar al contenido (con 2px de margen) ---

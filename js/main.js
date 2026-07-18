@@ -2353,7 +2353,21 @@ function drawEnemy(e, t) {
   ctx.translate(x, y);
   if (scale !== 1) ctx.scale(scale, scale);
 
-  switch (e.id) {
+  // Sprite pintado si existe para este enemigo (hereda escala por radio y los
+  // desplazamientos de windup/golpe); si no, el cuerpo vectorial del switch.
+  const eSpr = Sprites.get('enemigo_' + e.id);
+  if (eSpr) {
+    const inf = Sprites.info('enemigo_' + e.id);
+    const dh = 32, dw = Math.round(inf.w * dh / inf.h);
+    const wob = Math.sin(t * 5 + e.x) * 0.03; // respiración sutil
+    const faceRight = world.player ? world.player.x >= e.x : true;
+    const flip = (inf.face === 'right') !== faceRight;
+    ctx.save();
+    ctx.scale((flip ? -1 : 1) * (1 + wob), 1 - wob);
+    if (flash) ctx.globalAlpha = 0.5; // fogonazo al encajar un golpe
+    ctx.drawImage(eSpr, Math.round(-dw / 2), 11 - dh, dw, dh);
+    ctx.restore();
+  } else switch (e.id) {
     case 'cera_andante': {
       const wob = Math.sin(t * 6 + e.x) * 1.4;
       ctx.fillStyle = flash ? white : '#a89065';
@@ -3574,6 +3588,16 @@ function paintFatal(err) {
     piso: (n = 4) => { RunState.piso = n - 1; descendFloor(); return 'piso ' + RunState.piso + ' · ' + (floorMap.current?.bioma?.nombre ?? ''); },
     // Sube la racha (pruebas de Groove/buff G7c)
     groove: (n = 100) => { world.player?.addGroove(n); return { groove: Math.round(world.player?.groove ?? 0), buff: world.player?.grooveBuffed }; },
+    // Brota n enemigos por id junto al jugador (pruebas de sprites/IA)
+    spawn: (id = 'cera_andante', n = 1) => {
+      const p = world.player; if (!p) return 'sin jugador';
+      for (let i = 0; i < n; i++) {
+        const a = -Math.PI / 2 + (i - (n - 1) / 2) * 0.7;
+        const e = new Enemy(id, p.x + Math.cos(a) * 88, p.y + Math.sin(a) * 60);
+        e.room = cur; world.enemies.push(e);
+      }
+      return id + ' ×' + n;
+    },
     unaMano: (on = true) => {
       Input.setScheme(on ? 'una_mano' : 'raton');
       if (on) Input.forceTouch();

@@ -13,5 +13,10 @@
   "w": 50,
   "h": 68,
   "face": "left"
+ },
+ "enemigo_cera_andante": {
+  "w": 38,
+  "h": 68,
+  "face": "left"
  }
 }
