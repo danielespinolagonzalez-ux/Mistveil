@@ -107,7 +107,8 @@ canvas { image-rendering: pixelated; image-rendering: crisp-edges; background: #
 #rotate { position: fixed; inset: 0; display: none; place-items: center; background: #07050e; color: #cfc6e8;
   font: 22px VT323, monospace; text-align: center; z-index: 10; }
 body.movil-portrait #rotate { display: grid; }
-#fs { position: fixed; left: calc(8px + env(safe-area-inset-left)); top: calc(8px + env(safe-area-inset-top));
+/* Abajo a la izquierda: arriba tapaba los corazones del HUD en escritorio */
+#fs { position: fixed; left: calc(8px + env(safe-area-inset-left)); bottom: calc(8px + env(safe-area-inset-bottom));
   z-index: 20; background: rgba(20,17,32,0.55); color: #cfc6e8; border: 1px solid #4c4070;
   font: 16px monospace; width: 34px; height: 34px; border-radius: 6px; cursor: pointer; }
 #fs:focus-visible { outline: 2px solid #e8c565; }

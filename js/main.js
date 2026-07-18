@@ -1682,33 +1682,36 @@ function clipText(text, maxW) {
 }
 
 // --- Chrome ornamentado del HUD (100% por código, sin assets) ---
-// Panel oscuro con borde dorado biselado (gradiente) + hilo interior claro y
-// rombos en las esquinas. Es la pieza base para banners y cartelas del HUD, para
-// acercar el acabado "premium" de la referencia sin meter imágenes.
+// Panel oscuro casi opaco (el texto encima queda nítido) con doble borde dorado
+// biselado y remates en punta a los lados, como los banners de la referencia.
 function ornateFrame(x, y, w, h, opts = {}) {
-  const fill = opts.fill ?? 'rgba(12,9,24,0.82)';
-  const g1 = opts.gold ?? '#e9c877', g2 = opts.gold2 ?? '#8a6a2c';
+  const fill = opts.fill ?? 'rgba(15,11,28,0.92)';
+  const g1 = opts.gold ?? '#dfc06c', g2 = opts.gold2 ?? '#7c5f28';
   ctx.fillStyle = fill; ctx.fillRect(x, y, w, h);
   const gr = ctx.createLinearGradient(0, y, 0, y + h);
-  gr.addColorStop(0, g1); gr.addColorStop(0.5, g2); gr.addColorStop(1, g1);
-  ctx.strokeStyle = gr; ctx.lineWidth = 1.4; ctx.strokeRect(x + 0.7, y + 0.7, w - 1.4, h - 1.4);
-  ctx.strokeStyle = 'rgba(255,240,205,0.22)'; ctx.lineWidth = 1; ctx.strokeRect(x + 2.5, y + 2.5, w - 5, h - 5);
-  if (opts.corners !== false) {
-    ctx.fillStyle = g1; const r = opts.cr ?? 2.1;
-    for (const [cx, cy] of [[x, y], [x + w, y], [x, y + h], [x + w, y + h]]) {
-      ctx.beginPath(); ctx.moveTo(cx, cy - r); ctx.lineTo(cx + r, cy); ctx.lineTo(cx, cy + r); ctx.lineTo(cx - r, cy); ctx.closePath(); ctx.fill();
-    }
+  gr.addColorStop(0, g1); gr.addColorStop(0.55, g2); gr.addColorStop(1, '#b6924a');
+  ctx.strokeStyle = gr; ctx.lineWidth = 1.6; ctx.strokeRect(x + 0.8, y + 0.8, w - 1.6, h - 1.6);
+  ctx.strokeStyle = 'rgba(255,240,205,0.25)'; ctx.lineWidth = 1; ctx.strokeRect(x + 3, y + 3, w - 6, h - 6);
+  if (opts.finials !== false) {
+    // Puntas laterales + joya superior (rombos)
+    const my = y + h / 2, fr = 3;
+    ctx.fillStyle = g1;
+    ctx.beginPath(); ctx.moveTo(x - fr - 1, my); ctx.lineTo(x + 1.5, my - fr); ctx.lineTo(x + 1.5, my + fr); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(x + w + fr + 1, my); ctx.lineTo(x + w - 1.5, my - fr); ctx.lineTo(x + w - 1.5, my + fr); ctx.closePath(); ctx.fill();
+    const jx = x + w / 2;
+    ctx.beginPath(); ctx.moveTo(jx, y - 2.4); ctx.lineTo(jx + 2.2, y); ctx.lineTo(jx, y + 2.4); ctx.lineTo(jx - 2.2, y); ctx.closePath(); ctx.fill();
   }
 }
 // Banner ornamentado ajustado a un texto ya medido (con la fuente actual fijada).
-// side: 'left' ancla en x, 'right' ancla el borde derecho en x. Devuelve el rect.
+// side: 'left' ancla en x, 'right' ancla el borde derecho, 'center' centra en x.
+// Devuelve el rect con tx/cy para pintar el texto centrado en vertical.
 function hudBanner(text, x, y, opts = {}) {
-  const padX = opts.padX ?? 8, h = opts.h ?? 15;
+  const padX = opts.padX ?? 9, h = opts.h ?? 15;
   const tw = ctx.measureText(text).width;
   const w = tw + padX * 2;
-  const fx = opts.side === 'right' ? x - w : x;
+  const fx = opts.side === 'right' ? x - w : opts.side === 'center' ? x - w / 2 : x;
   ornateFrame(fx, y, w, h, opts);
-  return { x: fx, y, w, h, tx: fx + padX, cy: y + h - 4 };
+  return { x: fx, y, w, h, tx: fx + padX, cy: y + 11 };
 }
 
 // Overlay de hitboxes (F3): círculo azul = cuerpo, verde = hurtbox real del jugador
@@ -2641,17 +2644,22 @@ function drawHUD(t) {
     const rest = p.health.hp - i * 2;
     drawHeart(12 + i * 17, 8, rest >= 2 ? 2 : rest === 1 ? 1 : 0, t);
   }
+  // Fila del oro: oro → sello → objeto activo, en FLUJO medido (nada de x fijas:
+  // con oro de 2-3 cifras las posiciones fijas de antes se pisaban entre sí).
   ctx.fillStyle = '#8a6d2f'; ctx.beginPath(); ctx.arc(18, 31, 5, 0, 7); ctx.fill();
   ctx.fillStyle = '#e8c565'; ctx.beginPath(); ctx.arc(17, 30, 4.5, 0, 7); ctx.fill();
   ctx.fillStyle = '#fff2c8'; ctx.fillRect(15, 28, 2, 2);
   font(10); ctx.fillStyle = '#cfc6e8'; ctx.textAlign = 'left';
-  ctx.fillText('× ' + RunState.oro, 27, 35);
-  // Sello elemental equipado: rombo de su elemento junto al oro
+  const oroTxt = '× ' + RunState.oro;
+  ctx.fillText(oroTxt, 28, 35);
+  let gx = 28 + ctx.measureText(oroTxt).width + 9;
+  // Sello elemental equipado: rombo de su elemento tras el oro
   if (GameState.selloEquipado) {
     const sd = selloDef(GameState.selloEquipado);
     const col = DataDB.elementos[sd?.elemento]?.color ?? '#e9e2f5';
     ctx.fillStyle = col;
-    ctx.beginPath(); ctx.moveTo(50, 26); ctx.lineTo(54, 31); ctx.lineTo(50, 36); ctx.lineTo(46, 31); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(gx + 4, 26); ctx.lineTo(gx + 8, 31); ctx.lineTo(gx + 4, 36); ctx.lineTo(gx, 31); ctx.closePath(); ctx.fill();
+    gx += 15;
   }
   // Objeto activo (X): carga por salas limpiadas
   if (p.mods.activo) {
@@ -2659,7 +2667,7 @@ function drawHUD(t) {
     const listo = RunState.activoSalas >= cd;
     font(9);
     ctx.fillStyle = listo ? '#e8c565' : '#6c6193';
-    ctx.fillText(`⌛${listo ? ' X' : ` ${Math.min(RunState.activoSalas, cd)}/${cd}`}`, 62, 35);
+    ctx.fillText(`⌛${listo ? ' X' : ` ${Math.min(RunState.activoSalas, cd)}/${cd}`}`, gx, 35);
   }
 
   const spMax = DataDB.balance.ignicion.sp_max;
@@ -2691,24 +2699,35 @@ function drawHUD(t) {
     ctx.fillStyle = pulse;
     ctx.fillRect(28, 46, Math.round(72 * gv), 3);
     if (buffed) {
+      // Bajo la propia barra de racha, alineado con ella (antes caía en x=104
+      // y se montaba con el ¡F! del SP y el borde de la caja del Arte).
       font(7); ctx.fillStyle = '#ffd54f'; ctx.textAlign = 'left';
-      ctx.fillText('¡RACHA!', 104, 49);
+      ctx.fillText('¡RACHA!', 28, 57);
     }
   }
 
+  // Compás: banner dorado centrado arriba, como la referencia (así no compite
+  // con la columna izquierda). En retrato no hay sitio: texto simple como antes.
   const comp = DataDB.compas(RunState.compas);
   if (comp) {
     font(8); ctx.textAlign = 'left';
     const txt = '♪ ' + comp.nombre + ' (C)';
-    const b = hudBanner(txt, 108, 20, { h: 14 });
-    ctx.fillStyle = comp.color;
-    ctx.fillText(txt, b.tx, b.cy);
+    if (PORTRAIT) {
+      ctx.fillStyle = comp.color;
+      ctx.fillText(txt, 110, 31);
+    } else {
+      const b = hudBanner(txt, VW / 2, 3, { side: 'center' });
+      ctx.fillStyle = comp.color;
+      ctx.fillText(txt, b.tx, b.cy);
+    }
   }
 
+  // Arte equipada + reliquias: en su propia zona (x≥152), lejos del ¡F!/¡RACHA!
+  // del SP con los que antes chocaban.
   const hch = DataDB.hechizo(RunState.hechizo);
   if (hch) {
     const okSp = RunState.sp >= hch.coste_sp;
-    const bx = 110, by = 35;
+    const bx = 152, by = 35;
     ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(bx, by, 34, 12);
     ctx.strokeStyle = okSp ? '#b678e8' : '#37335c';
     ctx.strokeRect(bx + 0.5, by + 0.5, 33, 11);
@@ -2723,7 +2742,7 @@ function drawHUD(t) {
   RunState.items.slice(0, 10).forEach((id, i) => {
     const it = DataDB.item(id);
     const col = TAG_COLORS[it?.tags?.[0]] ?? '#e9e2f5';
-    const ix = 152 + i * 13, iy = 36;
+    const ix = 194 + i * 13, iy = 36;
     ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(ix, iy, 11, 11);
     ctx.fillStyle = col; ctx.fillRect(ix + 2, iy + 2, 7, 7);
     ctx.fillStyle = '#141120';
@@ -2738,8 +2757,8 @@ function drawHUD(t) {
   }[cur?.type] ?? '';
   font(8); ctx.textAlign = 'left';
   const flTxt = 'Piso ' + RunState.piso + ' · ' + label;
-  const fb = hudBanner(flTxt, VW - 6, 4, { side: 'right', h: 14 });
-  ctx.fillStyle = '#e4d8b0';
+  const fb = hudBanner(flTxt, VW - 6, 3, { side: 'right' });
+  ctx.fillStyle = '#e8dcae';
   ctx.fillText(flTxt, fb.tx, fb.cy);
 
   // Recordatorio de controles (solo teclado): abajo y centrado, unos segundos al
@@ -2805,7 +2824,11 @@ function drawMinimap() {
     const [gx, gy] = k.split(',').map(Number);
     minGx = Math.min(minGx, gx); maxGx = Math.max(maxGx, gx); minGy = Math.min(minGy, gy);
   }
-  const ox = VW - 12 - (maxGx - minGx + 1) * (CW + GAP), oy = 38;
+  // Bajo la cartela de piso; en táctil se aparta a la izquierda de los botones
+  // pausa/menú del borde derecho (la Torre es vertical: el minimapa crece hacia
+  // abajo y antes se metía debajo de esos botones).
+  const padR = Input.touchState().enabled ? 38 : 12;
+  const ox = VW - padR - (maxGx - minGx + 1) * (CW + GAP), oy = 24;
   const ICON = { tesoro: '#e8c565', tienda: '#7ec98f', jefe: '#e05a4f', maldita: '#b678e8' };
   for (const [k, vis] of known) {
     const [gx, gy] = k.split(',').map(Number);
