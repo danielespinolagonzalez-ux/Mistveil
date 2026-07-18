@@ -35,10 +35,11 @@ Claude Code: trabaja las fases EN ORDEN salvo indicación de Daniel. No avances 
 ## Fase R3 — Contenido de la Torre (pisos 4–9 con identidad propia)
 - [x] R3.0 (adelantada; pase 1 de identidad visual) Partículas ambientales por bioma (motas doradas de cera / lluvia de tinta / chispas invertidas que suben), definidas en `biomas.json → ambiente`.
 - [ ] R3.1 Sets de plantillas por bioma (`salas/`): hoy los 3 biomas reutilizan las 5 plantillas de piso1. Añadir ≥4 por bioma con sus obstáculos temáticos.
-- [ ] R3.2 Jefes de bioma con patrones propios: usar de verdad la data de patrones (`lluvia_de_cera`, `anillo_de_llamas`, `charcos_ardientes`, `invocar_velones`…) que hoy es decorativa. 2 fases por jefe.
+- [ ] R3.2 Jefes de bioma con patrones propios: usar de verdad la data de patrones (`lluvia_de_cera`, `anillo_de_llamas`, `charcos_ardientes`, `invocar_velones`…) que hoy es decorativa. 2 fases por jefe. **REPLANTEO (auditoría IA):** las "fases" NO se animan por fotogramas (la IA no es consistente entre frames) — cada jefe = 2-3 PIEZAS de estado (íntegro/furioso/roto) que el motor intercambia + patrones y FX por código.
 - [ ] R3.3 1–2 enemigos nuevos por bioma que expresen su mecánica (tinta, inversión…), definidos en JSON.
-- [ ] R3.4 Victoria REAL en el piso 9: sustituir `ui.victoria_provisional` por secuencia final + resumen de partida (tiempo, bajas, semilla) y vuelta al pueblo con recompensa.
-- [ ] R3.5 Elementos infrautilizados: al menos un enemigo/arte que use `luz`/`oscuridad`/`trueno` con sus oposiciones.
+- [ ] R3.4 Victoria REAL en el piso 9: sustituir `ui.victoria_provisional` por secuencia final + resumen de partida (tiempo, bajas, semilla) y vuelta al pueblo con recompensa. **REPLANTEO:** hacerla como ESCENA PINTADA (técnica del pueblo: telón + Pip + retrato + texto) — la narrativa ya es barata.
+- [ ] R3.5 Elementos infrautilizados: al menos un enemigo/arte que use `luz`/`oscuridad`/`trueno` con sus oposiciones. **REPLANTEO:** conceptualizarlos como "mecanismo de reloj con una idea clara" (silueta única = lo que la IA borda), sin conceptos que exijan multitud/texto/dependencia entre assets.
+- [ ] R3.6 (nueva, auditoría IA) **Viñetas de entrada a bioma** (un plano pintado + 2-3 líneas con retrato) — dar alma con la técnica del pueblo, ahora que es asequible. Opcional según decisión de ambición de Daniel.
 
 **Criterio:** una run completa 1→9 con jefes distinguibles y final digno; cada bioma se SIENTE distinto también en salas.
 
@@ -54,6 +55,12 @@ Se intercala con R3; los valores viven en balance.arte / biomas.json (F5).
 
 ## Fase R-Assets — Arte pintado por IA (decisión Daniel 2026-07-18: rompe la regla "cero assets")
 Estilo: romanticismo pictórico + fantasía FFIX/FFXIV. Daniel genera con ChatGPT según `docs/encargo_arte.md`; Claude trocea e integra SIEMPRE con fallback al dibujo por código.
+> **REPLANTEO de la auditoría IA (`docs/auditoria_diseno.md`), 2026-07-18:**
+> - AS-N1 **Biblia de estilo:** set fijo de 3-4 referencias (Pip + un enemigo + una textura) que se adjunta/usa como entrada i2i en cada generación; control A/B al abrir cada lote (evita deriva de estilo sin el `create_style`).
+> - AS-N2 **Presupuesto de fondos pintados:** recurso escaso (~2 MB c/u, meta bundle < 8 MB). Reservar para escenas fijas de alto impacto: pueblo ✅, victoria, El Redoble, y como mucho 1 plano por bioma. Salas de la Torre siguen procedurales.
+> - AS-N3 **El Redoble pintado:** telón + sprites de enemigo + retratos (técnica del pueblo). Mayor subida de calidad barata pendiente.
+> - AS-N4 **Poses extra de Pip** (vida barata, lo pidió Daniel): celebrar / herido / canalizar / sentarse. Piezas + hooks de código; NADA de sprite sheets.
+> - AS-N5 **Vecinos pintados como estilo:** los figurantes que la IA cuela en escenas = ambiente (solo lo interactuable es sprite). Intención, no accidente.
 - [x] AS0 Encargo completo redactado: listado de ~55 assets con prompts exactos, llave de estilo, plantillas y orden de producción (`docs/encargo_arte.md`).
 - [x] AS1 `tools/slice_assets.mjs`: troceado automático con 3 estrategias auto-detectadas (alfa real / damero pintado / fondo degradado por crecimiento de región), recorte, reducción por mitades a 2× y red de seguridad anti-"sprite comido"; `assets/sprites/manifest.json`.
 - [x] AS2 Cargador `js/sprites.js` con fallback por-código; en el bundle los PNG van incrustados en base64 (`__MISTVEIL_SPRITES__`).
@@ -95,6 +102,7 @@ Auditoría con capturas de TODAS las pantallas; causa raíz: `font(size)` pinta 
 **Criterio:** ninguna pantalla muestra texto solapado o cortado a 640×360 ni en móvil; verificado con capturas headless.
 
 ## Fase R4 — Refactor sostenible (sin cambiar comportamiento; smoke como red)
+- [ ] R4.0 (ADELANTADA por la auditoría IA) Extraer `js/escenas.js`: helper de ESCENA PINTADA reutilizable (fondo a pantalla + sprites y-ordenados + retratos de diálogo + cámara de escena), sacando lo que hoy vive suelto en `main.js`/`pueblo.js`. **Hacerlo ANTES de pintar el Redoble y las viñetas**: el estudio mostró que meter integración de arte en el god-file multiplica bugs latentes (p.ej. el `x,y` de Una Mano). Se hace una vez y todo lo pintado nuevo entra limpio.
 - [ ] R4.1 Trocear `main.js`: `js/scenes/` (un módulo por modo con `{enter, update, render}`), `js/render/` (dibujo 2.5D, HUD, minimapa), `js/signals.js` (los ~40 listeners centralizados; hoy hay señales suscritas en 2-3 sitios).
 - [ ] R4.2 Extraer `AudioManager` de `state.js` a `js/audio.js`.
 - [ ] R4.3 Retirar/condicionar los hooks `window.__mistveil` (flag de debug).
