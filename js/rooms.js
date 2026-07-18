@@ -480,15 +480,17 @@ export class Room {
     // losas procedurales de siempre (fallback) ---
     const texF = Sprites.get('suelo_' + (this.bioma?.id ?? ''));
     if (texF) {
-      const rep = 116; // px de mundo por repetición del patrón (≈3.6 losas)
-      const sx = rep / texF.width, sy = (rep * (TILE_SY / TILE)) / texF.height;
+      // Escala UNIFORME (sin estirar el ladrillo) — la referencia de Daniel usa
+      // ladrillo pequeño visto casi plano; el achatado 2.5D apenas se nota aquí.
+      const rep = 96; // px de mundo por repetición horizontal del patrón
+      const s = rep / texF.width;
       const patF = g.createPattern(texF, 'repeat');
-      patF.setTransform?.(new DOMMatrix([sx, 0, 0, sy, WALL, floorTop]));
+      patF.setTransform?.(new DOMMatrix([s, 0, 0, s, WALL, floorTop]));
       g.fillStyle = patF;
       g.fillRect(WALL, floorTop, RW * TILE, RH * TILE_SY);
-      // Veladura oscura general (la textura llega luminosa) + código de color
+      // Veladura violeta-oscura (penumbra de la referencia) + código de color
       // del tipo de sala, que antes iba en el tinte de las losas
-      g.fillStyle = 'rgba(16,11,32,0.38)';
+      g.fillStyle = 'rgba(18,12,40,0.42)';
       g.fillRect(WALL, floorTop, RW * TILE, RH * TILE_SY);
       const velTipo = {
         jefe: 'rgba(255,90,60,0.08)', tesoro: 'rgba(232,197,101,0.09)',

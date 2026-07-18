@@ -71,12 +71,12 @@
  },
  "muro_pendulos": {
   "w": 256,
-  "h": 128,
+  "h": 32,
   "tipo": "textura"
  },
  "suelo_pendulos": {
   "w": 256,
-  "h": 256,
+  "h": 97,
   "tipo": "textura"
  }
 }
