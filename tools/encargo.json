@@ -238,7 +238,8 @@
       "clase": "large prop",
       "targetH": 120,
       "face": "right",
-      "sujeto": "the Clock Gate: a monumental double door with an inlaid clock face, roman numerals, gold on dark oak"
+      "sujeto": "the Clock Gate: a monumental double door with an inlaid clock face, roman numerals, gold on dark oak",
+      "nota": "sustituido por npc_puerta (id real del código del pueblo)"
     },
     {
       "id": "retrato_pip",
@@ -503,6 +504,38 @@
       "estado": "hecho",
       "maxDim": 320,
       "sujeto": "engraved compass-star clock emblem decal (i2i desde la referencia de Daniel); se estampa con máscara radial en salas inicial/jefe"
+    },
+    {
+      "id": "npc_tablon",
+      "tipo": "sprite",
+      "clase": "prop",
+      "targetH": 64,
+      "face": "right",
+      "sujeto": "a wooden notice board on a post, parchment contracts pinned to it, one fluttering, small bronze bell on top"
+    },
+    {
+      "id": "npc_gremio",
+      "tipo": "sprite",
+      "clase": "prop",
+      "targetH": 64,
+      "face": "right",
+      "sujeto": "a guild notice board of dark oak with brass corners, wanted-poster parchments and a wax-sealed ledger hanging by a chain"
+    },
+    {
+      "id": "npc_redoble",
+      "tipo": "sprite",
+      "clase": "large prop",
+      "targetH": 88,
+      "face": "right",
+      "sujeto": "a small open-air battle pavilion: a great bronze bell hanging from a wooden gallows-frame over a drum podium, banners"
+    },
+    {
+      "id": "npc_puerta",
+      "tipo": "sprite",
+      "clase": "large prop",
+      "targetH": 110,
+      "face": "right",
+      "sujeto": "the Clock Gate: a monumental double door with an inlaid clock face, roman numerals, gold on dark oak, slightly ajar with warm light leaking"
     }
   ]
 }

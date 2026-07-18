@@ -2,6 +2,7 @@
 // Aquí viven los NPCs (sprites, diálogos, beneficios). main.js mueve a Pip y pinta el diálogo.
 import { DataDB } from './data_db.js';
 import { GameState, RunState, SaveManager, AudioManager } from './state.js';
+import { Sprites } from './sprites.js';
 
 export const PLAZA = { x: 0, y: -600, w: 560, h: 190 }; // lejos de la Torre (coords propias)
 const P = PLAZA;
@@ -165,6 +166,21 @@ export function drawNPC(g, npc, SX, SY, t) {
   const x = SX(npc.x), y = SY(npc.y);
   g.fillStyle = 'rgba(0,0,0,0.35)';
   g.beginPath(); g.ellipse(x, y + 4, 11, 3.5, 0, 0, 7); g.fill();
+  // Sprite pintado si existe ('npc_<id>'): respira sutilmente para tener vida;
+  // si no, el muñeco vectorial del switch (fallback).
+  const spr = Sprites.get('npc_' + npc.id);
+  if (spr) {
+    const inf = Sprites.info('npc_' + npc.id);
+    const dh = Math.max(30, Math.round(npc.r * 2.3));
+    const dw = Math.round(inf.w * dh / inf.h);
+    const sway = Math.sin(t * 1.7 + npc.x * 0.13) * 0.02;
+    g.save();
+    g.translate(x, y + 6);
+    g.scale(1 + sway, 1 - sway);
+    g.drawImage(spr, Math.round(-dw / 2), -dh, dw, dh);
+    g.restore();
+    return;
+  }
   switch (npc.id) {
     case 'margo': {
       const knead = Math.sin(t * 4) * 1.5;

@@ -3160,26 +3160,33 @@ function renderPueblo(t) {
 
   drawMist(t, 0.65);
 
-  // Caja de diálogo
+  // Caja de diálogo (con retrato pintado del NPC si existe, estilo FFIX:
+  // el busto asoma por encima del marco a la izquierda)
   if (dlg) {
     const line = dlg.lines[Math.min(dlg.i, dlg.lines.length - 1)];
     const bh = 64, by = VH - bh - 12;
+    const ret = Sprites.get('retrato_' + dlg.npc.id);
     ctx.fillStyle = 'rgba(13,10,26,0.92)';
     ctx.fillRect(20, by, VW - 40, bh);
     ctx.strokeStyle = '#6b5a36'; ctx.lineWidth = 2;
     ctx.strokeRect(21, by + 1, VW - 42, bh - 2);
+    let tx = 34;
+    if (ret) {
+      const inf = Sprites.info('retrato_' + dlg.npc.id);
+      const rh = 74, rw = Math.round(inf.w * rh / inf.h);
+      ctx.drawImage(ret, 28, by + bh - rh - 4, rw, rh);
+      tx = 28 + rw + 10;
+    }
     ctx.textAlign = 'left';
     if (line.who) {
       font(9); ctx.fillStyle = '#ffd54f';
-      ctx.fillText(line.who, 34, by + 18);
+      ctx.fillText(line.who, tx, by + 18);
     }
     font(9); ctx.fillStyle = '#e9e2f5';
-    // texto en 2 líneas
-    const words = line.text.split(' ');
-    let l1 = '', l2 = '';
-    for (const w of words) { if ((l1 + w).length < 62 && !l2) l1 += w + ' '; else l2 += w + ' '; }
-    ctx.fillText(l1.trim(), 34, by + (line.who ? 34 : 26));
-    if (l2) ctx.fillText(l2.trim(), 34, by + (line.who ? 48 : 40));
+    // texto en 2 líneas ajustadas al ancho REAL disponible
+    const lines = wrapText(line.text, VW - 40 - tx - 14, 2);
+    let ly = by + (line.who ? 34 : 26);
+    for (const ln of lines) { ctx.fillText(ln, tx, ly); ly += 14; }
     font(8); ctx.textAlign = 'right';
     ctx.fillStyle = '#6c6193';
     ctx.fillText('▸', VW - 34, by + bh - 10);
