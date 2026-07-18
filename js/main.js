@@ -225,6 +225,35 @@ function updateBiomaExtras(dt, p, room) {
       }
     }
   }
+  // La Bóveda de Truenos: descargas telegrafiadas caen a compás durante el combate
+  if (room?.truenos) {
+    const cfg = room.bioma.truenos;
+    const T = room.truenos;
+    for (const z of T.zaps) {
+      if (!z.fired) {
+        z.t -= dt;
+        if (z.t <= 0) {
+          z.fired = true; z.flash = 0.2;
+          if (Math.hypot(p.x - z.x, p.y - z.y) < cfg.radio_px + p.hurtR && !p.invulnerable) p.hurt(cfg.dano, z.x, z.y);
+          EventBus.emit('trueno_descarga', z.x, z.y, cfg.radio_px);
+          AudioManager.beep(70, 0.2, 'sawtooth', 0.07, -40);
+          FX.addShake(2.4);
+        }
+      } else z.flash -= dt;
+    }
+    T.zaps = T.zaps.filter(z => z.fired ? z.flash > -0.1 : true);
+    if (!room.cleared) { // solo mientras la sala está en combate
+      T.t += dt;
+      if (T.t >= cfg.period_s) {
+        T.t = 0;
+        const b = room.bounds;
+        for (let i = 0; i < (cfg.zonas ?? 2); i++) {
+          T.zaps.push({ x: b.x + 22 + Math.random() * (b.w - 44), y: b.y + 22 + Math.random() * (b.h - 44), t: cfg.telegraph_s, fired: false, flash: 0 });
+        }
+        AudioManager.beep(1300, 0.05, 'triangle', 0.03);
+      }
+    }
+  }
   // Mecha de los caídos (reavivables) se consume
   for (const c of world.corpses) c.t -= dt;
   world.corpses = world.corpses.filter(c => c.t > 0 && (!c.room || c.room === room));
@@ -414,6 +443,31 @@ function drawBiomaExtras(t) {
       ctx.beginPath(); ctx.arc(SX(pd.bx), SY(pd.by), 9, 0, 7); ctx.fill();
       ctx.fillStyle = '#ffe9a8';
       ctx.beginPath(); ctx.arc(SX(pd.bx) - 2, SY(pd.by) - 3, 3, 0, 7); ctx.fill();
+    }
+  }
+  // descargas de truenos: aro de telegrafía que se cierra, luego rayo + fogonazo
+  if (room.truenos?.zaps?.length) {
+    const cfg = room.bioma.truenos;
+    for (const z of room.truenos.zaps) {
+      const x = SX(z.x), y = SY(z.y);
+      if (!z.fired) {
+        const k = 1 - Math.max(0, z.t) / cfg.telegraph_s;
+        ctx.strokeStyle = 'rgba(171,71,188,' + (0.3 + 0.45 * k) + ')'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.ellipse(x, y, cfg.radio_px, cfg.radio_px * VIS.KY, 0, 0, 7); ctx.stroke();
+        const rr = cfg.radio_px * (1 - k) + 3;
+        ctx.beginPath(); ctx.ellipse(x, y, rr, rr * VIS.KY, 0, 0, 7); ctx.stroke();
+      } else if (z.flash > 0) {
+        ctx.globalAlpha = Math.min(1, z.flash / 0.2);
+        const g = ctx.createRadialGradient(x, y, 2, x, y, cfg.radio_px);
+        g.addColorStop(0, 'rgba(240,216,255,0.6)'); g.addColorStop(1, 'rgba(171,71,188,0)');
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.ellipse(x, y, cfg.radio_px, cfg.radio_px * VIS.KY, 0, 0, 7); ctx.fill();
+        ctx.strokeStyle = '#f0d8ff'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(x, y - 64);
+        for (let yy = y - 64; yy < y; yy += 11) ctx.lineTo(x + (Math.random() - 0.5) * 12, yy);
+        ctx.lineTo(x, y); ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
     }
   }
   // altares
@@ -668,7 +722,12 @@ const PALETTES = {
   tejedor_horas: ['#c69a58', '#77603f', '#f0e0b8'],
   engranaje_errante: ['#aeb8ce', '#6d7690', '#e8edf8'],
   velon_inestable: ['#f0e6d0', '#5aa7e8', '#ffffff'],
-  campanero: ['#b08d57', '#6d5636', '#ffd54f']
+  campanero: ['#b08d57', '#6d5636', '#ffd54f'],
+  badajo_errante: ['#b08d57', '#6d5636', '#c99cf0'],
+  girandula: ['#c9a24d', '#77603f', '#8fdc8f'],
+  remora_de_tinta: ['#3949AB', '#20204a', '#8f98e0'],
+  peon_de_sebo: ['#e8d5a3', '#b7a578', '#ff9c6a'],
+  cimbalo: ['#c9a24d', '#6d5636', '#c99cf0']
 };
 const TAG_COLORS = {
   lagrimas: '#7f96d8', stats: '#7ec98f', cadencia: '#ffd54f',
@@ -2081,6 +2140,26 @@ function drawBiomaDecor(room, t) {
     ctx.strokeStyle = '#c8b090'; ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.ellipse(mx, my, 12, 8 + Math.sin(t * 0.5 + seed) * 1.5, 0.3, 0, 7); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(mx - 4, my + 7); ctx.quadraticCurveTo(mx - 3, my + 15, mx - 5, my + 18); ctx.stroke();
+  } else if (bioma === 'truenos') {
+    // El órgano-carillón: tubos de bronce en la pared norte y campanas colgantes
+    const nx = SX(b.x + b.w * 0.5), ny = SY(b.y) - 32;
+    for (let i = 0; i < 7; i++) {
+      const tx = nx - 44 + i * 14, h = 16 + rndAt(i) * 20;
+      const grd = ctx.createLinearGradient(tx, ny - h, tx, ny);
+      grd.addColorStop(0, '#b98fd0'); grd.addColorStop(1, '#544266');
+      ctx.fillStyle = grd; ctx.fillRect(tx, ny - h, 8, h);
+      ctx.fillStyle = 'rgba(240,220,255,0.5)'; ctx.fillRect(tx, ny - h, 2, h);
+    }
+    for (let i = 0; i < 2; i++) { // campanas que se mecen
+      const cx = SX(b.x + b.w * (0.26 + i * 0.5)), cy0 = SY(b.y) - 22;
+      const sway = Math.sin(t * 0.8 + i * 2 + seed % 5) * 0.22;
+      const cx1 = cx + Math.sin(sway) * 8, cy1 = cy0 + 14;
+      ctx.strokeStyle = '#6d5c42'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(cx, cy0); ctx.lineTo(cx1, cy1); ctx.stroke();
+      ctx.fillStyle = '#9a7fae';
+      ctx.beginPath(); ctx.moveTo(cx1 - 6, cy1 + 6); ctx.quadraticCurveTo(cx1 - 6, cy1 - 4, cx1, cy1 - 5);
+      ctx.quadraticCurveTo(cx1 + 6, cy1 - 4, cx1 + 6, cy1 + 6); ctx.closePath(); ctx.fill();
+    }
   }
   ctx.restore();
   ctx.globalAlpha = 1;
@@ -2548,6 +2627,75 @@ function drawEnemy(e, t) {
         ctx.strokeStyle = 'rgba(255,60,48,0.8)';
         ctx.lineWidth = 2;
         ctx.beginPath(); ctx.arc(0, 0, 14 + Math.sin(t * 20) * 2, 0, 7); ctx.stroke();
+      }
+      break;
+    }
+    case 'badajo_errante': {
+      const st = e.atk;
+      if (st.state === 'windup') { // aviso: línea de carga en la dirección elegida
+        ctx.strokeStyle = 'rgba(171,71,188,' + (0.4 + 0.4 * Math.abs(Math.sin(t * 20))) + ')';
+        ctx.lineWidth = 2; ctx.setLineDash([4, 4]);
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(st.dir[0] * 36, st.dir[1] * 36); ctx.stroke();
+        ctx.setLineDash([]);
+      }
+      ctx.strokeStyle = flash ? white : '#6d5636'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(0, -10); ctx.lineTo(0, 1); ctx.stroke();
+      const gb = ctx.createRadialGradient(-2, 3, 1, 0, 5, 9);
+      gb.addColorStop(0, flash ? white : '#d8b877'); gb.addColorStop(1, flash ? white : '#7a5f38');
+      ctx.fillStyle = gb;
+      ctx.beginPath(); ctx.arc(0, 5, 8, 0, 7); ctx.fill();
+      ctx.fillStyle = flash ? white : '#4a3a22';
+      ctx.beginPath(); ctx.arc(0, -10, 2.5, 0, 7); ctx.fill();
+      break;
+    }
+    case 'girandula': {
+      const rot = e.spin * 2.2;
+      ctx.rotate(rot);
+      ctx.fillStyle = flash ? white : '#c9a24d';
+      for (let i = 0; i < 4; i++) {
+        ctx.rotate(Math.PI / 2);
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(3, -3); ctx.lineTo(12, -2); ctx.lineTo(2, 3); ctx.closePath(); ctx.fill();
+      }
+      ctx.rotate(-rot);
+      ctx.fillStyle = flash ? white : '#8fdc8f';
+      ctx.beginPath(); ctx.arc(0, 0, 3, 0, 7); ctx.fill();
+      break;
+    }
+    case 'remora_de_tinta': {
+      const wob = Math.sin(t * 8 + e.x) * 0.5;
+      ctx.fillStyle = flash ? white : '#3949AB';
+      ctx.beginPath();
+      ctx.moveTo(-7, 0); ctx.quadraticCurveTo(-13, -3 + wob * 3, -15, wob * 4);
+      ctx.quadraticCurveTo(-12, 2, -7, 2); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = flash ? white : '#2a2a6b';
+      ctx.beginPath(); ctx.ellipse(0, 0, 9, 6, wob * 0.2, 0, 7); ctx.fill();
+      ctx.fillStyle = '#c7ccf0';
+      ctx.beginPath(); ctx.arc(4, -1, 1.6, 0, 7); ctx.fill();
+      ctx.fillStyle = 'rgba(57,73,171,0.5)'; ctx.fillRect(-1, 6, 2, 3);
+      break;
+    }
+    case 'peon_de_sebo': {
+      const wob = Math.sin(t * 7 + e.x) * 1.1;
+      ctx.fillStyle = flash ? white : '#d9c48d';
+      ctx.beginPath(); ctx.ellipse(0, 3, 7, 8 + wob * 0.4, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = flash ? white : '#efe0b8';
+      ctx.beginPath(); ctx.ellipse(-1, 1, 3, 4, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#463b30'; ctx.fillRect(-0.7, -8, 1.6, 5);
+      ctx.fillStyle = 'rgba(255,120,60,0.85)';
+      ctx.beginPath(); ctx.ellipse(0.2, -10 + Math.sin(t * 12) * 0.6, 1.8, 3, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#2e2620'; ctx.fillRect(-3, 0, 1.5, 2); ctx.fillRect(1.5, 0, 1.5, 2);
+      break;
+    }
+    case 'cimbalo': {
+      const gc = ctx.createLinearGradient(-11, 0, 11, 0);
+      gc.addColorStop(0, flash ? white : '#d8b877'); gc.addColorStop(0.5, flash ? white : '#a5813f'); gc.addColorStop(1, flash ? white : '#d8b877');
+      ctx.fillStyle = gc;
+      ctx.beginPath(); ctx.ellipse(0, 0, 11, 4.5, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = flash ? white : '#6d5636';
+      ctx.beginPath(); ctx.arc(0, 0, 2.5, 0, 7); ctx.fill();
+      if (e.fireCd > (e.def.proyectil?.cadencia_s ?? 1.3) - 0.14) { // chispazo al disparar
+        ctx.strokeStyle = 'rgba(171,71,188,0.85)'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(5, -3); ctx.lineTo(9, -8); ctx.lineTo(7, -4); ctx.lineTo(12, -7); ctx.stroke();
       }
       break;
     }

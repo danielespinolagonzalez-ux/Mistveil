@@ -662,6 +662,59 @@ export class Enemy {
         }
         break;
       }
+      case 'charger': {
+        // Cargador: telegrafía y EMBISTE en línea recta. Se COMPROMETE con la
+        // dirección (no re-apunta como chase) → esquívalo de lado. No parryable.
+        const C = def.carga ?? {};
+        const st = this.atk;
+        if (st.state === 'stunned') { this.vx = this.vy = 0; st.t -= dt; if (st.t <= 0) st.state = 'idle'; break; }
+        if (st.state === 'windup') {
+          this.vx = this.vy = 0; st.t -= dt;
+          if (st.t <= 0) {
+            st.state = 'strike'; st.t = C.dur_s ?? 0.5;
+            AudioManager.beep(150, 0.16, 'sawtooth', 0.06, 90);
+            EventBus.emit('enemy_strike', this);
+          }
+          break;
+        }
+        if (st.state === 'strike') {
+          const sp = def.velocidad * (C.speed_mult ?? 3.4);
+          this.vx = st.dir[0] * sp; this.vy = st.dir[1] * sp;
+          st.t -= dt;
+          if (st.t <= 0) { st.state = 'recover'; st.t = C.recover_s ?? 0.6; }
+          break;
+        }
+        if (st.state === 'recover') { this.vx = this.vy = 0; st.t -= dt; if (st.t <= 0) st.state = 'idle'; break; }
+        this.vx = dx / dist * def.velocidad; this.vy = dy / dist * def.velocidad; // idle: acercarse
+        if (dist < (C.rango_px ?? 210) && dist > this.r + player.r + 8) {
+          st.state = 'windup'; st.t = C.windup_s ?? 0.7; st.dir = [dx / dist, dy / dist];
+          AudioManager.beep(540, 0.1, 'triangle', 0.05, -140);
+          EventBus.emit('enemy_windup', this);
+        }
+        break;
+      }
+      case 'spiral_shooter': {
+        // Girándula: deriva despacio y escupe balas en ESPIRAL rotatoria a compás.
+        this.vx = dx / dist * def.velocidad * 0.4;
+        this.vy = dy / dist * def.velocidad * 0.4;
+        this.fireCd -= dt;
+        if (this.fireCd <= 0 && def.proyectil) {
+          this.fireCd = def.proyectil.cadencia_s;
+          this._spiralA = (this._spiralA ?? 0) + (def.espiral?.giro ?? 0.6);
+          const n = def.espiral?.balas ?? 3;
+          for (let k = 0; k < n; k++) {
+            const a = this._spiralA + k * (Math.PI * 2 / n);
+            world.bullets.spawn({
+              x: this.x, y: this.y,
+              vx: Math.cos(a) * def.proyectil.velocidad,
+              vy: Math.sin(a) * def.proyectil.velocidad,
+              damage: def.proyectil.dano, color: this.elementColor
+            });
+          }
+          AudioManager.beep(600, 0.05, 'triangle', 0.03, 80);
+        }
+        break;
+      }
       default: this.vx = this.vy = 0;
     }
 

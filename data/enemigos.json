@@ -198,6 +198,80 @@
       "coste_dificultad": 3,
       "desc": "Diapasón con alas. No ataca: DESAFINA tus ventanas de Cadencia mientras viva. Échalo de la cámara.",
       "familia": "polvo"
+    },
+    {
+      "id": "badajo_errante",
+      "nombre": "Badajo Errante",
+      "pisos": [7, 10, 12],
+      "hp": 14,
+      "velocidad": 85,
+      "dano_contacto": 1,
+      "elemento": "trueno",
+      "comportamiento": "charger",
+      "carga": { "windup_s": 0.7, "dur_s": 0.5, "speed_mult": 3.4, "recover_s": 0.6, "rango_px": 210 },
+      "counter_chance": 0.0,
+      "coste_dificultad": 3,
+      "desc": "Badajo de bronce suelto. Se aploma, telegrafía y EMBISTE en línea recta: se compromete con la dirección, esquívalo de lado.",
+      "familia": "laton"
+    },
+    {
+      "id": "girandula",
+      "nombre": "Girándula",
+      "pisos": [4, 10, 12],
+      "hp": 12,
+      "velocidad": 45,
+      "dano_contacto": 1,
+      "elemento": "viento",
+      "comportamiento": "spiral_shooter",
+      "proyectil": { "dano": 1, "velocidad": 130, "cadencia_s": 0.5 },
+      "espiral": { "balas": 3, "giro": 0.6 },
+      "counter_chance": 0.0,
+      "coste_dificultad": 3,
+      "desc": "Veleta de latón que gira sin parar y escupe agujas en espiral. Muévete con la espiral, no contra ella.",
+      "familia": "laton"
+    },
+    {
+      "id": "remora_de_tinta",
+      "nombre": "Rémora de Tinta",
+      "pisos": [4, 6, 10],
+      "hp": 9,
+      "velocidad": 160,
+      "dano_contacto": 1,
+      "elemento": "oscuridad",
+      "comportamiento": "chase",
+      "counter_chance": 0.1,
+      "coste_dificultad": 2,
+      "desc": "Pez de tinta viva que nada por el suelo anegado. Rápida y directa.",
+      "familia": "polvo"
+    },
+    {
+      "id": "peon_de_sebo",
+      "nombre": "Peón de Sebo",
+      "pisos": [1, 3, 4],
+      "hp": 5,
+      "velocidad": 120,
+      "dano_contacto": 1,
+      "elemento": "fuego",
+      "comportamiento": "wander_bounce",
+      "counter_chance": 0.0,
+      "coste_dificultad": 1,
+      "desc": "Peoncito de cera que rebota sin rumbo por la sala. Estorba más que mata.",
+      "familia": "cera"
+    },
+    {
+      "id": "cimbalo",
+      "nombre": "Címbalo",
+      "pisos": [7, 10, 12],
+      "hp": 10,
+      "velocidad": 0,
+      "dano_contacto": 1,
+      "elemento": "trueno",
+      "comportamiento": "turret",
+      "proyectil": { "dano": 1, "velocidad": 200, "cadencia_s": 1.3 },
+      "counter_chance": 0.0,
+      "coste_dificultad": 2,
+      "desc": "Platillo de bronce anclado que descarga chispazos al jugador con cada golpe.",
+      "familia": "laton"
     }
   ],
   "jefes": [
@@ -232,7 +306,8 @@
       "tejedor_horas",
       "engranaje_errante",
       "velon_inestable",
-      "campanero"
+      "campanero",
+      "peon_de_sebo"
     ],
     "bioma_pendulos": [
       "cera_andante",
@@ -241,7 +316,8 @@
       "velon_inestable",
       "campanero",
       "cuco_de_cuerda",
-      "minutero_gemelo"
+      "minutero_gemelo",
+      "peon_de_sebo"
     ],
     "bioma_archivo": [
       "cera_andante",
@@ -252,7 +328,10 @@
       "cuco_de_cuerda",
       "cerero_errante",
       "afinador",
-      "minutero_gemelo"
+      "minutero_gemelo",
+      "remora_de_tinta",
+      "girandula",
+      "peon_de_sebo"
     ],
     "bioma_invertida": [
       "cera_andante",
@@ -263,7 +342,20 @@
       "cuco_de_cuerda",
       "cerero_errante",
       "afinador",
-      "minutero_gemelo"
+      "minutero_gemelo",
+      "badajo_errante",
+      "cimbalo"
+    ],
+    "bioma_truenos": [
+      "campanero",
+      "cuco_de_cuerda",
+      "engranaje_errante",
+      "minutero_gemelo",
+      "polilla_del_polvo",
+      "remora_de_tinta",
+      "badajo_errante",
+      "girandula",
+      "cimbalo"
     ]
   }
 }

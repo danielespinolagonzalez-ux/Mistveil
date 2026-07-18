@@ -79,7 +79,7 @@
     "neutral_mult": 1.0
   },
   "run": {
-    "floors_total": 9,
+    "floors_total": 12,
     "rooms_min": 7,
     "rooms_max": 14,
     "grid_w": 9,

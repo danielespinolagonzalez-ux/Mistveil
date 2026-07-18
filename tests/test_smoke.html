@@ -160,6 +160,22 @@ for (let i = 0; i < 260; i++) moth.update(1 / 60, p, roomCtx, mothWorld);
 assert('orbit_shoot: la polilla se mueve (orbita)', Math.hypot(moth.x - mx0, moth.y - my0) > 20 || Math.hypot(moth.vx, moth.vy) > 1);
 assert('orbit_shoot: la polilla dispara con su cadencia', fired.length >= 1);
 
+// Contenido nuevo — enemigos: existen, instancian y sus comportamientos corren
+for (const id of ['badajo_errante', 'girandula', 'remora_de_tinta', 'peon_de_sebo', 'cimbalo'])
+  assert('enemigo nuevo existe: ' + id, !!DataDB.enemigo(id));
+const ep = new Player(300, 200);
+const ctxE = { bounds: room, groundSolids: () => [] }; // enemigos no voladores tocan groundSolids
+const badWorld = { tears: new TearPool(), bullets: { spawn() {} }, corpses: [] };
+const bad = new Enemy('badajo_errante', 130, 200, {}); // a 170px → dentro del rango de carga
+let vioWindup = false, vioStrike = false;
+for (let i = 0; i < 220; i++) { bad.update(1 / 60, ep, ctxE, badWorld); if (bad.atk.state === 'windup') vioWindup = true; if (bad.atk.state === 'strike') vioStrike = true; }
+assert('charger: telegrafía (windup) y embiste (strike)', vioWindup && vioStrike);
+const girFired = [];
+const girWorld = { tears: new TearPool(), bullets: { spawn(b) { girFired.push(b); } }, corpses: [] };
+const gir = new Enemy('girandula', 300, 200, {});
+for (let i = 0; i < 140; i++) gir.update(1 / 60, ep, ctxE, girWorld);
+assert('spiral_shooter: dispara balas en espiral', girFired.length >= 6);
+
 // R0.2 — escalado de daño por piso (danoMult en overrides)
 const eScaled = new Enemy('tejedor_horas', 0, 0, { danoMult: 1.5 });
 assert('danoMult escala el proyectil (1 → 2)', eScaled.def.proyectil.dano === 2);
@@ -345,7 +361,7 @@ import('../js/rooms.js').then(async ({ buildTower }) => {
   const R = DataDB.balance.run;
   let ok = true, fallos = [];
   for (let i = 0; i < 60; i++) {
-    const piso = 1 + (i % 3);
+    const piso = 1 + (i % 12); // cubre los 12 pisos, incluida La Bóveda de Truenos (10-12)
     const f = buildTower(piso, i * 7717 + 13);
     const rooms = [...f.rooms.values()];
     const types = rooms.map(r => r.type);
@@ -364,6 +380,14 @@ import('../js/rooms.js').then(async ({ buildTower }) => {
     }
   }
   assert('60 torres generadas: inicial→jefe conexo, tesoro/tienda presentes' + (fallos.length ? ' [' + fallos.slice(0, 3) + ']' : ''), ok);
+  // Zona nueva — La Bóveda de Truenos (pisos 10-12) y su mecánica de descargas
+  const f10 = buildTower(10, 999);
+  const bioma10 = [...f10.rooms.values()][0].bioma;
+  assert('piso 10 pertenece a La Bóveda de Truenos', bioma10?.id === 'truenos');
+  assert('el bioma truenos define su mecánica de descargas', typeof bioma10?.truenos?.period_s === 'number');
+  assert('la Torre llega a 12 pisos', DataDB.balance.run.floors_total === 12);
+  const camaraTruenos = [...f10.rooms.values()].find(r => r.truenos);
+  assert('las cámaras de truenos arman su estado de descargas', !!camaraTruenos);
   const h2 = document.createElement('h2');
   h2.className = failed ? 'fail' : 'pass';
   h2.textContent = failed ? `${failed} test(s) FALLARON` : 'TODOS LOS TESTS PASAN';

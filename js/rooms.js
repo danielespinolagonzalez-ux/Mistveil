@@ -123,7 +123,7 @@ export class Room {
     this.pendingExit = null;
     this.template = null;
     this.bioma = biomaDe(piso);
-    this.pendulos = []; this.tinta = []; this.altars = [];
+    this.pendulos = []; this.tinta = []; this.altars = []; this.truenos = null;
     // La Sala de Péndulos: las galerías tienen un péndulo que barre el centro
     if (this.bioma?.pendulo && type === 'galeria') {
       this.pendulos.push({ ax: this.bounds.x + this.bounds.w / 2, ay: this.bounds.y + 6, t: Math.random() * 3, roceCd: 0 });
@@ -143,6 +143,10 @@ export class Room {
         if (solids.some(s => s.x === r.x && s.y === r.y)) continue;
         this.tinta.push(r);
       }
+    }
+    // La Bóveda de Truenos: descargas telegrafiadas a compás durante el combate
+    if (this.bioma?.truenos && ['camara', 'galeria', 'maldita'].includes(type)) {
+      this.truenos = { t: 0, zaps: [] };
     }
     // Cámaras especiales: altares interactivos (main.js gestiona el toque)
     if (type === 'fundicion') {
