@@ -204,6 +204,17 @@ const bossRoom = { bounds: { x: 0, y: 0, w: 416, h: 224 }, bioma: { id: 'pendulo
 const bossE = new Enemy('campanero', 208, 80, { hp: 100, jefe: true, comportamiento: 'jefe_ancla', ancla: { x: 208, y: 80 } });
 const jdir = crearDirectorJefe(bossE, bossRoom);
 assert('el director del jefe se crea para el bioma', !!jdir && jdir.nombre === DataDB.jefes.jefes.pendulos.nombre);
+// Cada bioma tiene un jefe DISTINTO (base/sprite propio) con su director
+const basesJefe = new Set();
+for (const bioma of ['pendulos', 'archivo', 'invertida', 'truenos']) {
+  const jd = DataDB.jefes.jefes[bioma];
+  assert('bioma ' + bioma + ' tiene jefe definido', !!jd && !!jd.base);
+  basesJefe.add(jd.base);
+  const rm = { bounds: { x: 0, y: 0, w: 416, h: 224 }, bioma: { id: bioma } };
+  const be = new Enemy(jd.base, 208, 80, { hp: 100, jefe: true, comportamiento: 'jefe_ancla', ancla: { x: 208, y: 80 } });
+  assert('director de ' + bioma + ' usa su base', crearDirectorJefe(be, rm)?.cfg.base === jd.base);
+}
+assert('los 4 jefes NO repiten base/sprite', basesJefe.size === 4);
 const jpl = new Player(208, 120);
 let casteó = false;
 for (let i = 0; i < 400 && !casteó; i++) { jdir.update(1 / 60, jpl); if (jdir.zonas.length) casteó = true; }

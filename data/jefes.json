@@ -1,18 +1,48 @@
 {
-  "_doc": "Jefes de raid (uno por bioma, distintos entre sí) + biblioteca de mecánicas telegrafiadas estilo FFXIV. El motor (js/jefes.js) las interpreta; main.js dibuja director.zonas. tipo: circulos | donut | cono | linea | barrido | safe | adds.",
+  "_doc": "Jefes de raid (uno por bioma, distintos entre sí: base/sprite, paleta y mecánicas propias) + biblioteca de mecánicas telegrafiadas estilo FFXIV. El motor (js/jefes.js) las interpreta; main.js dibuja director.zonas. tipo: circulos | donut | cono | linea | barrido | safe | adds.",
   "jefes": {
     "pendulos": {
       "base": "campanero",
       "nombre": "El Gran Campanero",
-      "hp": 130,
-      "r": 20,
-      "velocidad": 40,
-      "sello": "sello_ascuas",
-      "elemento": "trueno",
+      "hp": 130, "r": 20, "velocidad": 40,
+      "sello": "sello_ascuas", "elemento": "trueno",
       "respiro_s": 1.6,
       "fases": [
         { "hp": 1.0, "cadencia_s": 2.7, "mecanicas": ["anillo_campana", "cuna_doble", "lluvia_de_cera"] },
         { "hp": 0.5, "cadencia_s": 2.1, "mecanicas": ["barrido_manecilla", "lluvia_de_cera", "cuna_doble", "tanda_velones"] }
+      ]
+    },
+    "archivo": {
+      "base": "polilla_del_polvo",
+      "nombre": "La Archivera Anegada",
+      "hp": 155, "r": 18, "velocidad": 46,
+      "sello": "sello_marea", "elemento": "oscuridad",
+      "respiro_s": 1.7,
+      "fases": [
+        { "hp": 1.0, "cadencia_s": 2.6, "mecanicas": ["columnas_de_tinta", "pagina_barrida", "remolino_de_tinta"] },
+        { "hp": 0.5, "cadencia_s": 2.0, "mecanicas": ["marea_de_tinta", "columnas_de_tinta", "invocar_remoras", "pagina_barrida"] }
+      ]
+    },
+    "invertida": {
+      "base": "tejedor_horas",
+      "nombre": "El Primer Relojero",
+      "hp": 185, "r": 19, "velocidad": 40,
+      "elemento": "neutro",
+      "respiro_s": 1.5,
+      "fases": [
+        { "hp": 1.0, "cadencia_s": 2.5, "mecanicas": ["manecilla_horaria", "numeros_romanos", "cono_horario"] },
+        { "hp": 0.55, "cadencia_s": 1.9, "mecanicas": ["doble_manecilla", "engranaje_central", "numeros_romanos", "cono_horario"] }
+      ]
+    },
+    "truenos": {
+      "base": "cuco_de_cuerda",
+      "nombre": "El Gran Carillón",
+      "hp": 210, "r": 20, "velocidad": 38,
+      "elemento": "trueno",
+      "respiro_s": 1.6,
+      "fases": [
+        { "hp": 1.0, "cadencia_s": 2.6, "mecanicas": ["descarga_carillon", "tanido", "resonancia"] },
+        { "hp": 0.5, "cadencia_s": 2.0, "mecanicas": ["arco_electrico", "descarga_carillon", "invocar_cimbalos", "tanido"] }
       ]
     }
   },
@@ -22,6 +52,24 @@
     "lluvia_de_cera": { "tipo": "circulos", "telegraph_s": 1.5, "n": 5, "r": 42, "sobre_jugador": true, "dano": 1, "color": "#e4a13a" },
     "barrido_manecilla": { "tipo": "barrido", "telegraph_s": 1.1, "vueltas": 1.25, "vel": 1.5, "ancho": 0.15, "largo": 280, "dano": 1, "color": "#ffd54f" },
     "foso_del_compas": { "tipo": "safe", "telegraph_s": 2.0, "r_safe": 48, "dist": 96, "dano": 2, "color": "#e05a4f" },
-    "tanda_velones": { "tipo": "adds", "quien": "velon_inestable", "n": 2 }
+    "tanda_velones": { "tipo": "adds", "quien": "velon_inestable", "n": 2 },
+
+    "columnas_de_tinta": { "tipo": "circulos", "telegraph_s": 1.5, "n": 5, "r": 44, "sobre_jugador": true, "dano": 1, "color": "#5c6bc0" },
+    "pagina_barrida": { "tipo": "linea", "telegraph_s": 1.4, "ancho": 40, "largo": 340, "dano": 1, "color": "#7986cb" },
+    "remolino_de_tinta": { "tipo": "donut", "telegraph_s": 1.8, "r_int": 52, "r_ext": 320, "dano": 1, "color": "#5c6bc0" },
+    "marea_de_tinta": { "tipo": "safe", "telegraph_s": 2.0, "r_safe": 52, "dist": 100, "dano": 2, "color": "#3949AB" },
+    "invocar_remoras": { "tipo": "adds", "quien": "remora_de_tinta", "n": 2 },
+
+    "manecilla_horaria": { "tipo": "barrido", "telegraph_s": 1.2, "vueltas": 1.0, "vel": 1.5, "ancho": 0.15, "largo": 285, "dano": 1, "color": "#c8905a" },
+    "doble_manecilla": { "tipo": "barrido", "telegraph_s": 1.0, "vueltas": 1.0, "vel": 1.9, "ancho": 0.14, "largo": 285, "dano": 1, "color": "#e05a4f" },
+    "numeros_romanos": { "tipo": "circulos", "telegraph_s": 1.5, "n": 6, "r": 40, "sobre_jugador": false, "dano": 1, "color": "#c8905a" },
+    "cono_horario": { "tipo": "cono", "telegraph_s": 1.4, "n": 2, "sep": 1.35, "arco": 0.75, "largo": 250, "dano": 1, "color": "#e05a4f" },
+    "engranaje_central": { "tipo": "donut", "telegraph_s": 1.8, "r_int": 56, "r_ext": 340, "dano": 1, "color": "#c8905a" },
+
+    "descarga_carillon": { "tipo": "circulos", "telegraph_s": 1.4, "n": 5, "r": 44, "sobre_jugador": true, "dano": 1, "color": "#AB47BC" },
+    "resonancia": { "tipo": "donut", "telegraph_s": 1.8, "r_int": 50, "r_ext": 330, "dano": 1, "color": "#b98fd0" },
+    "tanido": { "tipo": "cono", "telegraph_s": 1.4, "n": 1, "arco": 1.0, "largo": 260, "dano": 1, "color": "#AB47BC" },
+    "arco_electrico": { "tipo": "barrido", "telegraph_s": 1.1, "vueltas": 1.25, "vel": 1.6, "ancho": 0.16, "largo": 280, "dano": 1, "color": "#b98fd0" },
+    "invocar_cimbalos": { "tipo": "adds", "quien": "cimbalo", "n": 2 }
   }
 }
