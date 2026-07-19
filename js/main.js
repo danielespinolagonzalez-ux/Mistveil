@@ -1709,8 +1709,14 @@ function update(dt) {
         const dmg = e.takeDamage(t.damage * elementMult(t.elemento, e.def.elemento), t.x, t.y);
         if (dmg > 0) {
           pushPopup(e.x + 8, e.y - e.r - 4, String(dmg), '#f4f0e6', 9);
-          const pal = PALETTES[e.id] ?? ['#fff'];
-          FX.burst(t.x, t.y, { n: 5, color: pal[0], speed: 80, life: 0.35, size: 2 });
+          // JUICE DEL DISPARO (Fase A #8): chispazo DIRECCIONAL teñido por elemento +
+          // núcleo blanco + micro-shake; al REMATAR, un micro-hit-stop que da peso.
+          const elc = DataDB.elementos[t.elemento]?.color ?? '#bfe3ff';
+          const ang = Math.atan2(t.vy, t.vx);
+          FX.burst(t.x, t.y, { n: 8, color: elc, speed: 150, life: 0.26, size: 2, glow: true, dir: ang, spread: 1.3 });
+          FX.burst(t.x, t.y, { n: 3, color: '#ffffff', speed: 55, life: 0.12, size: 1.6, glow: true });
+          FX.addShake(0.6);
+          if (e.health.dead) { hitStopT = Math.max(hitStopT, 0.045); FX.addShake(2.2); }
           if (t.flags) {
             if (t.flags.has('burn')) e.burn = { t: DataDB.balance.hechizos.quema_duracion_s, tick: 1 };
             if (t.flags.has('split_on_hit') && !t.split) {

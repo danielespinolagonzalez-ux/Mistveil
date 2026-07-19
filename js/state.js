@@ -154,13 +154,14 @@ export const AudioManager = {
         .catch(() => { /* falta el fichero o no decodifica: se queda el beep */ });
     }
   },
-  _playSample(name) {
+  _playSample(name, pitch = 1) {
     try {
       const buf = this._sfxBuffers[name];
       if (!buf) return false;
       this._ensure();
       const c = this.ctx, t = c.currentTime;
       const s = c.createBufferSource(); s.buffer = buf;
+      if (pitch !== 1) s.playbackRate.value = pitch; // varía el tono (anti-ametralladora / arpegio de combo)
       const g = c.createGain();
       g.gain.value = (this._sfxGain[name] ?? 0.55) * GameState.opciones.vol_sfx;
       s.connect(g); g.connect(c.destination);
@@ -439,8 +440,8 @@ export const AudioManager = {
     } catch {}
   },
 
-  sfx(name) {
-    if (this._playSample(name)) return; // SFX real (WAV) si está cargado; si no, beep
+  sfx(name, opts = {}) {
+    if (this._playSample(name, opts.pitch ?? 1)) return; // SFX real (WAV) si está cargado; si no, beep
     switch (name) {
       case 'tear': this.beep(760, 0.045, 'triangle', 0.03); break;
       case 'hit': this.beep(300, 0.05, 'square', 0.045); break;

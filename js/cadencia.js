@@ -266,7 +266,10 @@ export class Cadencia {
       player.comboIframeT = Math.max(player.comboIframeT, ifr);
     }
 
-    AudioManager.sfx(quality === 'perfect' ? 'cad_perfect' : quality === 'good' ? 'cad_good' : 'cad_fail');
+    // Arpegio de combo (Fase A #8): el golpe ASCIENDE de tono con el índice del combo
+    // (culmina en el finisher). El fallo no sube. Da sensación de "melodía" al combo.
+    const nota = ok ? Math.pow(2, Math.min(this.hitIndex, 7) * 2 / 12) : 1;
+    AudioManager.sfx(quality === 'perfect' ? 'cad_perfect' : quality === 'good' ? 'cad_good' : 'cad_fail', { pitch: nota });
     if (finisher) AudioManager.sfx('finisher');
     // Sinergias Compás × Arte (combo inmaculado, todo perfecto)
     if (isLastHit && ok && this.allPerfect) {

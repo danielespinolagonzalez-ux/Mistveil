@@ -302,7 +302,7 @@ export class Player {
           b.tear_range_px, b.tear_damage, opts);
       }
       EventBus.emit('tear_fired', this.x + a.x * 8, this.y + a.y * 8, a.x, a.y);
-      AudioManager.sfx('tear');
+      AudioManager.sfx('tear', { pitch: 0.94 + Math.random() * 0.13 }); // varía el tono: sin efecto ametralladora
     }
   }
 
