@@ -18,7 +18,8 @@ const FILES = {
   salas_piso1: 'data/salas/piso1_plantillas.json',
   jefes: 'data/jefes.json',
   musica: 'data/musica.json',
-  eventos: 'data/eventos.json'
+  eventos: 'data/eventos.json',
+  pactos: 'data/pactos.json'
 };
 
 // Claves mínimas requeridas por archivo (validación con errores claros)

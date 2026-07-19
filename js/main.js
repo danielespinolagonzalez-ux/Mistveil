@@ -26,6 +26,7 @@ import { crearDirectorJefe } from './jefes.js';
 import { Sprites } from './sprites.js';
 import * as UIK from './ui_kit.js';
 import { drawItemIcon } from './item_icons.js';
+import { Pactos } from './pactos.js';
 
 const PORTRAIT = !!window.MISTVEIL_PORTRAIT;
 const MOBILE = !!window.MISTVEIL_MOBILE;
@@ -174,6 +175,7 @@ let hitStopT = 0;  // micro-pausa en golpes perfectos (juice)
 let pendingUpgrades = null; // 3 mejoras ofrecidas al descender
 let upgradeIdx = 0;         // foco de la carta de mejora (toque/mando/teclado)
 let santIdx = 0;           // foco del Santuario (rejilla de nodos + Descender)
+let pactoIdx = 0;          // foco del selector de PACTOS (Heat, C4)
 let dlg = null;             // diálogo activo del pueblo {npc, lines, i}
 let puebloAviso = null;     // {titulo, sub, t} recompensa recién ganada
 let now0 = performance.now();
@@ -214,9 +216,9 @@ function placePlayerAtTop() {
   cam.x = gx; cam.y = gy;
 }
 
-// Memoria ganada (Cuerda Tensa la escala +50%)
+// Memoria ganada (los pactos de Heat la escalan: +memoria_por_nivel por tramo activo)
 function gainMemoria(n) {
-  GameState.memoria += Math.round(n * (GameState.cuerdaTensa ? 1.5 : 1));
+  GameState.memoria += Math.round(n * Pactos.memoriaMult());
   SaveManager.save();
 }
 
@@ -863,7 +865,7 @@ function autosaveRun() {
 }
 
 function restoreSnapshot(snap) {
-  // 1. RunState (GameState ya está cargado por SaveManager.load — cuerdaTensa/llave alteran el RNG del piso)
+  // 1. RunState (GameState ya está cargado por SaveManager.load — los pactos de Heat escalan la dificultad del piso)
   RunState.reset();
   RunState.piso = snap.piso ?? 1;
   RunState.semilla = (snap.semilla ?? 0) >>> 0;
@@ -1242,11 +1244,12 @@ EventBus.on('room_cleared', (room) => {
     for (let i = 0; i < 3; i++) spawnPickup('coin', cx, cy + 26);
     return;
   }
-  if (Math.random() * 100 < run.drop_oro_pct) {
+  const penuria = Pactos.efecto('sin_sosten'); // Heat: pacto Penuria divide el sostén (corazón/oro)
+  if (Math.random() * 100 < run.drop_oro_pct / penuria) {
     const n = run.oro_min + Math.floor(Math.random() * (run.oro_max - run.oro_min + 1));
     for (let i = 0; i < n; i++) spawnPickup('coin', cx, cy);
   }
-  if (Math.random() * 100 < run.drop_corazon_pct) spawnPickup('heart', cx, cy);
+  if (Math.random() * 100 < run.drop_corazon_pct / penuria) spawnPickup('heart', cx, cy);
   if (Math.random() * 100 < (run.drop_tomo_pct ?? 0)) {
     const tomoNuevo = DataDB.hechizos.hechizos.find(h => !RunState.tomos.includes(h.id));
     if (tomoNuevo) spawnPickup('tomo:' + tomoNuevo.id, cx, cy - 14);
@@ -1634,6 +1637,11 @@ function update(dt) {
   if (mode === 'santuario') {
     FX.update(dt);
     updateSantuario();
+    return;
+  }
+  if (mode === 'pactos') {
+    FX.update(dt);
+    updatePactos();
     return;
   }
   if (mode === 'batalla') {
@@ -4277,12 +4285,11 @@ function activarNodoSantuario(n) {
   const coste = DataDB.balance.arbol[n.id] ?? 999;
   if (GameState.tiene(n.id)) {
     if (n.id === 'cuarto_de_la_penumbra') {
-      GameState.cuerdaTensa = !GameState.cuerdaTensa; SaveManager.save();
-      AudioManager.sfx(GameState.cuerdaTensa ? 'door_seal' : 'door_open');
+      // Heat (C4): el nodo abre el selector de PACTOS (antes era un toggle booleano).
+      pactoIdx = 0; mode = 'pactos'; AudioManager.sfx('door_seal');
     } else AudioManager.sfx('no_sp');
   } else if (GameState.memoria >= coste) {
     GameState.memoria -= coste; GameState.desbloqueos.push(n.id);
-    if (n.id === 'cuarto_de_la_penumbra') GameState.cuerdaTensa = true;
     SaveManager.save(); AudioManager.sfx('equip');
     FX.burst(VW / 2 + cam.x, (VH / 2) / KY + cam.y, { n: 20, color: '#ffd54f', speed: 120, life: 0.6, size: 2, glow: true });
   } else AudioManager.sfx('no_sp');
@@ -4351,8 +4358,9 @@ function drawSantuario(t) {
     font(8);
     if (owned) {
       if (n.id === 'cuarto_de_la_penumbra') {
-        ctx.fillStyle = GameState.cuerdaTensa ? '#e05a4f' : '#6c6193';
-        ctx.fillText(GameState.cuerdaTensa ? 'ACTIVO · toca para apagar' : 'apagado · toca para activar', r.x + r.w / 2, r.y + r.h - 10);
+        const heat = Pactos.heat();
+        ctx.fillStyle = heat > 0 ? '#e05a4f' : '#6c6193';
+        ctx.fillText(heat > 0 ? 'Heat ' + heat + ' · toca para ajustar' : 'sin pactos · toca para elegir', r.x + r.w / 2, r.y + r.h - 10);
       } else {
         ctx.fillStyle = '#ffd54f';
         ctx.fillText('✓ grabado', r.x + r.w / 2, r.y + r.h - 10);
@@ -4368,6 +4376,105 @@ function drawSantuario(t) {
   UIK.boton(ctx, font, { ...dr, label: 'DESCENDER', sub: 'a la Torre', tono: 'primary', foco: focD, t });
   ctx.textAlign = 'center';
   UIK.glyphBar(ctx, font, Input, [{ k: 'nav', txt: 'mover' }, { k: 'confirm', txt: 'grabar / descender' }, { k: 'cancel', txt: 'pueblo' }], VW, VH);
+}
+
+// ---- Selector de PACTOS (Heat, C4): condiciones de dificultad OPT-IN, apilables y con
+// niveles; cada tramo sube la dificultad y paga +Memoria. Se abre desde el nodo
+// cuarto_de_la_penumbra del Santuario. Navegable por toque/mando/teclado. ----
+function pactoRect(i) {
+  // Layout adaptable: reparte todas las filas (pactos + Volver) entre la cabecera y la glyphBar
+  // sin desbordar (VH=360 en horizontal → filas compactas; VH=640 en vertical → más aire).
+  const n = Pactos.defs().length + 1; // +1 = botón Volver
+  const top = 72, bottom = VH - 26; // deja hueco para la glyphBar de abajo
+  const step = Math.min(46, (bottom - top) / n);
+  const h = Math.min(40, step - 4);
+  const w = Math.min(VW - 60, 468);
+  return { x: Math.round((VW - w) / 2), y: Math.round(top + i * step), w, h };
+}
+function pactoStepRects(r) {
+  // Zonas − / + a la derecha de la fila (táctil e indicador visual)
+  return {
+    menos: { x: r.x + r.w - 96, y: r.y + 9, w: 28, h: r.h - 18 },
+    mas: { x: r.x + r.w - 34, y: r.y + 9, w: 28, h: r.h - 18 },
+  };
+}
+function salirPactos() { SaveManager.save(); mode = 'santuario'; }
+function updatePactos() {
+  const defs = Pactos.defs(), n = defs.length; // índice n = botón Volver
+  if (UIK.cancelo(Input) || Input.justPressed('pause')) { salirPactos(); return; }
+  if (Input.justPressed('move_up')) pactoIdx = (pactoIdx - 1 + n + 1) % (n + 1);
+  if (Input.justPressed('move_down')) pactoIdx = (pactoIdx + 1) % (n + 1);
+  pactoIdx = Math.min(pactoIdx, n);
+  if (pactoIdx < n) { // fila de pacto enfocada: izq/dcha ajusta el nivel
+    const id = defs[pactoIdx].id;
+    if (Input.justPressed('move_left')) { Pactos.ajustar(id, -1); AudioManager.sfx('ui_tap'); }
+    if (Input.justPressed('move_right')) { Pactos.ajustar(id, +1); AudioManager.sfx('equip'); }
+    if (UIK.confirmo(Input)) { // A del mando: sube (y da la vuelta a 0 al pasar el máximo)
+      const d = defs[pactoIdx];
+      if (Pactos.nivel(id) >= (d.max_nivel ?? 1)) { Pactos.ajustar(id, -99); AudioManager.sfx('ui_tap'); }
+      else { Pactos.ajustar(id, +1); AudioManager.sfx('equip'); }
+    }
+  } else if (UIK.confirmo(Input)) { salirPactos(); return; } // Volver
+  const tap = Input.consumeTap();
+  if (tap) {
+    if (UIK.hit(pactoRect(n), tap)) { salirPactos(); return; } // Volver
+    for (let i = 0; i < n; i++) {
+      const r = pactoRect(i);
+      if (!UIK.hit(r, tap)) continue;
+      pactoIdx = i; const id = defs[i].id, st = pactoStepRects(r);
+      if (UIK.hit(st.menos, tap)) { Pactos.ajustar(id, -1); AudioManager.sfx('ui_tap'); }
+      else { Pactos.ajustar(id, +1); AudioManager.sfx('equip'); } // tocar la fila (o +) sube un nivel
+      break;
+    }
+  }
+}
+function drawPactos(t) {
+  const defs = Pactos.defs(), n = defs.length;
+  ctx.fillStyle = 'rgba(10,7,18,0.97)'; ctx.fillRect(0, 0, VW, VH); // fondo opaco (evita arrastre del frame previo)
+  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  font(15); ctx.fillStyle = '#e9e2f5'; ctx.fillText('PACTOS', VW / 2, 30);
+  font(8); ctx.fillStyle = '#b678e8';
+  ctx.fillText('El Reloj recompensa a quien sufre — más Heat, más Memoria', VW / 2, 48);
+  const heat = Pactos.heat(), mm = Pactos.memoriaMult();
+  font(10); ctx.fillStyle = heat > 0 ? '#ffd54f' : '#6c6193';
+  ctx.fillText('◆ Heat ' + heat + '   ·   Memoria ×' + mm.toFixed(2), VW / 2, 66);
+  for (let i = 0; i < n; i++) {
+    const d = defs[i], r = pactoRect(i), foco = i === pactoIdx, niv = Pactos.nivel(d.id), max = d.max_nivel ?? 1;
+    const cy = r.y + r.h / 2;
+    ctx.fillStyle = foco ? '#2b2547' : niv > 0 ? '#241f3d' : '#1d1930';
+    ctx.fillRect(r.x, r.y, r.w, r.h);
+    ctx.strokeStyle = foco ? '#ffffff' : niv > 0 ? (d.icono_color ?? '#ffd54f') : '#37335c';
+    ctx.lineWidth = foco ? 3 : niv > 0 ? 2 : 1.5;
+    ctx.strokeRect(r.x + 1, r.y + 1, r.w - 2, r.h - 2);
+    if (foco) { ctx.save(); ctx.setLineDash([5, 5]); ctx.lineWidth = 2; ctx.strokeStyle = `rgba(255,247,180,${0.5 + 0.4 * Math.sin(t * 8)})`; ctx.strokeRect(r.x - 3, r.y - 3, r.w + 6, r.h + 6); ctx.restore(); }
+    // Icono procedural del pacto
+    ctx.save(); ctx.translate(r.x + 22, cy);
+    drawItemIcon(ctx, d.icono_forma, d.icono_color ?? '#e9e2f5', 0, 0, Math.min(9, r.h * 0.26));
+    ctx.restore();
+    ctx.textAlign = 'left';
+    font(r.h >= 38 ? 10 : 9); ctx.fillStyle = niv > 0 ? '#ffd54f' : '#e9e2f5';
+    ctx.fillText(d.nombre, r.x + 40, cy - r.h * 0.08);
+    font(8); ctx.fillStyle = '#9c8fc0';
+    ctx.fillText(clipText(d.desc, r.w - 150), r.x + 40, cy + r.h * 0.30);
+    // Stepper − [pips] + (indicador y zonas táctiles)
+    const st = pactoStepRects(r);
+    ctx.textAlign = 'center';
+    font(13); ctx.fillStyle = niv > 0 ? '#e9e2f5' : '#55496e';
+    ctx.fillText('−', st.menos.x + st.menos.w / 2, cy + 5);
+    ctx.fillStyle = niv < max ? '#e9e2f5' : '#55496e';
+    ctx.fillText('+', st.mas.x + st.mas.w / 2, cy + 5);
+    // Pips de nivel entre − y +
+    const pipX = st.menos.x + st.menos.w + 4, pipW = (st.mas.x - pipX - 4), pw = Math.min(8, pipW / max - 2);
+    for (let k = 0; k < max; k++) {
+      const px = pipX + k * (pw + 2);
+      ctx.fillStyle = k < niv ? (d.icono_color ?? '#ffd54f') : '#37335c';
+      ctx.fillRect(px, cy - 5, pw, 10);
+    }
+  }
+  ctx.textAlign = 'center';
+  const rb = pactoRect(n), focB = pactoIdx === n;
+  UIK.boton(ctx, font, { ...rb, label: 'VOLVER', sub: 'al Santuario', tono: 'primary', foco: focB, t });
+  UIK.glyphBar(ctx, font, Input, [{ k: 'nav', txt: 'elegir' }, { k: 'confirm', txt: 'subir nivel' }, { k: 'cancel', txt: 'volver' }], VW, VH);
 }
 
 // ---- Pantalla de OPCIONES (Fase B, carencias #3/#4): volumen, asistencia de ritmo,
@@ -4525,6 +4632,7 @@ function render() {
   if (mode === 'title') { drawTitle(t); return; }
   if (mode === 'pueblo') { renderPueblo(t); return; }
   if (mode === 'santuario') { drawSantuario(t); return; }
+  if (mode === 'pactos') { drawPactos(t); return; }
   if (mode === 'batalla') { batalla.draw(t); return; }
   if (mode === 'menu') { menu.draw(t); return; }
   if (mode === 'balance') { drawBalanceScreen(); return; }

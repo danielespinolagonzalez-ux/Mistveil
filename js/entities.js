@@ -397,6 +397,10 @@ export class Enemy {
       if (this.def.proyectil) this.def.proyectil = { ...this.def.proyectil, dano: Math.max(1, Math.round(this.def.proyectil.dano * dm)) };
       if (this.def.explosion) this.def.explosion = { ...this.def.explosion, dano: Math.max(1, Math.round(this.def.explosion.dano * dm)) };
     }
+    // Heat (C4): multiplicador de velocidad del pacto Cacería (mismo patrón que danoMult).
+    const vm = this.def.velMult ?? 1;
+    delete this.def.velMult;
+    if (vm !== 1 && this.def.velocidad) this.def.velocidad *= vm;
     this.id = id;
     this.x = x; this.y = y; this.vx = 0; this.vy = 0;
     this.r = overrides.r ?? 10;

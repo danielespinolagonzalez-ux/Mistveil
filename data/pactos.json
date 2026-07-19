@@ -1,0 +1,65 @@
+{
+  "_doc": "Sistema Heat (C4). Pactos = condiciones de dificultad OPT-IN, apilables y con niveles. Cada nivel sube la dificultad por un LEVER concreto (efecto.tipo/por_nivel) y paga +Memoria (memoria_por_nivel). El Heat total = suma de niveles. Se eligen en el Santuario (nodo cuarto_de_la_penumbra) antes de descender. Añadir un pacto = una entrada aquí (cero código), siempre que reuse un efecto.tipo ya cableado en el punto de uso. Tipos cableados: hp_enemigo, dano_enemigo, velocidad_enemigo (via velMult en overrides), densidad (presupuesto de sala), elite (prob de élite), sin_sosten (menos corazones/oro).",
+  "pactos": [
+    {
+      "id": "vida_tensa",
+      "nombre": "Cuerda Tensa",
+      "desc": "Los enemigos aguantan más golpes.",
+      "icono_forma": "cuerda",
+      "icono_color": "#e05a4f",
+      "max_nivel": 3,
+      "efecto": { "tipo": "hp_enemigo", "por_nivel": 0.18 },
+      "memoria_por_nivel": 0.15
+    },
+    {
+      "id": "furia_del_reloj",
+      "nombre": "Furia del Reloj",
+      "desc": "Sus golpes hacen más daño.",
+      "icono_forma": "llama",
+      "icono_color": "#f0803a",
+      "max_nivel": 3,
+      "efecto": { "tipo": "dano_enemigo", "por_nivel": 0.2 },
+      "memoria_por_nivel": 0.18
+    },
+    {
+      "id": "enjambre",
+      "nombre": "Enjambre",
+      "desc": "Cada sala trae más enemigos.",
+      "icono_forma": "doble_gota",
+      "icono_color": "#7ec98f",
+      "max_nivel": 3,
+      "efecto": { "tipo": "densidad", "por_nivel": 0.22 },
+      "memoria_por_nivel": 0.16
+    },
+    {
+      "id": "caceria",
+      "nombre": "Cacería",
+      "desc": "Los enemigos se mueven más rápido.",
+      "icono_forma": "ala",
+      "icono_color": "#5fd2e0",
+      "max_nivel": 2,
+      "efecto": { "tipo": "velocidad_enemigo", "por_nivel": 0.14 },
+      "memoria_por_nivel": 0.16
+    },
+    {
+      "id": "corte_de_elites",
+      "nombre": "Corte de Élites",
+      "desc": "Aparecen más minijefes.",
+      "icono_forma": "peso",
+      "icono_color": "#8fa6ff",
+      "max_nivel": 2,
+      "efecto": { "tipo": "elite", "por_nivel": 0.6 },
+      "memoria_por_nivel": 0.2
+    },
+    {
+      "id": "penuria",
+      "nombre": "Penuria",
+      "desc": "Menos corazones y menos oro.",
+      "icono_forma": "corazon",
+      "icono_color": "#c86a8e",
+      "max_nivel": 2,
+      "efecto": { "tipo": "sin_sosten", "por_nivel": 0.5 },
+      "memoria_por_nivel": 0.14
+    }
+  ]
+}

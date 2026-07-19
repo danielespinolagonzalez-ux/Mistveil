@@ -27,6 +27,7 @@ import { spawnArt, updateArt, romano } from '../js/artes_fx.js';
 import { selloDef, obtenerSello, rasgoCuraPorSp, finisherElemental } from '../js/sellos.js';
 import { pickAzar, aplicarEvento } from '../js/eventos.js';
 import { drawItemIcon } from '../js/item_icons.js';
+import { Pactos, calcHeat, calcMemoriaMult, calcEfecto, nivelClamp } from '../js/pactos.js';
 
 const out = document.getElementById('out');
 let failed = 0;
@@ -215,6 +216,33 @@ assert('C3: items.json define conjuntos (set-bonus por tag)', Array.isArray(Data
   assert('C3: el conjunto se activa al reunir 3 de una etiqueta', pc.mods.conjuntos.includes('lagrimas:3'));
   assert('C3: el conjunto aplica su efecto (tear_rate ×1.2)', pc.stats.tear_rate_per_s > r0 * 1.15);
   RunState.items.length = 0; RunState.items.push(...saved);
+})();
+
+// Fase C — C4 (Heat / pactos: condiciones de dificultad OPT-IN, apilables, +Memoria por tramo)
+assert('C4: pactos.json define pactos con efecto/nivel/memoria',
+  Array.isArray(DataDB.pactos?.pactos) && DataDB.pactos.pactos.length >= 4 &&
+  DataDB.pactos.pactos.every(p => p.id && p.efecto?.tipo && (p.max_nivel ?? 0) >= 1 && typeof p.memoria_por_nivel === 'number'));
+(() => {
+  const defs = [{ id: 'a', max_nivel: 3, memoria_por_nivel: 0.1, efecto: { tipo: 'hp_enemigo', por_nivel: 0.2 } }];
+  assert('C4: calcHeat suma niveles activos', calcHeat({ a: 2, b: 1 }) === 3);
+  assert('C4: calcMemoriaMult apila (+0.1×2 = 1.2)', Math.abs(calcMemoriaMult({ a: 2 }, defs) - 1.2) < 1e-9);
+  assert('C4: calcEfecto compone el lever (+0.2×2 = 1.4)', Math.abs(calcEfecto({ a: 2 }, defs, 'hp_enemigo') - 1.4) < 1e-9);
+  assert('C4: calcEfecto = 1 si ningún pacto toca ese lever', calcEfecto({ a: 2 }, defs, 'otro') === 1);
+  assert('C4: nivelClamp acota a [0, max]', nivelClamp(9, defs[0]) === 3 && nivelClamp(-3, defs[0]) === 0);
+})();
+(() => {
+  const prev = GameState.pactos;
+  GameState.pactos = { vida_tensa: 3 };
+  assert('C4: Pactos.heat lee el estado real', Pactos.heat() === 3);
+  assert('C4: Pactos.efecto(hp_enemigo) sube con Cuerda Tensa', Pactos.efecto('hp_enemigo') > 1);
+  assert('C4: Pactos.memoriaMult sube con pacto activo', Pactos.memoriaMult() > 1);
+  GameState.pactos = prev ?? {};
+})();
+(() => {
+  const d = DataDB.enemigos.enemigos.find(e => (e.velocidad ?? 0) > 0);
+  const base = new Enemy(d.id, 0, 0);
+  const fast = new Enemy(d.id, 0, 0, { velMult: 2 });
+  assert('C4: velMult (Cacería) escala la velocidad del enemigo', Math.abs(fast.def.velocidad - base.def.velocidad * 2) < 1e-6);
 })();
 
 // Player existe y responde a la física

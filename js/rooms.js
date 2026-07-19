@@ -6,6 +6,7 @@ import { AudioManager, GameState, RunState } from './state.js';
 import { Enemy } from './entities.js';
 import { rollItem } from './items.js';
 import { Sprites } from './sprites.js';
+import { Pactos } from './pactos.js';
 
 export const TILE = 32, RW = 13, RH = 7, WALL = 16;
 export const BLOCK_W = RW * TILE + WALL * 2;   // 448
@@ -368,9 +369,12 @@ export class Room {
       .filter(Boolean);
     // Maldita: presupuesto doble. Desafío: reforzado (mult data-driven). Escalado por piso.
     const budMult = this.type === 'maldita' ? 2 : this.type === 'desafio' ? (DataDB.balance.desafio?.presupuesto_mult ?? 1.8) : 1;
-    let budget = R.dificultad_sala_base * budMult + (this.piso - 1) * (R.dificultad_por_piso ?? 2);
-    const hpMult = 1 + (this.piso - 1) * R.escalado_hp_por_piso;
-    const danoMult = 1 + (this.piso - 1) * (R.escalado_dano_por_piso ?? 0);
+    // Heat (C4): pactos apilables suben la dificultad por lever (densidad/hp/daño/velocidad/élite).
+    const pactoDensidad = Pactos.efecto('densidad');   // Enjambre
+    const pactoVel = Pactos.efecto('velocidad_enemigo'); // Cacería
+    let budget = (R.dificultad_sala_base * budMult + (this.piso - 1) * (R.dificultad_por_piso ?? 2)) * pactoDensidad;
+    const hpMult = (1 + (this.piso - 1) * R.escalado_hp_por_piso) * Pactos.efecto('hp_enemigo'); // Cuerda Tensa
+    const danoMult = (1 + (this.piso - 1) * (R.escalado_dano_por_piso ?? 0)) * Pactos.efecto('dano_enemigo'); // Furia del Reloj
     const inv = this.bioma?.invertida; // Relojería Invertida: telegrafía doble, zarpazo feroz
     const out = [];
     const pts = [...this.spawnPts].sort(() => Math.random() - 0.5);
@@ -380,12 +384,12 @@ export class Room {
       if (budget <= 0 && out.length) break;
       const affordable = pool.filter(d => d.coste_dificultad <= Math.max(budget, 1));
       const def = affordable.length ? pick(affordable) : pick(pool);
-      const ov = { hp: Math.round(def.hp * hpMult), danoMult };
+      const ov = { hp: Math.round(def.hp * hpMult), danoMult, velMult: pactoVel };
       if (inv) { ov.windup_mult = inv.windup_mult; ov.strike_mult = inv.strike_mult; }
       // Élite (minijefe): un enemigo normal puede promocionar a élite con un rasgo. Prob
       // sube por piso. Los gemelos (minuteros) nunca son élite (ya vienen en pareja).
       const EL = DataDB.balance.elite;
-      if (EL && !def.gemelo && eliteN < (EL.max_por_sala ?? 2) && Math.random() < Math.min(EL.prob_max ?? 0.2, (EL.prob_base ?? 0.06) + (this.piso - 1) * (EL.prob_por_piso ?? 0.014))) {
+      if (EL && !def.gemelo && eliteN < (EL.max_por_sala ?? 2) && Math.random() < Math.min((EL.prob_max ?? 0.2) * Pactos.efecto('elite'), ((EL.prob_base ?? 0.06) + (this.piso - 1) * (EL.prob_por_piso ?? 0.014)) * Pactos.efecto('elite'))) {
         ov.elite = (EL.rasgos ?? ['acorazado', 'veloz', 'iracundo'])[Math.floor(Math.random() * (EL.rasgos?.length ?? 3))];
         eliteN++;
         budget -= 2; // un élite consume presupuesto extra (cuenta como más peligro)
@@ -761,7 +765,9 @@ export function buildTower(piso = 1, seed = Date.now()) {
   const rnd = mulberry32((seed ^ (piso * 104729)) >>> 0);
   const R = DataDB.balance.run;
   const hpMult = (1 + (piso - 1) * R.escalado_hp_por_piso)
-    * (GameState.cuerdaTensa ? 1.25 : 1); // modo Cuerda Tensa (Santuario)
+    * Pactos.efecto('hp_enemigo'); // Heat: pacto Cuerda Tensa (Santuario)
+  const danoMultRoam = Pactos.efecto('dano_enemigo');   // Heat: Furia del Reloj
+  const velMultRoam = Pactos.efecto('velocidad_enemigo'); // Heat: Cacería
   const pickR = (arr) => arr[Math.floor(rnd() * arr.length)];
   const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1));[a[i], a[j]] = [a[j], a[i]]; } return a; };
 
@@ -875,7 +881,7 @@ export function buildTower(piso = 1, seed = Date.now()) {
         x = r.bounds.x + 20 + rnd() * (r.bounds.w - 40);
         y = r.bounds.y + 20 + rnd() * (r.bounds.h - 40);
       } while (tries-- > 0 && solids.some(s => x > s.x - 12 && x < s.x + s.w + 12 && y > s.y - 12 && y < s.y + s.h + 12));
-      const e = new Enemy(def.id, x, y, { hp: Math.round(def.hp * hpMult) });
+      const e = new Enemy(def.id, x, y, { hp: Math.round(def.hp * hpMult), danoMult: danoMultRoam, velMult: velMultRoam });
       e.room = r;
       roamers.push(e);
     }

@@ -9,7 +9,7 @@ export const GameState = {
   xp: 0, nivel: 1, engranajes: 0,        // progresión: XP por piso → niveles → engranajes
   esfera: ['eje'],                       // nodos activados de la Esfera del Reloj
   usoHechizos: {}, usoCompases: {},      // "todo sube de nivel": contadores de uso
-  cuerdaTensa: false,           // modo reto (requiere cuarto_de_la_penumbra)
+  pactos: {},                   // Heat (C4): { id_pacto: nivel } — condiciones de dificultad OPT-IN apilables (requiere cuarto_de_la_penumbra); antes era el booleano cuerdaTensa
   sellosObtenidos: [],          // sellos elementales conseguidos (botín de jefes)
   selloEquipado: null,          // sello elemental activo (persiste entre runs)
   flags: {},                    // narrativa/pueblo (hermanos_memoria, ate_idx...)
@@ -52,9 +52,9 @@ export const SaveManager = {
   save() {
     try {
       localStorage.setItem(this.KEY, JSON.stringify({
-        schema: 2, memoria: GameState.memoria,
+        schema: 3, memoria: GameState.memoria,
         desbloqueos: GameState.desbloqueos, opciones: GameState.opciones,
-        cuerdaTensa: GameState.cuerdaTensa, stats: GameState.stats, flags: GameState.flags,
+        pactos: GameState.pactos, stats: GameState.stats, flags: GameState.flags,
         xp: GameState.xp, nivel: GameState.nivel, engranajes: GameState.engranajes,
         ligaRango: GameState.ligaRango ?? 0,
         esfera: GameState.esfera, usoHechizos: GameState.usoHechizos, usoCompases: GameState.usoCompases,
@@ -67,10 +67,12 @@ export const SaveManager = {
       const raw = localStorage.getItem(this.KEY);
       if (!raw) return false;
       const d = JSON.parse(raw);
-      if (d.schema !== 1 && d.schema !== 2) return false;
+      if (![1, 2, 3].includes(d.schema)) return false;
       GameState.memoria = d.memoria ?? 0;
       GameState.desbloqueos = d.desbloqueos ?? [];
-      GameState.cuerdaTensa = d.cuerdaTensa ?? false;
+      // Migración C4 (schema 2→3): el booleano cuerdaTensa se generaliza al mapa de pactos.
+      // Una run "tensa" antigua equivale a Cuerda Tensa nivel 2 (+36% vida enemiga).
+      GameState.pactos = (d.pactos && typeof d.pactos === 'object') ? d.pactos : (d.cuerdaTensa ? { vida_tensa: 2 } : {});
       GameState.flags = d.flags ?? {};
       GameState.xp = d.xp ?? 0;
       GameState.nivel = d.nivel ?? 1;

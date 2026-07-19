@@ -27,7 +27,7 @@ Auditoría por 9 analistas comparando Mistveil con el género (Hades, Dead Cells
 - [ ] C1 Ampliar a ~50-60 reliquias (sobre todo JSON) que modulen ritmo/compás/SP, no solo +daño; algunas que escalen con desempeño rítmico (payoff de build) (carencias #5 y #10).
 - [x] C2 Pedestal de tesoro **"elige 1 de 2-3"**: el tesoro SIEMPRE ofrece 2 reliquias (3 con Páginas perdidas); coger una desvanece las demás. Reusa `rollItem`; persistencia B1 (pedestal3). Misma cantidad de botín, con decisión de build.
 - [x] C3 **Motor de conjuntos/set-bonus** por etiqueta (`items.conjuntos`): reunir N reliquias de un mismo tag (3 cadencia/lágrimas/ignición/movilidad, 4 stats) desbloquea un efecto de conjunto (reusa el formato de efectos de item). Detección una-vez-por-umbral, flash al activar. `aplicarEfectos` factorizado para items Y conjuntos.
-- [ ] C4 **Sistema Heat** data-driven (`data/pactos.json`): condiciones apilables con niveles y +Memoria por tramo, reusando el andamio de Cuerda Tensa (carencia #6, crítica).
+- [x] C4 **Sistema Heat** data-driven (`data/pactos.json`): 6 pactos apilables con niveles (Cuerda Tensa/Furia/Enjambre/Cacería/Corte de Élites/Penuria); cada tramo sube un lever de dificultad (hp/daño/velocidad/densidad/élite/sostén) y paga +Memoria. Selector navegable desde el nodo `cuarto_de_la_penumbra` del Santuario (generaliza el viejo booleano). `js/pactos.js` con funciones puras testeables; efectos cableados en el punto de uso; migración de guardado schema 2→3 (carencia #6, crítica).
 - [ ] C5 Activar los 6 sellos restantes con selector (cruza R2.5); rangos múltiples en el Santuario y un sumidero tardío para engranajes/Memoria.
 
 **Criterio C:** dos runs se juegan distinto, la build "despega", y "ya gané" pasa a "gané a nivel N, ahora N+1".
