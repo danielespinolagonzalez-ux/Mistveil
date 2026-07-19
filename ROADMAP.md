@@ -51,6 +51,16 @@ Auditoría por 9 analistas comparando Mistveil con el género (Hades, Dead Cells
 
 **Criterio E:** el cimiento temático tiene edificio; el frame se siente "dirigido"; hay accesibilidad de release.
 
+### Fase F — Cuerdaqueda: la ciudad viva (hub modular que se enciende) · diseño en `docs/ciudad.md`
+Reformula el "pueblo" plano en una **villa en terrazas, con profundidad, que se DESBLOQUEA rescatando a su gente en la Torre** y se re-ilumina distrito a distrito. Subsume E1 (extraer la escena a `js/ciudad.js`). Todo con *fallback* por código → el arte de Recraft llega al final, por lotes.
+- [ ] F0 Cimientos: `data/ciudad.json` (11 distritos + `unlock`) + `js/ciudad.js` (3 terrazas, calle en arco, estado `ruina`/`viva` derivado); `GameState.rescatados` + `SaveManager` schema 4 con migración. Migrar los 7 NPCs actuales a datos.
+- [ ] F1 Bucle de rescate: `data/rescates.json` + `type:'rescate'` en `rooms.js` (cerrojo rítmico reusa `cad.counter`); `npc_rescatado`→`barrio_iluminado` + secuencia de encendido + `flash`; recompensa vía `eventos.js`.
+- [ ] F2 Profundidad y vida: parallax de 3 capas (fallback a degradado), oclusores en primer plano, vecinos ambientales que pasean por distritos vivos, niños/Tuerca al superar `rescatados_min`, *pan* vertical al subir de terraza.
+- [ ] F3 Servicios: mover la Forja de Sellos a la **Fragua**; **Conservatorio** (ensayo de compás + capa musical, reusa A5); **Atalaya** (intel del piso); **Botica** (consumibles).
+- [ ] F4 Vestido de arte: lotes CIUDAD-1…6 de Recraft (esqueleto/parallax, fachadas, vecinos, retratos, props, cautivos), uno por sesión, con visto bueno de Daniel (≈130 cr).
+
+**Criterio F:** volver al hub es un premio que crece; la villa se siente un lugar, no un menú; rescatar a alguien se ve, se oye y se juega.
+
 ---
 
 ## Fase R0 — Afinación (bugs y huecos detectados en el mapeo)
