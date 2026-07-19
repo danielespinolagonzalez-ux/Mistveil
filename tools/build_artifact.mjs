@@ -69,7 +69,7 @@ const DATA_PATHS = [
   'data/balance.json', 'data/biomas.json', 'data/elementos.json', 'data/enemigos.json',
   'data/items.json', 'data/hechizos.json', 'data/compases.json', 'data/santuario.json',
   'data/progresion.json', 'data/esfera.json', 'data/sellos.json', 'data/textos_es.json',
-  'data/salas/piso1_plantillas.json',
+  'data/salas/piso1_plantillas.json', 'data/jefes.json',
 ];
 const dataObj = {};
 for (const p of DATA_PATHS) dataObj[p] = JSON.parse(readFileSync(join(ROOT, p), 'utf8'));

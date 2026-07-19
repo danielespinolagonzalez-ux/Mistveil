@@ -463,8 +463,8 @@ export class Enemy {
     const dx = player.x - this.x, dy = player.y - this.y;
     const dist = Math.hypot(dx, dy) || 1;
 
-    // --- Patrones de jefe (Campanero Mayor) ---
-    if (def.jefe) {
+    // --- Patrones de jefe LEGACY (bosses sin motor de raid) ---
+    if (def.jefe && def.comportamiento !== 'jefe_ancla') {
       if (!this.summoned && this.health.hp <= this.health.max / 2) {
         this.summoned = true;
         this.def = { ...def, velocidad: def.velocidad * 1.3 };
@@ -769,6 +769,16 @@ export class Enemy {
           }
           if (curado) AudioManager.beep(680, 0.1, 'sine', 0.04, 140);
         }
+        break;
+      }
+      case 'jefe_ancla': {
+        // Jefe de raid: se mantiene junto a su ANCLA y encara al jugador; las
+        // MECÁNICAS (js/jefes.js) son la amenaza, no su cuerpo. Cuasi-estático.
+        const anc = def.ancla ?? { x: this.x, y: this.y };
+        const adx = anc.x - this.x, ady = anc.y - this.y, ad = Math.hypot(adx, ady);
+        if (ad > 26) { this.vx = adx / ad * def.velocidad; this.vy = ady / ad * def.velocidad; }
+        else { this.vx = dx / dist * def.velocidad * 0.22; this.vy = dy / dist * def.velocidad * 0.22; }
+        this._faceAng = Math.atan2(dy, dx);
         break;
       }
       default: this.vx = this.vy = 0;

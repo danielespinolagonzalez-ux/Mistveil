@@ -311,18 +311,27 @@ export class Room {
     const first = !this.visited;
     this.visited = true;
     if (this.type === 'jefe' && !this.cleared) {
-      const c = { x: this.bounds.x + this.bounds.w / 2, y: this.bounds.y + this.bounds.h * 0.35 };
+      const c = { x: this.bounds.x + this.bounds.w / 2, y: this.bounds.y + this.bounds.h * 0.4 };
       const hpMult = 1 + (this.piso - 1) * DataDB.balance.run.escalado_hp_por_piso;
-      // Jefe del bioma (Campanero Mayor / Archivera Anegada / El Primer Relojero)
-      const jb = DataDB.biomas?.jefes_bioma?.[this.bioma?.id] ?? { base: 'campanero', nombre: 'Campanero Mayor', hp: 90, velocidad: 95, counter_chance: 0.5, r: 18 };
-      const { base, ...ov } = jb;
-      this.pendingSpawns = [{
-        id: base, x: c.x, y: c.y,
-        overrides: {
-          ...ov, hp: Math.round(jb.hp * hpMult), coste_dificultad: 0, jefe: true,
-          danoMult: 1 + (this.piso - 1) * (DataDB.balance.run.escalado_dano_por_piso ?? 0)
-        }
-      }];
+      const danoMult = 1 + (this.piso - 1) * (DataDB.balance.run.escalado_dano_por_piso ?? 0);
+      const raid = DataDB.jefes?.jefes?.[this.bioma?.id];
+      if (raid) {
+        // Jefe de RAID (motor js/jefes.js): anclado, lanza mecánicas telegrafiadas
+        this.pendingSpawns = [{
+          id: raid.base ?? 'campanero', x: c.x, y: c.y,
+          overrides: {
+            nombre: raid.nombre, hp: Math.round(raid.hp * hpMult), r: raid.r ?? 18,
+            velocidad: raid.velocidad ?? 40, comportamiento: 'jefe_ancla', jefe: true,
+            sello: raid.sello, elemento: raid.elemento, familia: raid.familia,
+            coste_dificultad: 0, danoMult, ancla: { x: c.x, y: c.y }
+          }
+        }];
+      } else {
+        // Legacy: jefe del bioma reutilizando un enemigo base (biomas.jefes_bioma)
+        const jb = DataDB.biomas?.jefes_bioma?.[this.bioma?.id] ?? { base: 'campanero', nombre: 'Campanero Mayor', hp: 90, velocidad: 95, counter_chance: 0.5, r: 18 };
+        const { base, ...ov } = jb;
+        this.pendingSpawns = [{ id: base, x: c.x, y: c.y, overrides: { ...ov, hp: Math.round(jb.hp * hpMult), coste_dificultad: 0, jefe: true, danoMult } }];
+      }
       this._seal(world);
     } else if (!this.cleared && this.spawnPts.length) {
       this.pendingSpawns = this._rollSpawns();

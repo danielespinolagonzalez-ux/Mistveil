@@ -21,6 +21,7 @@ import { PLAZA, NPCS, visita, resetVisita, drawNPC, drawCoro, drawPuebloBackdrop
 import { syncFamiliares, updateFamiliares, drawFamiliar } from './familiares.js';
 import { spawnArt, updateArt, drawArt, romano } from './artes_fx.js';
 import { selloDef, selloEquipado, obtenerSello, rasgoCuraPorSp, rasgoDashBurn, finisherElemental } from './sellos.js';
+import { crearDirectorJefe } from './jefes.js';
 import { Sprites } from './sprites.js';
 
 const PORTRAIT = !!window.MISTVEIL_PORTRAIT;
@@ -406,6 +407,72 @@ function drawMetronomo() {
   }
 }
 
+// Telegrafías del jefe de raid (js/jefes.js): se dibujan crecientes en el suelo
+// para que las esquives con tiempo (círculo, donut "acércate", cono, barrido, safe).
+function drawBossZonas(dir) {
+  if (!dir?.zonas?.length) return;
+  const KY = VIS.KY;
+  for (const z of dir.zonas) {
+    const sx = SX(z.x), sy = SY(z.y);
+    const aviso = z.fase === 'aviso';
+    const k = aviso ? 1 - Math.max(0, z.t) / Math.max(0.001, z.telegraph_s ?? 1) : 1;
+    const fillA = aviso ? 0.10 + 0.24 * k : 0.45;
+    const lineA = aviso ? 0.45 + 0.45 * k : 0.95;
+    ctx.save();
+    ctx.fillStyle = z.color ?? '#e05a4f'; ctx.strokeStyle = z.color ?? '#e05a4f'; ctx.lineWidth = 2;
+    if (z.tipo === 'circulos') {
+      ctx.globalAlpha = fillA; ctx.beginPath(); ctx.ellipse(sx, sy, z.r, z.r * KY, 0, 0, 7); ctx.fill();
+      ctx.globalAlpha = lineA; ctx.beginPath(); ctx.ellipse(sx, sy, z.r, z.r * KY, 0, 0, 7); ctx.stroke();
+    } else if (z.tipo === 'donut') {
+      ctx.globalAlpha = fillA; ctx.beginPath();
+      ctx.ellipse(sx, sy, z.r_ext, z.r_ext * KY, 0, 0, 7);
+      ctx.ellipse(sx, sy, z.r_int, z.r_int * KY, 0, 0, 7, true);
+      ctx.fill('evenodd');
+      ctx.globalAlpha = 0.9; ctx.strokeStyle = '#7ee8e0';
+      ctx.beginPath(); ctx.ellipse(sx, sy, z.r_int, z.r_int * KY, 0, 0, 7); ctx.stroke(); // borde de la zona segura
+    } else if (z.tipo === 'safe') {
+      const b = dir.room.bounds;
+      ctx.globalAlpha = fillA; ctx.beginPath();
+      ctx.rect(SX(b.x), SY(b.y), b.w, b.h * KY);
+      ctx.ellipse(sx, sy, z.r_safe, z.r_safe * KY, 0, 0, 7, true);
+      ctx.fill('evenodd');
+      ctx.globalAlpha = 0.95; ctx.strokeStyle = '#7ee8e0';
+      ctx.beginPath(); ctx.ellipse(sx, sy, z.r_safe, z.r_safe * KY, 0, 0, 7); ctx.stroke();
+    } else if (z.tipo === 'cono') {
+      ctx.globalAlpha = fillA; ctx.beginPath(); ctx.moveTo(sx, sy);
+      const a0 = z.ang - z.arco / 2, a1 = z.ang + z.arco / 2;
+      for (let i = 0; i <= 10; i++) { const a = a0 + (a1 - a0) * i / 10; ctx.lineTo(sx + Math.cos(a) * z.largo, sy + Math.sin(a) * z.largo * KY); }
+      ctx.closePath(); ctx.fill();
+      ctx.globalAlpha = lineA; ctx.stroke();
+    } else if (z.tipo === 'linea') {
+      ctx.translate(sx, sy); ctx.rotate(z.ang); ctx.scale(1, KY);
+      ctx.globalAlpha = fillA; ctx.fillRect(0, -z.ancho / 2, z.largo, z.ancho);
+    } else if (z.tipo === 'barrido') {
+      const activa = z.fase === 'activa';
+      const ex = sx + Math.cos(z.ang) * z.largo, ey = sy + Math.sin(z.ang) * z.largo * KY;
+      ctx.globalAlpha = activa ? 0.95 : lineA; ctx.lineWidth = activa ? 6 : 3;
+      ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.stroke();
+      if (activa) { ctx.globalAlpha = 0.6; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.stroke(); }
+    }
+    ctx.restore();
+  }
+}
+
+// Barra de vida grande del jefe (estilo raid): nombre + fase, arriba-centro.
+function drawBossHP(dir) {
+  if (!dir || dir.boss.health.dead) return;
+  const b = dir.boss;
+  const w = Math.min(VW - 80, 380), x = (VW - w) / 2, y = 40;
+  ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(x - 2, y - 2, w + 4, 9);
+  ctx.fillStyle = '#3a2030'; ctx.fillRect(x, y, w, 5);
+  const frac = Math.max(0, b.health.hp / b.health.max);
+  ctx.fillStyle = '#e0556b'; ctx.fillRect(x, y, w * frac, 5);
+  ctx.fillStyle = '#ffd54f'; ctx.fillRect(x, y, w * frac, 2);
+  font(9); ctx.textAlign = 'center'; ctx.fillStyle = '#ffe9c9';
+  ctx.fillText(dir.nombre + '  ·  Fase ' + (dir.fase + 1), VW / 2, y - 4);
+  ctx.textAlign = 'left';
+}
+
 function drawBiomaExtras(t) {
   const room = floorMap.current;
   if (!room) return;
@@ -532,7 +599,7 @@ function onEnterRoom(room, first) {
   if (first) {
     for (const s of room.pickupSpots) if (Math.random() < 0.5) spawnPickup('coin', s.x, s.y, false);
   }
-  if (room.type === 'jefe' && !room.cleared) { flash(DataDB.biomas?.jefes_bioma?.[room.bioma?.id]?.nombre ?? 'Campanero Mayor'); AudioManager.bell(98, 0.12); }
+  if (room.type === 'jefe' && !room.cleared) { flash(DataDB.jefes?.jefes?.[room.bioma?.id]?.nombre ?? DataDB.biomas?.jefes_bioma?.[room.bioma?.id]?.nombre ?? 'Campanero Mayor'); AudioManager.bell(98, 0.12); }
 }
 
 // Cartas de mejora: rects compartidos por update (tap) y drawOverlay
@@ -765,6 +832,18 @@ EventBus.on('enemigo_reavivado', (rev) => flash('El Cerero reaviva a ' + rev.def
 EventBus.on('enemy_blink', (x, y) => FX.burst(x, y, { n: 10, color: '#b98fd0', speed: 90, life: 0.3, size: 2, glow: true }));
 EventBus.on('escudo_bloqueo', (x, y) => { FX.burst(x, y, { n: 5, color: '#e8e2c8', speed: 70, life: 0.2, size: 1.5, spread: 1.2 }); AudioManager.beep(300, 0.05, 'square', 0.025); });
 EventBus.on('enemy_curado', (x, y) => FX.burst(x, y - 4, { n: 4, color: '#8fdc8f', speed: 40, life: 0.5, size: 1.5, glow: true, gravity: -60 }));
+// Jefes de raid (js/jefes.js): cambio de fase, invocaciones y golpe de mecánica
+EventBus.on('jefe_fase', (n, nombre) => { flash(nombre + ' — FASE ' + n, 'La mecánica cambia'); FX.addShake(3); AudioManager.bell?.(120, 0.2); });
+EventBus.on('jefe_adds', (quien, n, x, y) => {
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2;
+    const e = new Enemy(quien, x + Math.cos(a) * 32, y + Math.sin(a) * 32);
+    e.room = floorMap.current; world.enemies.push(e);
+  }
+  flash('¡El jefe invoca refuerzos!');
+  AudioManager.sfx?.('enemy_spawn');
+});
+EventBus.on('jefe_golpe', () => FX.addShake(2));
 EventBus.on('sinergia', (a, b) => flash('SINERGIA: ' + a, b));
 // El Primer Relojero: roba tu compás en su primera campanada; se recupera con su derrota
 EventBus.on('boss_campanada', (e) => {
@@ -837,7 +916,7 @@ EventBus.on('room_cleared', (room) => {
     const it = rollItem('jefe');
     if (it) spawnPickup('item:' + it.id, cx + 34, cy - 20);
     // Sello elemental del jefe de bioma (R2): botín único, solo la primera vez
-    const selloId = DataDB.biomas?.jefes_bioma?.[room.bioma?.id]?.sello;
+    const selloId = DataDB.jefes?.jefes?.[room.bioma?.id]?.sello ?? DataDB.biomas?.jefes_bioma?.[room.bioma?.id]?.sello;
     if (selloId && selloDef(selloId)?.estado === 'activo' && !GameState.sellosObtenidos.includes(selloId)) {
       spawnPickup('sello:' + selloId, cx, cy - 40);
     }
@@ -1331,6 +1410,12 @@ function update(dt) {
       const ctxE = { bounds: e.room?.bounds ?? bb, groundSolids: () => e.room?.groundSolids() ?? [] };
       e.update(dtMundo, p, ctxE, world);
     }
+    // Director de mecánicas del jefe de raid: nace con él, muere con él
+    const jefe = alive.find(e => e.def?.comportamiento === 'jefe_ancla');
+    if (jefe) {
+      if (!world.bossDir || world.bossDir.boss !== jefe) world.bossDir = crearDirectorJefe(jefe, jefe.room ?? floorMap.current);
+      world.bossDir?.update(dtMundo, p);
+    } else world.bossDir = null;
   }
 
   // Familiares de reliquia (R1.1)
@@ -3083,6 +3168,7 @@ function drawHUD(t) {
   }
 
   drawBiomaExtras(t);
+  if (world.bossDir) { drawBossZonas(world.bossDir); drawBossHP(world.bossDir); }
   if (showDebug) drawHitboxes();
   drawMinimap();
 
@@ -3926,6 +4012,17 @@ function paintFatal(err) {
         e.room = cur; world.enemies.push(e);
       }
       return id + ' ×' + n;
+    },
+    // Invoca el jefe de raid del bioma en la sala actual (pruebas de mecánicas)
+    jefe: (bioma) => {
+      const p = world.player; if (!p) return 'sin jugador';
+      const rm = cur ?? floorMap.current;
+      const bid = bioma ?? rm?.bioma?.id ?? 'pendulos';
+      const raid = DataDB.jefes?.jefes?.[bid]; if (!raid) return 'sin jefe raid para ' + bid;
+      const c = { x: rm.bounds.x + rm.bounds.w / 2, y: rm.bounds.y + rm.bounds.h * 0.4 };
+      const e = new Enemy(raid.base ?? 'campanero', c.x, c.y, { nombre: raid.nombre, hp: raid.hp, r: raid.r ?? 18, velocidad: raid.velocidad ?? 40, comportamiento: 'jefe_ancla', jefe: true, sello: raid.sello, elemento: raid.elemento, ancla: c });
+      e.room = rm; world.enemies.push(e);
+      return raid.nombre + ' invocado';
     },
     unaMano: (on = true) => {
       Input.setScheme(on ? 'una_mano' : 'raton');

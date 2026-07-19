@@ -197,6 +197,21 @@ const healW = { tears: new TearPool(), bullets: { spawn() {} }, corpses: [], ene
 for (let i = 0; i < 150; i++) heal.update(1 / 60, ep, ctxM, healW);
 assert('healer: cura a un aliado herido cercano', ally.health.hp > 1);
 
+// Jefes de raid: el director lanza mecánicas telegrafiadas y cambia de fase
+const { crearDirectorJefe } = await import('../js/jefes.js');
+assert('data/jefes.json cargado con el jefe de Péndulos', !!DataDB.jefes?.jefes?.pendulos);
+const bossRoom = { bounds: { x: 0, y: 0, w: 416, h: 224 }, bioma: { id: 'pendulos' } };
+const bossE = new Enemy('campanero', 208, 80, { hp: 100, jefe: true, comportamiento: 'jefe_ancla', ancla: { x: 208, y: 80 } });
+const jdir = crearDirectorJefe(bossE, bossRoom);
+assert('el director del jefe se crea para el bioma', !!jdir && jdir.nombre === DataDB.jefes.jefes.pendulos.nombre);
+const jpl = new Player(208, 120);
+let casteó = false;
+for (let i = 0; i < 400 && !casteó; i++) { jdir.update(1 / 60, jpl); if (jdir.zonas.length) casteó = true; }
+assert('el director lanza una mecánica (telegrafía)', casteó);
+bossE.health.hp = Math.round(bossE.health.max * 0.4);
+jdir.update(1 / 60, jpl);
+assert('el jefe salta a fase 2 bajo el umbral de vida', jdir.fase === 1);
+
 // R0.2 — escalado de daño por piso (danoMult en overrides)
 const eScaled = new Enemy('tejedor_horas', 0, 0, { danoMult: 1.5 });
 assert('danoMult escala el proyectil (1 → 2)', eScaled.def.proyectil.dano === 2);

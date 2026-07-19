@@ -1,0 +1,27 @@
+{
+  "_doc": "Jefes de raid (uno por bioma, distintos entre sí) + biblioteca de mecánicas telegrafiadas estilo FFXIV. El motor (js/jefes.js) las interpreta; main.js dibuja director.zonas. tipo: circulos | donut | cono | linea | barrido | safe | adds.",
+  "jefes": {
+    "pendulos": {
+      "base": "campanero",
+      "nombre": "El Gran Campanero",
+      "hp": 130,
+      "r": 20,
+      "velocidad": 40,
+      "sello": "sello_ascuas",
+      "elemento": "trueno",
+      "respiro_s": 1.6,
+      "fases": [
+        { "hp": 1.0, "cadencia_s": 2.7, "mecanicas": ["anillo_campana", "cuna_doble", "lluvia_de_cera"] },
+        { "hp": 0.5, "cadencia_s": 2.1, "mecanicas": ["barrido_manecilla", "lluvia_de_cera", "cuna_doble", "tanda_velones"] }
+      ]
+    }
+  },
+  "mecanicas": {
+    "anillo_campana": { "tipo": "donut", "telegraph_s": 1.8, "r_int": 54, "r_ext": 330, "dano": 1, "color": "#ffd54f" },
+    "cuna_doble": { "tipo": "cono", "telegraph_s": 1.5, "n": 2, "sep": 1.25, "arco": 0.8, "largo": 250, "dano": 1, "color": "#e05a4f" },
+    "lluvia_de_cera": { "tipo": "circulos", "telegraph_s": 1.5, "n": 5, "r": 42, "sobre_jugador": true, "dano": 1, "color": "#e4a13a" },
+    "barrido_manecilla": { "tipo": "barrido", "telegraph_s": 1.1, "vueltas": 1.25, "vel": 1.5, "ancho": 0.15, "largo": 280, "dano": 1, "color": "#ffd54f" },
+    "foso_del_compas": { "tipo": "safe", "telegraph_s": 2.0, "r_safe": 48, "dist": 96, "dano": 2, "color": "#e05a4f" },
+    "tanda_velones": { "tipo": "adds", "quien": "velon_inestable", "n": 2 }
+  }
+}

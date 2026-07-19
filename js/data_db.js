@@ -15,7 +15,8 @@ const FILES = {
   esfera: 'data/esfera.json',
   sellos: 'data/sellos.json',
   textos: 'data/textos_es.json',
-  salas_piso1: 'data/salas/piso1_plantillas.json'
+  salas_piso1: 'data/salas/piso1_plantillas.json',
+  jefes: 'data/jefes.json'
 };
 
 // Claves mínimas requeridas por archivo (validación con errores claros)
