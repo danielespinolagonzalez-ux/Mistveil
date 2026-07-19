@@ -227,3 +227,51 @@ hit"* (`cad_perfect`), *"a bright metallic ting with a spark, a successful parry
 Antes de nada: **Daniel decide** (a) herramienta de audio y (b) si aceptamos el
 peso extra en el bundle o vamos con build "con audio" aparte. Con eso, se produce
 M0 y se valida el estilo a oído.
+
+---
+
+## 8. Activar el conector de ElevenLabs (elegido por Daniel)
+
+Daniel eligió **ElevenLabs** (`github.com/elevenlabs/elevenlabs-mcp`) — excelente
+para **SFX** (`text_to_sound_effects`) y **voces/TTS** (`text_to_speech`,
+`text_to_voice`); para las **músicas** ambientales, según qué exponga la versión del
+MCP, se usa su generación musical o, si no, Suno/Udio y se importa el loop.
+
+> **Importante**: Claude **no puede autoinstalarse el conector** en la sesión — es un
+> servidor MCP **auto-alojado** que necesita **tu clave de API** y se registra en la
+> config MCP de Claude Code. La clave es un **secreto**: **nunca** la pegues en el
+> chat ni la subas al repo.
+
+Ya dejé listo en la raíz `**.mcp.json**` (lee la clave de la variable de entorno,
+sin secreto dentro):
+```json
+{ "mcpServers": { "ElevenLabs": {
+  "command": "uvx", "args": ["elevenlabs-mcp"],
+  "env": { "ELEVENLABS_API_KEY": "${ELEVENLABS_API_KEY}", "ELEVENLABS_MCP_OUTPUT_MODE": "files" }
+} } }
+```
+
+**Cómo encenderlo, según dónde uses Claude Code:**
+
+- **CLI / escritorio (local):**
+  1. Instala `uv` (trae `uvx`): `curl -LsSf https://astral.sh/uv/install.sh | sh`.
+  2. Exporta tu clave en la shell: `export ELEVENLABS_API_KEY=sk_...`
+     (o ponla en tu gestor de secretos; **no** en el repo).
+  3. Abre Claude Code en la carpeta del repo: detecta `.mcp.json` y te pide
+     **aprobar** el servidor del proyecto. Acéptalo.
+  4. Comprueba con `/mcp` que aparece **ElevenLabs** conectado; sus herramientas
+     (`text_to_sound_effects`, `text_to_speech`…) ya estarán disponibles.
+  - Alternativa sin `.mcp.json`: `claude mcp add ElevenLabs -e ELEVENLABS_API_KEY=sk_... -- uvx elevenlabs-mcp`.
+
+- **Claude Code en la web (este entorno remoto):** el `.mcp.json` del repo puede no
+  bastar (el sandbox web gestiona los MCP por *entorno* y hace falta que `uvx`/Python
+  estén disponibles). Añádelo en los **ajustes del entorno / conectores** de Claude
+  con `ELEVENLABS_API_KEY` como **secreto** del entorno. (El conector "ElevenLabs" del
+  directorio de un clic **no** sirve: ese gestiona *agentes de voz*, no genera SFX.)
+
+Cuando el conector esté activo y yo vea sus herramientas en la sesión, **empiezo por
+el lote S0 (SFX)** — es lo más fuerte de ElevenLabs — y luego la música (§7), todo
+con el flujo de §5 y guardando en `assets/audio/`.
+
+**Mientras tanto**, si quieres arrancar ya, en esta sesión hay otro conector de audio
+(música + TTS) con el que puedo hacer un primer pase de prueba del estilo.
