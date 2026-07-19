@@ -1334,6 +1334,7 @@ function update(dt) {
     if (!GameState.flags.menuVisto) { GameState.flags.menuVisto = true; SaveManager.save(); }
     return;
   }
+  if (mode === 'opciones') { updateOpciones(); return; }
   if (mode === 'menu') {
     if (menu.update(Input, dt) === 'cerrar') mode = menuReturn;
     return;
@@ -4001,23 +4002,79 @@ function drawSantuario(t) {
   UIK.glyphBar(ctx, font, Input, [{ k: 'nav', txt: 'mover' }, { k: 'confirm', txt: 'grabar / descender' }, { k: 'cancel', txt: 'pueblo' }], VW, VH);
 }
 
+// ---- Pantalla de OPCIONES (Fase B, carencias #3/#4): volumen, asistencia de ritmo,
+// calibración de latencia y control. Navegable por toque/mando/teclado con el kit. ----
+let optIdx = 0;
+function optItems() {
+  const o = GameState.opciones;
+  const items = [
+    { type: 'slider', label: 'Volumen música', get: () => o.vol_musica,
+      set: v => { o.vol_musica = v; AudioManager.setMusicVol(); }, valTxt: () => Math.round(o.vol_musica * 100) + '%' },
+    { type: 'slider', label: 'Volumen efectos', get: () => o.vol_sfx,
+      set: v => { o.vol_sfx = v; AudioManager.sfx('ui_tap'); }, valTxt: () => Math.round(o.vol_sfx * 100) + '%' },
+    { type: 'slider', label: 'Asistencia de ritmo', get: () => ((o.escala_ventanas ?? 1) - 1) / 0.6,
+      set: v => { o.escala_ventanas = 1 + Math.max(0, Math.min(1, v)) * 0.6; },
+      valTxt: () => { const e = o.escala_ventanas ?? 1; return e <= 1.02 ? 'Normal' : e >= 1.55 ? 'Fácil' : 'Suave +' + Math.round((e - 1) * 100) + '%'; } },
+    { type: 'slider', label: 'Calibración de latencia', get: () => ((o.latencia_ms ?? 0) + 120) / 240,
+      set: v => { o.latencia_ms = Math.round((v * 240 - 120) / 5) * 5; },
+      valTxt: () => { const l = o.latencia_ms ?? 0; return (l > 0 ? '+' : '') + l + ' ms'; } },
+  ];
+  if (Input.touchState().enabled) items.push({
+    type: 'toggle', label: 'Control táctil',
+    act: () => { const nuevo = Input.scheme() === 'una_mano' ? 'raton' : 'una_mano'; Input.setScheme(nuevo); o.esquema_control = nuevo; },
+    valTxt: () => Input.scheme() === 'una_mano' ? 'Una Mano' : 'Dos pulgares',
+  });
+  items.push({ type: 'button', label: 'Volver', tono: 'primary', act: () => salirOpciones() });
+  return items;
+}
+function optRect(i) {
+  const w = Math.min(VW - 80, 420), h = 44, gap = 5;
+  return { x: Math.round((VW - w) / 2), y: 52 + i * (h + gap), w, h };
+}
+function salirOpciones() { SaveManager.save(); mode = 'paused'; }
+function updateOpciones() {
+  const items = optItems(), n = items.length;
+  if (UIK.cancelo(Input)) { salirOpciones(); return; }
+  if (Input.justPressed('move_up')) optIdx = (optIdx - 1 + n) % n;
+  if (Input.justPressed('move_down')) optIdx = (optIdx + 1) % n;
+  optIdx = Math.min(optIdx, n - 1);
+  const it = items[optIdx];
+  if (it.type === 'slider') { // izq/dcha ajusta el slider enfocado
+    let dv = 0;
+    if (Input.justPressed('move_left')) dv = -0.1;
+    if (Input.justPressed('move_right')) dv = 0.1;
+    if (dv) it.set(Math.max(0, Math.min(1, it.get() + dv)));
+  }
+  if (UIK.confirmo(Input) && it.act) it.act();
+  const tap = Input.consumeTap();
+  if (tap) for (let i = 0; i < n; i++) {
+    const r = optRect(i);
+    if (!UIK.hit(r, tap)) continue;
+    optIdx = i; const t2 = items[i];
+    if (t2.type === 'slider') { const bx = r.x + 12, bw = r.w - 24; t2.set(Math.max(0, Math.min(1, (tap.x - bx) / bw))); }
+    else if (t2.act) t2.act();
+    break;
+  }
+}
+function drawOpciones(t) {
+  const items = optItems(), n = items.length;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  font(16); ctx.fillStyle = '#e9e2f5'; ctx.fillText('OPCIONES', VW / 2, 46);
+  for (let i = 0; i < n; i++) {
+    const r = optRect(i), it = items[i], foco = i === optIdx;
+    if (it.type === 'slider') UIK.slider(ctx, font, { ...r, label: it.label, value: it.get(), valTxt: it.valTxt(), foco, t });
+    else UIK.boton(ctx, font, { ...r, label: it.label, sub: it.valTxt ? it.valTxt() : '', tono: it.tono, foco, t });
+  }
+  UIK.glyphBar(ctx, font, Input, [{ k: 'nav', txt: 'elegir' }, { k: 'confirm', txt: 'ajustar' }, { k: 'cancel', txt: 'volver' }], VW, VH);
+  ctx.textAlign = 'center';
+}
+
 // Opciones del menú de pausa (botones grandes navegables por toque/mando/teclado).
 function pauseOptions() {
-  const opts = [{ label: 'Continuar', tono: 'primary', act: () => { mode = 'play'; } }];
-  if (Input.touchState().enabled) {
-    const um = Input.scheme() === 'una_mano';
-    opts.push({
-      label: um ? 'Control: Una Mano' : 'Control: Twin-stick', sub: 'cambiar esquema táctil',
-      act: () => {
-        const nuevo = um ? 'raton' : 'una_mano';
-        Input.setScheme(nuevo); GameState.opciones.esquema_control = nuevo; SaveManager.save();
-        flash(nuevo === 'una_mano' ? 'MODO UNA MANO' : 'Twin-stick táctil',
-          nuevo === 'una_mano' ? 'auto-disparo · tap: golpe · mantén: Arte · doble-tap: Ignición' : 'dos pulgares: mover + apuntar');
-        mode = 'play';
-      },
-    });
-  }
-  return opts;
+  return [
+    { label: 'Continuar', tono: 'primary', act: () => { mode = 'play'; } },
+    { label: 'Opciones', sub: 'volumen · ritmo · latencia · control', act: () => { optIdx = 0; mode = 'opciones'; } },
+  ];
 }
 function pauseRect(i, n) {
   const w = 260, h = UIK.UI.BTN_H, gap = 12;
@@ -4030,6 +4087,7 @@ function drawOverlay(t = 0) {
   ctx.fillStyle = 'rgba(8,5,16,0.8)';
   ctx.fillRect(0, 0, VW, VH);
   ctx.textAlign = 'center';
+  if (mode === 'opciones') { drawOpciones(t); return; }
   if (mode === 'upgrade' && pendingUpgrades) {
     font(14); ctx.fillStyle = '#ffd54f';
     ctx.fillText('El Reloj te ofrece cuerda', VW / 2, 74);

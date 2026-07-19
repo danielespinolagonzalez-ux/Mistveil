@@ -129,6 +129,7 @@ export class Cadencia {
     const wscale = (player.mods?.cadencia.window_scale ?? 1)
       * (GameState.tiene('pulso_constante') ? 1.1 : 1) // nodo del Santuario
       * ventanaMult() // Esfera del Reloj + nivel del compás
+      * (GameState.opciones.escala_ventanas ?? 1) // asistencia de ritmo (Opciones)
       * (this.desafinado ? (DataDB.balance.sinergias?.desafinado_window_mult ?? 0.78) : 1); // El Afinador
     const decay = Math.pow(cfg.window_decay_per_hit, this.hitIndex);
     const pw = cfg.window_perfect_ms * decay * wscale;
@@ -165,7 +166,9 @@ export class Cadencia {
         EventBus.emit('cadencia_early', player.x, player.y);
         return;
       }
-      this._landHit(computeQuality(this.t, alignT, pw, gw, cfg.coyote_input_ms), player, enemies);
+      // Calibración de latencia (Opciones): compensa el retardo audio/entrada del móvil
+      const lat = GameState.opciones.latencia_ms ?? 0;
+      this._landHit(computeQuality(this.t - lat, alignT, pw, gw, cfg.coyote_input_ms), player, enemies);
       return;
     }
     // No pulsar tampoco perdona

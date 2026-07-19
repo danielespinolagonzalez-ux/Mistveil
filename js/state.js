@@ -12,7 +12,7 @@ export const GameState = {
   selloEquipado: null,          // sello elemental activo (persiste entre runs)
   flags: {},                    // narrativa/pueblo (hermanos_memoria, ate_idx...)
   stats: { runs: 0, muertes: 0, victorias: 0 },
-  opciones: { escala_ventanas: 1.0, vol_musica: 1.0, vol_sfx: 1.0, esquema_control: 'raton' },
+  opciones: { escala_ventanas: 1.0, vol_musica: 1.0, vol_sfx: 1.0, esquema_control: 'raton', latencia_ms: 0 },
   tiene(id) { return this.desbloqueos.includes(id); }
 };
 
@@ -296,6 +296,9 @@ export const AudioManager = {
     } catch {}
   },
   unlockMusic() { this._musicUnlocked = true; this._desilenciarIOS(); if (this._desiredId) this.playTrack(this._desiredId, this._desiredOpts || {}); },
+  // Aplica en caliente el volumen de música (para el slider de Opciones). El SFX se
+  // lee ya en vivo en cada disparo, así que no necesita setter.
+  setMusicVol() { try { if (this._musMaster) this._musMaster.gain.value = 0.85 * GameState.opciones.vol_musica; } catch {} },
   // ---- Motor de música por WebAudio: BUCLE SIN COSTURA. Cada pista se decodifica a
   // un AudioBuffer y, si va en loop, se le hornea un crossfade cola→cabeza en el punto
   // que mejor casa (por correlación), de modo que el final funda con el principio; se

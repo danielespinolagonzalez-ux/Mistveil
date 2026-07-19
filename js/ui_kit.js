@@ -44,6 +44,26 @@ export function boton(g, font, spec) {
   return { x, y, w, h };
 }
 
+// Slider horizontal etiquetado. value 0..1. Devuelve el rect de la BARRA (para
+// tocar/arrastrar). El foco lo ajusta con izq/dcha; el menú lee ese rect para el tacto.
+export function slider(g, font, spec) {
+  let { x, y, w, h = UI.BTN_H, label = '', value = 0, foco = false, valTxt = '', t = 0 } = spec;
+  h = Math.max(h, UI.TAP_MIN);
+  g.save();
+  rrect(g, x, y, w, h, UI.R); g.fillStyle = TONOS.normal.fill; g.fill();
+  g.lineWidth = foco ? 3 : 1.5; g.strokeStyle = foco ? '#fff' : TONOS.normal.border; g.stroke();
+  if (foco) { g.setLineDash([5, 5]); g.lineWidth = 2; g.strokeStyle = `rgba(255,247,180,${0.5 + 0.4 * Math.sin(t * 8)})`; rrect(g, x - 3, y - 3, w + 6, h + 6, UI.R + 2); g.stroke(); g.setLineDash([]); }
+  g.fillStyle = TONOS.normal.text; g.textBaseline = 'middle';
+  font(UI_SIZE.nota); g.textAlign = 'left'; g.fillText(label, x + 12, y + h * 0.30);
+  g.textAlign = 'right'; g.fillStyle = '#ffe9c9'; g.fillText(valTxt, x + w - 12, y + h * 0.30);
+  const bx = x + 12, bw = w - 24, by = y + h * 0.66, bh = 6, v = Math.max(0, Math.min(1, value));
+  g.fillStyle = 'rgba(0,0,0,0.45)'; rrect(g, bx, by - bh / 2, bw, bh, 3); g.fill();
+  g.fillStyle = '#ffd54f'; rrect(g, bx, by - bh / 2, bw * v, bh, 3); g.fill();
+  g.beginPath(); g.arc(bx + bw * v, by, 7, 0, 7); g.fillStyle = '#fff7dd'; g.fill();
+  g.restore();
+  return { x: bx, y, w: bw, h }; // barra (para tocar/arrastrar)
+}
+
 // Panel/caja de fondo con doble borde (look de menu_equipo._panel / reloj_batalla._panel).
 export function panel(g, x, y, w, h, opts = {}) {
   const { titulo = '', font = null } = opts;
