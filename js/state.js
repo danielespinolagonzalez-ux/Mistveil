@@ -92,6 +92,7 @@ export const AudioManager = {
   _ensure() {
     if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
     if (this.ctx.state === 'suspended') this.ctx.resume();
+    if (!this._sfxLoaded) this.loadSfx(); // precarga los SFX reales la 1ª vez
   },
   beep(freq, dur = 0.08, type = 'square', gain = 0.06, slide = 0) {
     try {
@@ -128,6 +129,42 @@ export const AudioManager = {
       s.connect(f); f.connect(g); g.connect(c.destination);
       s.start(t); s.stop(t + dur + 0.02);
     } catch { /* audio no disponible */ }
+  },
+
+  // ---- SFX REALES (assets/audio/sfx_*.wav) decodificados a AudioBuffer y
+  // disparados por WebAudio (baja latencia, se solapan, y suenan por el canal
+  // media en iOS gracias al tag silencioso). Si el fichero falta (p. ej. en el
+  // bundle sin assets/audio), _sfxBuffers[name] queda vacío y sfx() cae al beep. ----
+  _sfxBuffers: {},
+  _sfxLoaded: false,
+  _sfxNombres: ['tear', 'hit', 'enemy_die', 'hurt', 'dash', 'parry', 'cad_perfect', 'cad_good', 'gold', 'heart'],
+  // Ganancia por SFX (los WAV van normalizados a -1 dBFS = altos; aquí se equilibran).
+  // tear es más bajo porque se dispara en ráfaga y se solaparía.
+  _sfxGain: { tear: 0.42, hit: 0.6, enemy_die: 0.62, hurt: 0.72, dash: 0.5, parry: 0.62, cad_perfect: 0.72, cad_good: 0.5, gold: 0.55, heart: 0.62 },
+  loadSfx() {
+    if (this._sfxLoaded || !this.ctx) return;
+    this._sfxLoaded = true;
+    for (const name of this._sfxNombres) {
+      fetch(this.musicBase + 'sfx_' + name + '.wav')
+        .then(r => (r.ok ? r.arrayBuffer() : Promise.reject()))
+        .then(ab => new Promise((ok, no) => this.ctx.decodeAudioData(ab, ok, no))) // forma callback: iOS viejo también
+        .then(buf => { this._sfxBuffers[name] = buf; })
+        .catch(() => { /* falta el fichero o no decodifica: se queda el beep */ });
+    }
+  },
+  _playSample(name) {
+    try {
+      const buf = this._sfxBuffers[name];
+      if (!buf) return false;
+      this._ensure();
+      const c = this.ctx, t = c.currentTime;
+      const s = c.createBufferSource(); s.buffer = buf;
+      const g = c.createGain();
+      g.gain.value = (this._sfxGain[name] ?? 0.55) * GameState.opciones.vol_sfx;
+      s.connect(g); g.connect(c.destination);
+      s.start(t);
+      return true;
+    } catch { return false; }
   },
 
   // Campana lejana (música y jefe): parciales inarmónicos + eco de piedra
@@ -298,6 +335,7 @@ export const AudioManager = {
   },
 
   sfx(name) {
+    if (this._playSample(name)) return; // SFX real (WAV) si está cargado; si no, beep
     switch (name) {
       case 'tear': this.beep(760, 0.045, 'triangle', 0.03); break;
       case 'hit': this.beep(300, 0.05, 'square', 0.045); break;
