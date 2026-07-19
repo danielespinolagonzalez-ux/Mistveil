@@ -117,7 +117,7 @@ export class Room {
     this.rocks = []; this.pits = []; this.wax = [];
     this.spawnPts = []; this.pickupSpots = [];
     this.visited = false; this.sealed = false; this.looted = false;
-    this.cleared = (type === 'inicial' || type === 'tesoro' || type === 'tienda' || type === 'galeria' || type === 'fundicion' || type === 'metronomo' || type === 'apuestas');
+    this.cleared = (type === 'inicial' || type === 'tesoro' || type === 'tienda' || type === 'galeria' || type === 'fundicion' || type === 'metronomo' || type === 'apuestas' || type === 'evento');
     this.spawnTimer = 0; this.pendingSpawns = [];
     this.trapdoor = null;
     this.pendingExit = null;
@@ -157,6 +157,13 @@ export class Room {
       this.altars.push({ kind: 'metronomo', x: this.bounds.x + this.bounds.w / 2, y: this.bounds.y + this.bounds.h / 2, used: false });
     } else if (type === 'apuestas') {
       this.altars.push({ kind: 'apuesta', x: this.bounds.x + this.bounds.w / 2, y: this.bounds.y + this.bounds.h / 2, used: false });
+    } else if (type === 'evento') {
+      // Evento de altar data-driven (data/eventos.json): elige uno y guarda su glifo/color.
+      const evs = DataDB.eventos?.eventos ?? [];
+      if (evs.length) {
+        const ev = evs[Math.floor(Math.random() * evs.length)];
+        this.altars.push({ kind: 'evento', evId: ev.id, glifo: ev.glifo, color: ev.color, x: this.bounds.x + this.bounds.w / 2, y: this.bounds.y + this.bounds.h / 2, used: false });
+      }
     }
     // Sala del tesoro: pedestal con una reliquia del pool 'tesoro'.
     // Con Páginas perdidas (extra_choice, R1.5) ofrece DOS y eliges una.

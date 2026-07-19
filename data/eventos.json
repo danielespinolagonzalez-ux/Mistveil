@@ -1,0 +1,44 @@
+{
+  "_nota": "Eventos de altar data-driven (salas tipo 'evento'). Los interpreta js/eventos.js: coste (oro/sp/corazon) se cobra por adelantado; efectos[] se aplican fijos; azar[] elige UNA salida ponderada por 'peso'. tipos de efecto: dar_item(pool), curar(valor), quitar_corazon(valor), oro(valor), sp(valor), emboscada(valor). Añadir un evento = 1 entrada aquí (sin código).",
+  "eventos": [
+    {
+      "id": "trato_prestamista",
+      "nombre": "El Trato del Prestamista",
+      "glifo": "✦", "color": "#d9a441",
+      "desc": "Un cofre lacrado te tienta. Aceptas... y el Reloj cobra su parte.",
+      "efectos": [{ "tipo": "dar_item", "pool": "tesoro" }],
+      "azar": [
+        { "peso": 52, "tipo": "quitar_corazon", "valor": 1, "txt": "El precio: un corazón" },
+        { "peso": 30, "tipo": "oro", "valor": -14, "txt": "El precio: 14 de oro" },
+        { "peso": 18, "tipo": "emboscada", "valor": 3, "txt": "¡Era una trampa! Te emboscan" }
+      ]
+    },
+    {
+      "id": "fuente_cuerda",
+      "nombre": "La Fuente de Cuerda",
+      "glifo": "≈", "color": "#7ee8e0",
+      "desc": "Aguas que gotean del mecanismo. Bebes.",
+      "azar": [
+        { "peso": 45, "tipo": "curar", "valor": 99, "txt": "Aguas claras: te curas del todo" },
+        { "peso": 32, "tipo": "curar", "valor": 2, "txt": "Un trago fresco: +1 corazón" },
+        { "peso": 23, "tipo": "quitar_corazon", "valor": 1, "txt": "Aguas turbias... pierdes un corazón" }
+      ]
+    },
+    {
+      "id": "relicario_sellado",
+      "nombre": "El Relicario Sellado",
+      "glifo": "❖", "color": "#b678e8",
+      "desc": "Ofrenda espíritu al relicario y ábrelo.",
+      "coste": { "sp": 70 },
+      "efectos": [{ "tipo": "dar_item", "pool": "jefe" }]
+    },
+    {
+      "id": "moneda_del_tiempo",
+      "nombre": "La Moneda del Tiempo",
+      "glifo": "◉", "color": "#e0556b",
+      "desc": "Paga con tu propia cuerda vital: un corazón por oro y espíritu.",
+      "coste": { "corazon": 1 },
+      "efectos": [{ "tipo": "oro", "valor": 28 }, { "tipo": "sp", "valor": 24 }]
+    }
+  ]
+}

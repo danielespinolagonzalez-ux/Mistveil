@@ -25,6 +25,7 @@ import { nodoDisponible, activarNodo, esferaBonos } from '../js/esfera.js';
 import { syncFamiliares, updateFamiliares } from '../js/familiares.js';
 import { spawnArt, updateArt, romano } from '../js/artes_fx.js';
 import { selloDef, obtenerSello, rasgoCuraPorSp, finisherElemental } from '../js/sellos.js';
+import { pickAzar, aplicarEvento } from '../js/eventos.js';
 
 const out = document.getElementById('out');
 let failed = 0;
@@ -134,6 +135,27 @@ assert('balance.elite define rasgos y multiplicadores', Array.isArray(DataDB.bal
   assert('élite acorazado encaja menos daño', acor.takeDamage(20, 100, 0) < base.takeDamage(20, 100, 0));
   assert('élite veloz se mueve más rápido', vel.def.velocidad > base.def.velocidad);
   assert('enemigo normal no es élite', base.elite === null);
+})();
+
+// Salas nuevas — EVENTOS de altar data-driven (data/eventos.json + js/eventos.js)
+assert('eventos.json carga con al menos 3 eventos', Array.isArray(DataDB.eventos?.eventos) && DataDB.eventos.eventos.length >= 3);
+assert('cada evento tiene id, glifo y color', DataDB.eventos.eventos.every(e => e.id && e.glifo && e.color));
+(() => {
+  // pickAzar respeta el peso: con r casi 0 sale el primero; con r casi 1, el último
+  const lista = [{ peso: 70, k: 'a' }, { peso: 30, k: 'b' }];
+  assert('pickAzar elige por peso (extremos)', pickAzar(lista, 0.01).k === 'a' && pickAzar(lista, 0.99).k === 'b');
+  // aplicarEvento con api simulada: un evento con coste sp que no se puede pagar → ok:false
+  let oro = 0, sp = 0; const efectos = [];
+  const api = { oro: () => oro, sp: () => sp, corazones: () => 3, rnd: () => 0.5, addOro: n => oro += n, addSp: n => sp += n, quitarCorazon: () => {}, efecto: ef => efectos.push(ef.tipo) };
+  const conCoste = { nombre: 'X', coste: { sp: 70 }, efectos: [{ tipo: 'dar_item', pool: 'jefe' }] };
+  assert('evento rechaza si no puedes pagar (no aplica efectos)', aplicarEvento(conCoste, api).ok === false && efectos.length === 0);
+  sp = 100;
+  const r = aplicarEvento(conCoste, api);
+  assert('evento cobra coste y aplica efecto al poder pagar', r.ok === true && sp === 30 && efectos.includes('dar_item'));
+  // evento con azar aplica exactamente una salida
+  const azarEv = { nombre: 'Y', azar: [{ peso: 1, tipo: 'oro', valor: 5 }] };
+  const before = efectos.length; aplicarEvento(azarEv, api);
+  assert('evento con azar aplica una salida', efectos.length === before + 1);
 })();
 
 // Player existe y responde a la física

@@ -15,6 +15,7 @@ import { esferaBonos, ganarXP, xpParaNivel } from './esfera.js';
 import { compasesActivos, desbloqueado, desbloqueosEnNivel, etiqueta } from './progresion.js';
 import { Tutorial } from './tutorial.js';
 import { applyItem, rollItem } from './items.js';
+import { aplicarEvento } from './eventos.js';
 import { cast, elementMult } from './spells.js';
 import { FX } from './fx.js';
 import { PLAZA, NPCS, visita, resetVisita, drawNPC, drawCoro, drawPuebloBackdrop, drawPlazaGround } from './pueblo.js';
@@ -390,6 +391,44 @@ function activarAltar(al, p) {
     al.used = true;
     AudioManager.sfx('gold');
     flash('Apuesta sellada: ' + C.apuesta_coste + ' oro', 'limpia la próxima cámara sin fallo ni rasguño → ' + C.apuesta_premio);
+  } else if (al.kind === 'evento') {
+    // Evento de altar data-driven (data/eventos.json → js/eventos.js). El intérprete lee
+    // las reglas; aquí solo le damos acceso al mundo (api) y pintamos el resultado.
+    const def = DataDB.eventos?.eventos?.find(e => e.id === al.evId);
+    if (!def) { al.used = true; return; }
+    const pool = () => (DataDB.enemigos.pools_spawn['bioma_' + (cur?.bioma?.id ?? '')] ?? DataDB.enemigos.pools_spawn['piso1']);
+    const api = {
+      oro: () => RunState.oro, sp: () => RunState.sp,
+      corazones: () => Math.ceil(p.health.max / 2),
+      rnd: Math.random,
+      addOro: (n) => { RunState.oro = Math.max(0, RunState.oro + n); },
+      addSp: (n) => { RunState.sp = Math.max(0, Math.min(DataDB.balance.ignicion.sp_max, RunState.sp + n)); },
+      quitarCorazon: (n) => { p.mods.statAdd.max_hp = (p.mods.statAdd.max_hp ?? 0) - n; p.applyBalance(); p.health.hp = Math.min(p.health.hp, p.health.max); FX.addShake(3); },
+      efecto: (ef) => {
+        switch (ef.tipo) {
+          case 'dar_item': { const it = rollItem(ef.pool ?? 'tesoro'); if (it) spawnPickup('item:' + it.id, al.x, al.y - 18, false); break; }
+          case 'curar': p.health.hp = Math.min(p.health.max, p.health.hp + (ef.valor ?? 2)); AudioManager.sfx('heart'); break;
+          case 'quitar_corazon': api.quitarCorazon(ef.valor ?? 1); break;
+          case 'oro': RunState.oro = Math.max(0, RunState.oro + (ef.valor ?? 0)); AudioManager.sfx('gold'); break;
+          case 'sp': api.addSp(ef.valor ?? 0); break;
+          case 'emboscada': {
+            const pl = pool();
+            for (let i = 0; i < (ef.valor ?? 2); i++) {
+              const a = (i / (ef.valor ?? 2)) * Math.PI * 2;
+              const e = new Enemy(pl[Math.floor(Math.random() * pl.length)], al.x + Math.cos(a) * 40, al.y + Math.sin(a) * 30);
+              e.room = cur; world.enemies.push(e);
+            }
+            EventBus.emit('enemy_spawned', al.x, al.y); AudioManager.sfx('door_seal'); FX.addShake(3);
+            break;
+          }
+        }
+      }
+    };
+    const res = aplicarEvento(def, api);
+    if (!res.ok) { flash(res.titulo, res.sub); return; }
+    al.used = true;
+    AudioManager.sfx('equip');
+    flash(res.titulo, res.sub);
   }
 }
 
@@ -646,16 +685,18 @@ function drawBiomaExtras(t) {
       ctx.fillStyle = al.used ? '#241f38' : '#2a2340';
       ctx.fillRect(x - 7, y - 8, 14, 14);
       font(10); ctx.textAlign = 'center';
-      ctx.fillStyle = al.used ? '#5a5470' : { corazon: '#e0556b', fusion: '#b678e8', metronomo: '#7ee8e0', apuesta: '#ffd54f' }[al.kind];
-      ctx.fillText({ corazon: '♥', fusion: '◇', metronomo: '△', apuesta: '◈' }[al.kind], x, y + 3);
+      // Color/glifo por kind, con FALLBACK para altares-evento (traen su propio glifo/color).
+      ctx.fillStyle = al.used ? '#5a5470' : (al.color ?? { corazon: '#e0556b', fusion: '#b678e8', metronomo: '#7ee8e0', apuesta: '#ffd54f' }[al.kind] ?? '#c9a24a');
+      ctx.fillText(al.glifo ?? ({ corazon: '♥', fusion: '◇', metronomo: '△', apuesta: '◈' }[al.kind] ?? '?'), x, y + 3);
       if (!al.used && Math.hypot(p.x - al.x, p.y - al.y) < 26) {
         font(7); ctx.fillStyle = '#e9e2f5';
-        const label = {
+        const evDef = al.kind === 'evento' ? DataDB.eventos?.eventos?.find(e => e.id === al.evId) : null;
+        const label = evDef ? ('ATAQUE: ' + (evDef.nombre ?? 'evento')) : {
           corazon: 'ATAQUE: 1 corazón → 1 engranaje',
           fusion: 'ATAQUE: 2 reliquias comunes → 1 rara',
           metronomo: 'ATAQUE: reto de ritmo → reliquia',
           apuesta: 'ATAQUE: apostar ' + DataDB.balance.camaras.apuesta_coste + ' oro'
-        }[al.kind];
+        }[al.kind] ?? 'ATAQUE: interactuar';
         ctx.fillText(label, x, y - 18);
       }
     }
@@ -701,6 +742,7 @@ function onEnterRoom(room, first) {
   if (first && room.type === 'fundicion') flash('La Fundición', 'Sacrificio a cambio de engranajes');
   if (first && room.type === 'metronomo') flash('Cámara del Metrónomo', 'Un reto de ritmo puro');
   if (first && room.type === 'apuestas') flash('El Reloj de Apuestas', 'El Gremio paga a los intachables');
+  if (first && room.type === 'evento') { const ev = DataDB.eventos?.eventos?.find(e => e.id === room.altars?.[0]?.evId); flash(ev?.nombre ?? 'Un altar aguarda', ev?.desc ?? 'Acércate y decide'); }
   if (first) {
     for (const s of room.pickupSpots) if (Math.random() < 0.5) spawnPickup('coin', s.x, s.y, false);
   }
@@ -3742,7 +3784,7 @@ function drawMinimap() {
   // abajo y antes se metía debajo de esos botones).
   const padR = Input.touchState().enabled ? 38 : 12;
   const ox = VW - padR - (maxGx - minGx + 1) * (CW + GAP), oy = 24;
-  const ICON = { tesoro: '#e8c565', tienda: '#7ec98f', jefe: '#e05a4f', maldita: '#b678e8' };
+  const ICON = { tesoro: '#e8c565', tienda: '#7ec98f', jefe: '#e05a4f', maldita: '#b678e8', evento: '#d9a441', desafio: '#7ee8e0' };
   for (const [k, vis] of known) {
     const [gx, gy] = k.split(',').map(Number);
     const room = floorMap.rooms.get(k);

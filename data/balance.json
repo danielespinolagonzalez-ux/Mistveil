@@ -104,7 +104,7 @@
     "laberinto_ramas_base": 2,
     "laberinto_ramas_var": 3,
     "laberinto_bucles_max": 2,
-    "evento_prob": 0,
+    "evento_prob": 0.55,
     "desafio_prob": 0
   },
   "elite": {
