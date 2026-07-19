@@ -226,6 +226,8 @@ export const AudioManager = {
       case 'equip': this.beep(660, 0.1, 'triangle', 0.05); setTimeout(() => this.beep(880, 0.1, 'triangle', 0.05), 80); setTimeout(() => this.beep(1320, 0.14, 'triangle', 0.05), 160); break;
       case 'tome': this.beep(440, 0.12, 'sine', 0.05); setTimeout(() => this.beep(587, 0.12, 'sine', 0.05), 90); setTimeout(() => this.beep(880, 0.2, 'sine', 0.05), 180); break;
       case 'armor': this.beep(500, 0.08, 'square', 0.05, -100); break;
+      // Toque de botón (feedback sutil de pulsación, muy corto y bajo)
+      case 'ui_tap': this.beep(1240, 0.028, 'sine', 0.028, 120); break;
     }
   }
 };

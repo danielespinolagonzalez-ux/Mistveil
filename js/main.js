@@ -27,11 +27,17 @@ import { Sprites } from './sprites.js';
 const PORTRAIT = !!window.MISTVEIL_PORTRAIT;
 const MOBILE = !!window.MISTVEIL_MOBILE;
 const VW = PORTRAIT ? 360 : 640, VH = PORTRAIT ? 640 : 360;
+// Supersampling: el lienzo interno se dibuja a SS× y se muestra al tamaño lógico
+// (resize() controla el CSS). Así el texto (Gelica) y el arte pintado salen
+// nítidos y suaves — el look "perfilado" en vez de pixelado 8-bit. Todo el juego
+// sigue trabajando en coordenadas VW×VH; la escala base la fija render().
+const SS = 2;
 const { KY, WALL_H, CAP, S_FACE, EXTRA_TOP } = VIS;
 const canvas = document.getElementById('game');
-canvas.width = VW; canvas.height = VH;
+canvas.width = VW * SS; canvas.height = VH * SS;
 const ctx = canvas.getContext('2d');
-ctx.imageSmoothingEnabled = false;
+ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+ctx.setTransform(SS, 0, 0, SS, 0, 0);
 
 function resize() {
   const s = Math.min(window.innerWidth / VW, window.innerHeight / VH);
@@ -88,14 +94,17 @@ let menuReturn = 'play';
 let pendingBalance = null; // pantalla de XP al pisar la trampilla
 let lastDeathXP = null;
 // Botones táctiles mínimos (el resto son gestos: tap dcha = ATQ, flick izq = DASH, agitar = Ignición)
+// Combate al CENTRO-ABAJO: Ignición (centro, la mayor), Parada y Arte flanqueándola,
+// para llegar con los dos pulgares desde los sticks. Sistema (pausa/≡/♪) arriba dcha.
+// (No reordenar: TOUCH_BTNS_1MANO/PUEBLO referencian los índices 4 y 5.)
 const TOUCH_BTNS_PLAY = [
-  { code: 'TouchB', label: 'PAR', x: VW - 30, y: VH - 92, r: 24 },
-  { code: 'TouchQ', label: 'Q', x: VW - 28, y: VH - 156, r: 19 },
-  { code: 'TouchF', label: 'F', x: VW - 66, y: VH - 130, r: 16 }, // respaldo si el agitado no va
-  { code: 'TouchC', label: '♪', x: VW - 26, y: VH - 208, r: 14 },
-  { code: 'TouchPause', label: 'II', x: VW - 16, y: 58, r: 13 },
-  { code: 'TouchMenu', label: '≡', x: VW - 16, y: 88, r: 13 },
-  { code: 'TouchX', label: '⌛', x: VW - 70, y: VH - 178, r: 14 } // objeto activo (solo si llevas uno)
+  { code: 'TouchB', label: 'PARADA',   x: VW / 2 - 58, y: VH - 40, r: 21 },   // 0 bloqueo
+  { code: 'TouchQ', label: 'ARTE',     x: VW / 2 + 58, y: VH - 40, r: 21 },   // 1 magia
+  { code: 'TouchF', label: 'IGNICIÓN', x: VW / 2,      y: VH - 50, r: 25 },   // 2 overdrive (centro)
+  { code: 'TouchC', label: '♪',        x: VW - 16, y: 118, r: 13 },           // 3 compás (sistema)
+  { code: 'TouchPause', label: 'II',   x: VW - 16, y: 58, r: 13 },            // 4
+  { code: 'TouchMenu', label: '≡',     x: VW - 16, y: 88, r: 13 },            // 5
+  { code: 'TouchX', label: '⌛',        x: VW / 2 + 116, y: VH - 60, r: 15 }   // 6 objeto activo (solo si llevas uno)
 ];
 const TOUCH_BTNS_PUEBLO = [TOUCH_BTNS_PLAY[5]];
 const TOUCH_BTNS_1MANO = [TOUCH_BTNS_PLAY[4], TOUCH_BTNS_PLAY[5]]; // solo pausa y ≡
@@ -1172,6 +1181,13 @@ bufInput.consume = (a) => { if (a in inputBuf) inputBuf[a] = 0; };
 // ---------- Update ----------
 function update(dt) {
   if (Input.f5Pressed()) DataDB.reload();
+  // Feedback de pulsación: un "tick" suave al tocar CUALQUIER botón táctil (el
+  // pulso visual y la vibración ya los da input.js; esto añade el eco sonoro).
+  if (Input.touchState().enabled) {
+    for (const c of ['TouchB', 'TouchQ', 'TouchF', 'TouchX', 'TouchC', 'TouchPause', 'TouchMenu']) {
+      if (Input.justCode(c)) { AudioManager.sfx('ui_tap'); break; }
+    }
+  }
   // Refrescar buffer de entrada (sobrevive al hit-stop; caduca solo)
   const bufS = DataDB.balance.game_feel?.input_buffer_s ?? 0;
   for (const a in inputBuf) {
@@ -1826,7 +1842,7 @@ function drawMist(t, strength = 1) {
 }
 let hurtFlashT = 0; // pulso rojo en los bordes al recibir daño
 
-function font(size) { ctx.font = `${size * 2}px VT323, monospace`; }
+function font(size) { ctx.font = `${size * 2}px Gelica, serif`; }
 
 // Ayudas de texto medido (VT323 no es monoespaciada del todo: medir evita solapes).
 // El mayor tamaño de la lista (descendente) cuyo texto quepa en maxW; fija esa fuente.
@@ -3459,12 +3475,19 @@ function drawTouchUI(t) {
     const MEDALLONES = { TouchB: 'boton_campana', TouchC: 'boton_nota', TouchQ: 'boton_pluma', TouchF: 'boton_llama', TouchX: 'boton_reloj' };
     const med = Sprites.get(MEDALLONES[b.code]);
     if (med) {
+      if (pk > 0) { // resplandor de pulsación detrás del medallón (feedback sutil)
+        ctx.globalAlpha = pk * 0.4;
+        const g = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r * 2);
+        g.addColorStop(0, col); g.addColorStop(1, col + '00');
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 2, 0, 7); ctx.fill();
+      }
       ctx.globalAlpha = b.pressed ? 1 : on ? 0.62 + pk * 0.3 : 0.22;
       ctx.drawImage(med, b.x - rr, b.y - rr, rr * 2, rr * 2);
       if (pk > 0) { // onda que sale del medallón
-        ctx.globalAlpha = pk * 0.5;
-        ctx.strokeStyle = col; ctx.lineWidth = 2 + pk * 1.5;
-        ctx.beginPath(); ctx.arc(b.x, b.y, b.r + (1 - pk) * 12, 0, 7); ctx.stroke();
+        ctx.globalAlpha = pk * 0.55;
+        ctx.strokeStyle = col; ctx.lineWidth = 2 + pk * 2;
+        ctx.beginPath(); ctx.arc(b.x, b.y, b.r + (1 - pk) * 16, 0, 7); ctx.stroke();
       }
       if (b.r > 20) { // etiqueta pequeña bajo el medallón grande (claridad)
         ctx.globalAlpha = 0.75;
@@ -3898,6 +3921,7 @@ function drawOverlay() {
 }
 
 function render() {
+  ctx.setTransform(SS, 0, 0, SS, 0, 0); // escala base de supersampling cada frame
   const t = T();
   if (mode === 'title') { drawTitle(t); return; }
   if (mode === 'pueblo') { renderPueblo(t); return; }
@@ -4084,8 +4108,11 @@ function paintFatal(err) {
     return;
   }
   SaveManager.load();
+  // Espera a que Gelica esté disponible: el texto se mide (measureText) para los
+  // layouts, así que arrancar sin la fuente daría métricas del fallback.
+  try { if (document.fonts?.load) { await document.fonts.load('16px Gelica'); await document.fonts.ready; } } catch {}
   await Sprites.load(); // arte pintado opcional; el bake de salas usa las texturas
-  Input.init(canvas, toWorld);
+  Input.init(canvas, toWorld, VW, VH);
   if (GameState.opciones.esquema_control) Input.setScheme(GameState.opciones.esquema_control);
   Input.setTouchButtons(TOUCH_BTNS_PLAY);
   if (PORTRAIT || MOBILE) {

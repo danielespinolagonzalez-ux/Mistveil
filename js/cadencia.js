@@ -396,7 +396,7 @@ export class Cadencia {
 
     // Aviso de counter: icono de parry
     if (this.counter) {
-      ctx.font = '18px VT323, monospace';
+      ctx.font = '18px Gelica, serif';
       ctx.textAlign = 'center';
       ctx.fillStyle = '#ff3b30';
       ctx.fillText('¡E!', x, y - outerR - 6);

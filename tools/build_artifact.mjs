@@ -92,19 +92,13 @@ try {
   console.log(`sprites incrustados: ${Object.keys(manifest).length} (${Math.round(peso / 1024)} KB)`);
 } catch { console.log('sin assets/sprites (el juego dibuja todo por código)'); }
 
-// ---------- 3. Fuente VT323 (opcional; si falla, fallback monospace) ----------
+// ---------- 3. Fuente Gelica (local, incrustada en base64; sin red) ----------
 let fontCss = '';
 if (!SIN_FUENTE) {
   try {
-    const css = await (await fetch('https://fonts.googleapis.com/css2?family=VT323&display=swap', {
-      headers: { 'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/120 Safari/537.36' },
-    })).text();
-    const url = css.match(/url\((https:[^)]+\.woff2)\)/)?.[1];
-    if (url) {
-      const buf = Buffer.from(await (await fetch(url)).arrayBuffer());
-      fontCss = `@font-face{font-family:'VT323';font-style:normal;font-weight:400;src:url(data:font/woff2;base64,${buf.toString('base64')}) format('woff2');}`;
-      console.log(`fuente VT323 incrustada (${Math.round(buf.length / 1024)} KB)`);
-    }
+    const buf = readFileSync(join(ROOT, 'assets/fonts/Gelica-Regular.otf'));
+    fontCss = `@font-face{font-family:'Gelica';font-style:normal;font-weight:400;src:url(data:font/otf;base64,${buf.toString('base64')}) format('opentype');}`;
+    console.log(`fuente Gelica incrustada (${Math.round(buf.length / 1024)} KB)`);
   } catch (e) { console.warn('sin fuente incrustada:', String(e).slice(0, 80)); }
 }
 
@@ -120,10 +114,10 @@ const html = `<!DOCTYPE html>
 ${fontCss}
 html, body { margin: 0; height: 100%; background: radial-gradient(ellipse at 50% 40%, #131022 0%, #07050e 70%); overflow: hidden; overscroll-behavior: none; }
 body { display: grid; place-items: center; }
-canvas { image-rendering: pixelated; image-rendering: crisp-edges; background: #141120; cursor: crosshair;
+canvas { image-rendering: auto; background: #141120; cursor: crosshair;
   box-shadow: 0 0 80px rgba(90,70,160,0.25), 0 0 8px rgba(0,0,0,0.8); touch-action: none; -webkit-user-select: none; user-select: none; }
 #rotate { position: fixed; inset: 0; display: none; place-items: center; background: #07050e; color: #cfc6e8;
-  font: 22px VT323, monospace; text-align: center; z-index: 10; }
+  font: 22px Gelica, serif; text-align: center; z-index: 10; }
 body.movil-portrait #rotate { display: grid; }
 /* Abajo a la izquierda: arriba tapaba los corazones del HUD en escritorio */
 #fs { position: fixed; left: calc(8px + env(safe-area-inset-left)); bottom: calc(8px + env(safe-area-inset-bottom));
@@ -131,7 +125,7 @@ body.movil-portrait #rotate { display: grid; }
   font: 16px monospace; width: 34px; height: 34px; border-radius: 6px; cursor: pointer; }
 #fs:focus-visible { outline: 2px solid #e8c565; }
 #fstip { display: none; position: fixed; inset: 0; z-index: 30; background: rgba(7,5,14,0.94);
-  color: #cfc6e8; font: 20px/1.7 VT323, monospace; text-align: center; padding: 30vh 24px 0; }
+  color: #cfc6e8; font: 20px/1.7 Gelica, serif; text-align: center; padding: 30vh 24px 0; }
 #fstip em { color: #6c6193; font-size: 15px; font-style: normal; display: block; margin-top: 18px; }
 </style>
 </head>

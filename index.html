@@ -3,15 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <title>MISTVEIL: El Reloj de las Almas</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
 <style>
+  /* Tipografía del juego: Gelica (serif perfilada) — local, sin dependencia de red */
+  @font-face { font-family: 'Gelica'; font-style: normal; font-weight: 400;
+    src: url('assets/fonts/Gelica-Regular.otf') format('opentype'); font-display: swap; }
   html, body { margin: 0; height: 100%; background: radial-gradient(ellipse at 50% 40%, #131022 0%, #07050e 70%); overflow: hidden; }
   body { display: grid; place-items: center; }
   canvas {
-    image-rendering: pixelated;
-    image-rendering: crisp-edges;
+    image-rendering: auto;
     background: #141120;
     cursor: crosshair;
     box-shadow: 0 0 80px rgba(90, 70, 160, 0.25), 0 0 8px rgba(0,0,0,0.8);

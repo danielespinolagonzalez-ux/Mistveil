@@ -64,12 +64,16 @@ let mouse = { x: 320, y: 180, left: false, right: false };
 let padState = { move: [0, 0], aim: [0, 0], buttons: new Set(), justButtons: new Set() };
 let padRest = null; // línea base de ejes en reposo (auto-calibración anti-deriva)
 let scaleFn = (x, y) => [x, y];
+// Tamaño LÓGICO del lienzo (VW×VH). El backing puede ser mayor (supersampling),
+// así que los toques se mapean a coords lógicas para casar con botones/sticks.
+let LW = 0, LH = 0;
 
 function codesFor(action) { return INPUT_MAP[action] ?? []; }
 
 export const Input = {
-  init(canvas, toWorld) {
+  init(canvas, toWorld, logicalW, logicalH) {
     scaleFn = toWorld;
+    LW = logicalW || canvas.width; LH = logicalH || canvas.height;
     // Todas las teclas mapeadas: preventDefault evita que el navegador haga scroll
     // (flechas/Espacio) y se trague el keyup, dejando una tecla "pegada".
     const GAME_CODES = new Set(Object.values(INPUT_MAP).flat());
@@ -100,7 +104,7 @@ export const Input = {
     // --- Táctil ---
     const rawPos = t => {
       const r = canvas.getBoundingClientRect();
-      return [(t.clientX - r.left) * canvas.width / r.width, (t.clientY - r.top) * canvas.height / r.height];
+      return [(t.clientX - r.left) * LW / r.width, (t.clientY - r.top) * LH / r.height];
     };
     const findButton = (x, y) => touchUI.buttons.find(b => Math.hypot(x - b.x, y - b.y) < b.r * 1.35);
     const touchButtons = new Map(); // touchId -> button
@@ -136,11 +140,11 @@ export const Input = {
           // segundo dedo (raro con una mano, pero pasa): golpe de ritmo
           just.add('TouchA');
           eco(x, y, 'ritmo'); vib(10);
-        } else if (x < canvas.width / 2 && touchUI.move.id === null) {
+        } else if (x < LW / 2 && touchUI.move.id === null) {
           touchUI.move = { id: t.identifier, ox: x, oy: y, x: 0, y: 0, t0: performance.now(), lx: x, ly: y };
-        } else if (x >= canvas.width / 2 && touchUI.aim.id === null) {
+        } else if (x >= LW / 2 && touchUI.aim.id === null) {
           touchUI.aim = { id: t.identifier, ox: x, oy: y, x: 0, y: 0, t0: performance.now(), lx: x, ly: y };
-        } else if (x >= canvas.width / 2) {
+        } else if (x >= LW / 2) {
           // Segundo dedo en el lado derecho (mientras apuntas) = golpe de Cadencia inmediato
           just.add('TouchA');
         }

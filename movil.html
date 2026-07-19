@@ -5,15 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>MISTVEIL · móvil</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
 <style>
+  @font-face { font-family: 'Gelica'; font-style: normal; font-weight: 400;
+    src: url('assets/fonts/Gelica-Regular.otf') format('opentype'); font-display: swap; }
   html, body { margin: 0; height: 100%; background: #07050e; overflow: hidden; overscroll-behavior: none; }
   body { display: grid; place-items: center; }
   canvas {
-    image-rendering: pixelated;
-    image-rendering: crisp-edges;
+    image-rendering: auto;
     background: #141120;
     touch-action: none;
     -webkit-user-select: none; user-select: none;
@@ -21,7 +19,7 @@
   /* Aviso: el juego es apaisado */
   #rotate {
     position: fixed; inset: 0; display: none; place-items: center;
-    background: #07050e; color: #cfc6e8; font: 22px VT323, monospace;
+    background: #07050e; color: #cfc6e8; font: 22px Gelica, serif;
     text-align: center; z-index: 10;
   }
   @media (orientation: portrait) { #rotate { display: grid; } }
