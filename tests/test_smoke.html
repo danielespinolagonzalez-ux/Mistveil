@@ -16,7 +16,7 @@
 import { DataDB } from '../js/data_db.js';
 import { Player, Enemy, TearPool, BulletPool } from '../js/entities.js';
 import { computeQuality, Cadencia } from '../js/cadencia.js';
-import { buildTestFloor, buildTower, isDoorFront, TILE, RW, RH } from '../js/rooms.js';
+import { buildTestFloor, buildTower, Room, isDoorFront, TILE, RW, RH } from '../js/rooms.js';
 import { applyItem, applyItemEffects } from '../js/items.js';
 import { elementMult } from '../js/spells.js';
 import { EventBus } from '../js/event_bus.js';
@@ -156,6 +156,13 @@ assert('cada evento tiene id, glifo y color', DataDB.eventos.eventos.every(e => 
   const azarEv = { nombre: 'Y', azar: [{ peso: 1, tipo: 'oro', valor: 5 }] };
   const before = efectos.length; aplicarEvento(azarEv, api);
   assert('evento con azar aplica una salida', efectos.length === before + 1);
+})();
+
+// Salas-DESAFÍO: combate reforzado con reloj de BONUS (el tiempo NO bloquea la salida)
+(() => {
+  const rd = new Room(1, 1, 'desafio', 3);
+  assert('sala desafío tiene reto con límite de tiempo', !!rd.reto && rd.reto.limite > 0 && rd.reto.activo === false);
+  assert('sala desafío es de combate (no pre-limpia) con spawns', rd.cleared === false && rd.spawnPts.length > 0);
 })();
 
 // Player existe y responde a la física

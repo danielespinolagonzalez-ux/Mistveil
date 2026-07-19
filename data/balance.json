@@ -105,7 +105,15 @@
     "laberinto_ramas_var": 3,
     "laberinto_bucles_max": 2,
     "evento_prob": 0.55,
-    "desafio_prob": 0
+    "desafio_prob": 0.4
+  },
+  "desafio": {
+    "presupuesto_mult": 1.8,
+    "elite_garantizado": true,
+    "tiempo_base_s": 22,
+    "tiempo_por_piso_s": 1.5,
+    "bonus_oro": 18,
+    "bonus_corazon_pct": 45
   },
   "elite": {
     "prob_base": 0.1,

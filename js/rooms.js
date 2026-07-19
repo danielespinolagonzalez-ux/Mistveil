@@ -124,13 +124,20 @@ export class Room {
     this.template = null;
     this.bioma = biomaDe(piso);
     this.pendulos = []; this.tinta = []; this.altars = []; this.truenos = null;
+    // Sala-DESAFÍO: combate reforzado con reloj para un BONUS (el reto NO bloquea la salida:
+    // se limpia matando a todos como cualquier cámara; el tiempo solo decide la recompensa).
+    this.reto = null;
+    if (type === 'desafio') {
+      const D = DataDB.balance.desafio ?? {};
+      this.reto = { activo: false, t: 0, limite: (D.tiempo_base_s ?? 22) + (piso - 1) * (D.tiempo_por_piso_s ?? 1.5), ganado: false };
+    }
     // La Sala de Péndulos: las galerías tienen un péndulo que barre el centro
     if (this.bioma?.pendulo && type === 'galeria') {
       this.pendulos.push({ ax: this.bounds.x + this.bounds.w / 2, ay: this.bounds.y + 6, t: Math.random() * 3, roceCd: 0 });
     }
 
     this._walls = null;
-    if (['normal', 'camara', 'galeria', 'maldita'].includes(type)) this._applyTemplate(pickTemplate(), Math.random() < 0.5);
+    if (['normal', 'camara', 'galeria', 'maldita', 'desafio'].includes(type)) this._applyTemplate(pickTemplate(), Math.random() < 0.5);
     // El Archivo Anegado: charcos de tinta que frenan (el fuego los seca)
     if (this.bioma?.tinta && ['camara', 'galeria', 'normal'].includes(type)) {
       const tc = this.bioma.tinta;
@@ -342,7 +349,7 @@ export class Room {
       this._seal(world);
     } else if (!this.cleared && this.spawnPts.length) {
       this.pendingSpawns = this._rollSpawns();
-      if (this.pendingSpawns.length) this._seal(world);
+      if (this.pendingSpawns.length) { this._seal(world); if (this.reto) this.reto.activo = true; } // arranca el reloj del reto
       else this.cleared = true;
     }
     return first;
@@ -361,8 +368,9 @@ export class Room {
     const pool = (DataDB.enemigos.pools_spawn['bioma_' + (this.bioma?.id ?? '')] ?? DataDB.enemigos.pools_spawn['piso1'])
       .map(id => DataDB.enemigo(id))
       .filter(Boolean);
-    // Maldita: presupuesto doble. Escalado por piso según spec §4 (incremento tunable).
-    let budget = R.dificultad_sala_base * (this.type === 'maldita' ? 2 : 1) + (this.piso - 1) * (R.dificultad_por_piso ?? 2);
+    // Maldita: presupuesto doble. Desafío: reforzado (mult data-driven). Escalado por piso.
+    const budMult = this.type === 'maldita' ? 2 : this.type === 'desafio' ? (DataDB.balance.desafio?.presupuesto_mult ?? 1.8) : 1;
+    let budget = R.dificultad_sala_base * budMult + (this.piso - 1) * (R.dificultad_por_piso ?? 2);
     const hpMult = 1 + (this.piso - 1) * R.escalado_hp_por_piso;
     const danoMult = 1 + (this.piso - 1) * (R.escalado_dano_por_piso ?? 0);
     const inv = this.bioma?.invertida; // Relojería Invertida: telegrafía doble, zarpazo feroz
@@ -393,10 +401,18 @@ export class Room {
       }
       budget -= def.coste_dificultad;
     }
+    // Desafío: garantiza al menos UN élite (el minijefe del reto) si el JSON lo pide.
+    if (this.type === 'desafio' && (DataDB.balance.desafio?.elite_garantizado ?? true)) {
+      const noElite = out.filter(o => !o.pairKey && !o.overrides.elite);
+      const EL = DataDB.balance.elite;
+      if (noElite.length && EL) noElite[Math.floor(Math.random() * noElite.length)].overrides.elite = (EL.rasgos ?? ['acorazado'])[Math.floor(Math.random() * (EL.rasgos?.length ?? 1))];
+    }
     return out;
   }
 
   update(dt, world) {
+    // Reloj del desafío: corre mientras la sala está sellada (en combate). No bloquea nada.
+    if (this.reto?.activo && this.sealed && this.spawnTimer <= 0) this.reto.t += dt;
     if (this.spawnTimer > 0) {
       this.spawnTimer -= dt;
       if (this.spawnTimer <= 0 && this.pendingSpawns.length) {

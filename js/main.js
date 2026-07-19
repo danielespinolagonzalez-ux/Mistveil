@@ -743,6 +743,7 @@ function onEnterRoom(room, first) {
   if (first && room.type === 'metronomo') flash('Cámara del Metrónomo', 'Un reto de ritmo puro');
   if (first && room.type === 'apuestas') flash('El Reloj de Apuestas', 'El Gremio paga a los intachables');
   if (first && room.type === 'evento') { const ev = DataDB.eventos?.eventos?.find(e => e.id === room.altars?.[0]?.evId); flash(ev?.nombre ?? 'Un altar aguarda', ev?.desc ?? 'Acércate y decide'); }
+  if (first && room.type === 'desafio') flash('EL DESAFÍO DEL COMPÁS', 'Límpiala a tiempo para el bonus · un minijefe acecha');
   if (first) {
     for (const s of room.pickupSpots) if (Math.random() < 0.5) spawnPickup('coin', s.x, s.y, false);
   }
@@ -1251,6 +1252,22 @@ EventBus.on('room_cleared', (room) => {
     const it = rollItem('tesoro');
     if (it) spawnPickup('item:' + it.id, cx, cy - 14);
     gainMemoria(DataDB.balance.meta.memoria_por_reto);
+  }
+  // Desafío: siempre suelta una reliquia; si además lo limpiaste A TIEMPO, BONUS (oro +
+  // opción de corazón). El reloj solo decide el bonus, nunca el paso (la puerta ya abrió).
+  if (room.reto) {
+    room.reto.activo = false;
+    const D = DataDB.balance.desafio ?? {};
+    const it = rollItem('tesoro'); if (it) spawnPickup('item:' + it.id, cx, cy - 14);
+    if (room.reto.t <= room.reto.limite) {
+      room.reto.ganado = true;
+      RunState.oro += (D.bonus_oro ?? 18);
+      AudioManager.sfx('clear'); FX.addShake(2.5);
+      if (Math.random() * 100 < (D.bonus_corazon_pct ?? 45)) spawnPickup('heart', cx, cy + 20);
+      flash('¡DESAFÍO SUPERADO A TIEMPO!', '+' + (D.bonus_oro ?? 18) + ' oro de bonus');
+    } else {
+      flash('Desafío completado', 'Demasiado lento para el bonus...');
+    }
   }
 });
 EventBus.on('player_hurt', () => {
@@ -3654,6 +3671,19 @@ function drawHUD(t) {
       ctx.fillText(txt, b.tx, b.cy);
       pip(b.tx + ctx.measureText(txt).width + 8, b.cy);
     }
+  }
+
+  // Reloj del DESAFÍO: barra de cuenta atrás mientras la sala-reto está en combate. Si se
+  // agota, el reto sigue (se limpia matando a todos), solo se pierde el bonus → se pone rojo.
+  if (cur?.reto?.activo && cur.sealed) {
+    const rt = cur.reto, rest = Math.max(0, rt.limite - rt.t), k = Math.max(0, Math.min(1, rest / rt.limite));
+    const bw = 120, bx = (VW - bw) / 2, by = 52;
+    ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(bx, by, bw, 5);
+    ctx.fillStyle = k > 0 ? (k < 0.25 ? (Math.floor(t * 8) % 2 ? '#ff5a4f' : '#ffb547') : '#7ee8e0') : '#6c6193';
+    ctx.fillRect(bx, by, Math.round(bw * k), 5);
+    ctx.strokeStyle = 'rgba(126,232,224,0.6)'; ctx.lineWidth = 1; ctx.strokeRect(bx - 0.5, by - 0.5, bw + 1, 6);
+    font(7); ctx.textAlign = 'center'; ctx.fillStyle = k > 0 ? '#cfeeea' : '#ff8a7a';
+    ctx.fillText(k > 0 ? ('BONUS EN ' + rest.toFixed(1) + 's') : 'BONUS PERDIDO — ¡acaba con ellos!', VW / 2, by - 3);
   }
 
   // Arte equipada + reliquias: en su propia zona (x≥152), lejos del ¡F!/¡RACHA!
