@@ -137,6 +137,13 @@
     "bonus_sp": 30,
     "bonus_corazon_pct": 40
   },
+  "rescate": {
+    "_doc": "F1: sala 'rescate' — un vecino cautivo de Cuerdaqueda (data/rescates.json) preso tras guardias; al limpiar la sala se abre su cerrojo RÍTMICO (QTE de paradas al compás) y al romperlo el vecino queda liberado (GameState.rescatados → enciende su distrito). prob = probabilidad por piso de que aparezca si hay algún vecino elegible.",
+    "prob": 0.22,
+    "cerrojo_beats": 4,
+    "cerrojo_aciertos": 3,
+    "cerrojo_beat_ms": 620
+  },
   "elite": {
     "prob_base": 0.06,
     "prob_por_piso": 0.014,

@@ -16,7 +16,7 @@
 import { DataDB } from '../js/data_db.js';
 import { Player, Enemy, TearPool, BulletPool } from '../js/entities.js';
 import { computeQuality, Cadencia } from '../js/cadencia.js';
-import { buildTestFloor, buildTower, Room, isDoorFront, poolBioma, TILE, RW, RH } from '../js/rooms.js';
+import { buildTestFloor, buildTower, Room, isDoorFront, poolBioma, rescateElegible, TILE, RW, RH } from '../js/rooms.js';
 import { applyItem, applyItemEffects } from '../js/items.js';
 import { elementMult } from '../js/spells.js';
 import { EventBus } from '../js/event_bus.js';
@@ -604,6 +604,31 @@ assert('F0: ciudad.json define ≥11 distritos con id/unlock/servicio',
   SaveManager.load();
   assert('F0: rescatados se persiste (schema 4, guardar/cargar)', GameState.rescatados.includes('hermanos'));
   GameState.rescatados = prev; SaveManager.save();
+})();
+// F1 — bucle de rescate: catálogo + elegibilidad por piso + siembra de la celda
+assert('F1: rescates.json define ≥5 cautivos con barrio/pisos/cerrojo',
+  (DataDB.rescates?.rescates?.length ?? 0) >= 5 &&
+  DataDB.rescates.rescates.every(r => r.id && r.barrio && Array.isArray(r.pisos) && r.cerrojo));
+(() => {
+  const prev = GameState.rescatados.slice();
+  GameState.rescatados = [];
+  const e1 = rescateElegible(1).map(r => r.id);
+  assert('F1: rescateElegible(1) incluye a los hermanos (pisos 1-3)', e1.includes('hermanos'));
+  assert('F1: rescateElegible(1) NO incluye la atalaya (pisos 6-9)', !e1.includes('atalaya'));
+  GameState.rescatados = ['hermanos'];
+  assert('F1: rescatar excluye a ese vecino de la elegibilidad',
+    !rescateElegible(1).map(r => r.id).includes('hermanos'));
+  GameState.rescatados = prev;
+})();
+(() => {
+  const def = DataDB.rescates.rescates.find(r => r.id === 'hermanos');
+  const r = new Room(0, 0, 'rescate', 1);
+  r.setRescate(def);
+  assert('F1: setRescate coloca al cautivo y su cerrojo',
+    !!r.cautivo && r.altars.some(a => a.kind === 'cerrojo'));
+  assert('F1: la celda de rescate NO empieza limpia (tiene guardias)', r.cleared === false);
+  const guardias = r._spawnGuardias();
+  assert('F1: _spawnGuardias siembra guardias.n enemigos', guardias.length === (def.guardias?.n ?? 2));
 })();
 
 // R1 — Reliquias completas: los 6 efectos antes "pendientes" ya se interpretan

@@ -78,6 +78,18 @@ function pickTemplate(biomaId) {
   return list[0];
 }
 
+// F1 — Rescates: vecinos cautivos aún NO liberados cuyo rango de pisos incluye este piso.
+// (El campo `pisos:[min,max]` es un RANGO, como en enemigos/plantillas.) Devuelve las defs
+// elegibles; buildTower elige una si toca sembrar una sala de rescate.
+export function rescateElegible(piso) {
+  const list = DataDB.rescates?.rescates ?? [];
+  return list.filter(r => {
+    if (GameState.rescatados?.includes(r.id)) return false;
+    const [lo, hi] = r.pisos ?? [1, 12];
+    return piso >= lo && piso <= hi;
+  });
+}
+
 // Validador anti-encierro: ninguna celda con enemigo/botín/cera puede quedar aislada
 // tras un muro de roca (softlock: sala sellada con enemigo inalcanzable). Los pozos y
 // la cera NO cuentan como barrera (se dispara por encima / se rompe), solo la roca.
@@ -168,7 +180,7 @@ export class Room {
     }
 
     this._walls = null;
-    if (['normal', 'camara', 'galeria', 'maldita', 'desafio', 'sincronia'].includes(type)) this._applyTemplate(pickTemplate(this.bioma?.id), Math.random() < 0.5);
+    if (['normal', 'camara', 'galeria', 'maldita', 'desafio', 'sincronia', 'rescate'].includes(type)) this._applyTemplate(pickTemplate(this.bioma?.id), Math.random() < 0.5);
     // El Archivo Anegado: charcos de tinta que frenan (el fuego los seca)
     if (this.bioma?.tinta && ['camara', 'galeria', 'normal'].includes(type)) {
       const tc = this.bioma.tinta;
@@ -382,6 +394,10 @@ export class Room {
         this.pendingSpawns = this._spawnMinijefe(c, hpMult, danoMult); // D4: campeón + escoltas
       }
       this._seal(world);
+    } else if (this.type === 'rescate' && !this.cleared) {
+      // F1: los guardias velan la celda; al limpiarlos, el cerrojo del cautivo se activa.
+      this.pendingSpawns = this._spawnGuardias();
+      if (this.pendingSpawns.length) this._seal(world); else this.cleared = true;
     } else if (!this.cleared && this.spawnPts.length) {
       this.pendingSpawns = this._rollSpawns();
       if (this.pendingSpawns.length) {
@@ -448,6 +464,41 @@ export class Room {
       const noElite = out.filter(o => !o.pairKey && !o.overrides.elite);
       const EL = DataDB.balance.elite;
       if (noElite.length && EL) noElite[Math.floor(Math.random() * noElite.length)].overrides.elite = (EL.rasgos ?? ['acorazado'])[Math.floor(Math.random() * (EL.rasgos?.length ?? 1))];
+    }
+    return out;
+  }
+
+  // F1 — Rescate: coloca al vecino CAUTIVO en el centro y su cerrojo rítmico justo debajo.
+  // buildTower lo llama tras crear la sala (para pasarle la def elegida de rescates.json).
+  setRescate(def) {
+    if (!def) return;
+    this.rescateDef = def;
+    const cx = this.bounds.x + this.bounds.w / 2, cy = this.bounds.y + this.bounds.h / 2 - 8;
+    this.cautivo = { id: def.barrio, x: cx, y: cy, liberado: false };
+    // El cerrojo es un altar (main.js gestiona el toque); solo se abre con la sala LIMPIA.
+    this.altars.push({ kind: 'cerrojo', rescateId: def.id, barrio: def.barrio, x: cx, y: cy + 22, used: false });
+  }
+
+  // F1: guardias de la celda — exactamente guardias.n enemigos del bioma alrededor del cautivo.
+  _spawnGuardias() {
+    const def = this.rescateDef; if (!def) return [];
+    const G = def.guardias ?? { n: 2, elite: false };
+    const R = DataDB.balance.run;
+    const pool = poolBioma(this.bioma?.id, this.piso).filter(d => !d.gemelo && d.comportamiento !== 'reviver');
+    if (!pool.length) return [];
+    const hpMult = (1 + (this.piso - 1) * R.escalado_hp_por_piso) * Pactos.efecto('hp_enemigo');
+    const danoMult = (1 + (this.piso - 1) * (R.escalado_dano_por_piso ?? 0)) * Pactos.efecto('dano_enemigo');
+    const n = Math.max(1, G.n ?? 2);
+    const cx = this.bounds.x + this.bounds.w / 2, cy = this.bounds.y + this.bounds.h / 2;
+    const EL = DataDB.balance.elite;
+    const out = [];
+    for (let i = 0; i < n; i++) {
+      const a = -Math.PI / 2 + (i - (n - 1) / 2) * 0.8;
+      const d = pick(pool);
+      const ov = { hp: Math.round(d.hp * hpMult), danoMult };
+      // Guardias de élite en los rescates tardíos (def.guardias.elite): el primero se refuerza.
+      if (G.elite && i === 0 && EL) ov.elite = (EL.rasgos ?? ['acorazado'])[Math.floor(Math.random() * (EL.rasgos?.length ?? 1))];
+      out.push({ id: d.id, x: cx + Math.cos(a) * 96, y: cy + Math.sin(a) * 64 - 4, overrides: ov });
     }
     return out;
   }
@@ -903,6 +954,10 @@ export function buildTower(piso = 1, seed = Date.now()) {
   if (rnd() < (R.evento_prob ?? 0.5)) specials.push('evento');
   if (rnd() < (R.desafio_prob ?? 0.35)) specials.push('desafio');
   if (rnd() < (DataDB.balance.sincronia?.prob ?? 0.3)) specials.push('sincronia'); // D5: Cámara de Sincronía
+  // F1 — Rescate: si queda algún vecino cautivo elegible para este piso, puede aparecer su celda.
+  const rescElig = rescateElegible(piso);
+  let rescateDef = null;
+  if (rescElig.length && rnd() < (DataDB.balance.rescate?.prob ?? 0.2)) { rescateDef = pickR(rescElig); specials.push('rescate'); }
   while (deadEnds.length < specials.length) { const k = sprout(); if (!k) break; deadEnds.push(k); }
   shuffle(deadEnds);
   const typeOf = new Map([[startK, 'inicial'], [bossK, 'jefe']]);
@@ -925,6 +980,8 @@ export function buildTower(piso = 1, seed = Date.now()) {
   // ---- FASE 3: construir las Room y cablear puertas (objeto compartido por arista) ----
   const rooms = new Map();
   for (const c of cells.values()) rooms.set(K(c.gx, c.gy), new Room(c.gx, c.gy, typeOf.get(K(c.gx, c.gy)) ?? 'camara', piso));
+  // F1: pasa la def de rescate elegida a su sala (siembra el cautivo + el cerrojo).
+  if (rescateDef) for (const r of rooms.values()) if (r.type === 'rescate') { r.setRescate(rescateDef); break; }
   for (const e of edges) {
     const [ak, bk] = e.split('|');
     const ra = rooms.get(ak), rb = rooms.get(bk); if (!ra || !rb) continue;

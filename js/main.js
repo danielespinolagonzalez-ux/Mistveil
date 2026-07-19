@@ -270,7 +270,7 @@ function newRun() {
 }
 
 // ---------- Biomas, altares, mascota y caídos ----------
-let altarCd = 0, metro = null;
+let altarCd = 0, metro = null, cerrojo = null;
 function updateBiomaExtras(dt, p, room) {
   if (altarCd > 0) altarCd -= dt;
   // Péndulos de la Sala de Péndulos: barren la galería; roce cercano = Espíritu
@@ -434,6 +434,17 @@ function activarAltar(al, p) {
     al.used = true;
     AudioManager.sfx('equip');
     flash(res.titulo, res.sub);
+  } else if (al.kind === 'cerrojo') {
+    // F1: cerrojo rítmico del cautivo. Solo se abre con la CELDA LIMPIA (guardias caídos).
+    if (!cur?.cleared) { flash('Los guardias velan el cerrojo', 'Limpia la celda primero'); return; }
+    const RB = DataDB.balance.rescate ?? {};
+    cerrojo = {
+      altar: al, rescateId: al.rescateId, barrio: al.barrio,
+      t: -0.8, beats: RB.cerrojo_beats ?? 4, need: RB.cerrojo_aciertos ?? 3, beatMs: RB.cerrojo_beat_ms ?? 620,
+      hits: 0, claimed: new Set(), hitBeats: new Set(), feed: '', feedT: 0
+    };
+    mode = 'cerrojo';
+    AudioManager.sfx('tome');
   }
 }
 
@@ -509,6 +520,91 @@ function drawMetronomo() {
   if (C.feedT > 0) {
     font(12); ctx.fillStyle = C.feed.startsWith('¡') ? '#ffd54f' : C.feed === 'bien' ? '#7ee8e0' : '#e0556b';
     ctx.fillText(C.feed, VW / 2, VH / 2 - 88);
+  }
+}
+
+// F1 — EL CERROJO: QTE rítmico para liberar al vecino cautivo. Reusa el latido del
+// metrónomo: PARADA (parry/tap) al compás; `need` aciertos de `beats` rompen el cerrojo.
+// Fallar no castiga (solo cuenta el intento) → accesible y bueno para móvil/Una Mano.
+function updateCerrojo(dt) {
+  const C = cerrojo;
+  C.t += dt;
+  if (C.feedT > 0) C.feedT -= dt;
+  const tMs = C.t * 1000;
+  const beatIdx = Math.round(tMs / C.beatMs);
+  if (beatIdx >= 1 && beatIdx <= C.beats && !C['tick' + beatIdx] && Math.abs(tMs - beatIdx * C.beatMs) < 30) {
+    C['tick' + beatIdx] = true;
+    AudioManager.beep(beatIdx % 2 === 1 ? 640 : 500, 0.06, 'square', 0.05);
+  }
+  const press = Input.justPressed('parry') || Input.justPressed('melee') || Input.justCode('Enter') || (Input.touchState().enabled && Input.justCode('TouchTap'));
+  if (press && beatIdx >= 1 && beatIdx <= C.beats && !C.claimed.has(beatIdx)) {
+    const diff = Math.abs(tMs - beatIdx * C.beatMs);
+    C.claimed.add(beatIdx);
+    if (diff <= 150) { C.hits++; C.hitBeats.add(beatIdx); C.feed = '¡CLAC!'; C.feedT = 0.4; AudioManager.sfx('cad_perfect'); FX.addShake(1); }
+    else if (diff <= 300) { C.hits++; C.hitBeats.add(beatIdx); C.feed = 'cede'; C.feedT = 0.4; AudioManager.sfx('cad_good'); }
+    else { C.feed = 'fuera de compás'; C.feedT = 0.4; AudioManager.sfx('cad_fail'); }
+  }
+  if (tMs > (C.beats + 0.6) * C.beatMs) {
+    if (C.hits >= C.need) liberarCautivo(C);
+    else {
+      flash('El cerrojo aguanta', C.hits + '/' + C.need + ' — vuelve a intentarlo al compás');
+      AudioManager.sfx('cad_fail');
+      cerrojo = null; mode = 'play';
+    }
+  }
+}
+function liberarCautivo(C) {
+  const def = DataDB.rescates?.rescates?.find(r => r.id === C.rescateId);
+  if (!GameState.rescatados.includes(C.rescateId)) GameState.rescatados.push(C.rescateId);
+  SaveManager.save();
+  const mem = def?.recompensa?.memoria ?? 0;
+  if (mem) GameState.memoria += mem;
+  C.altar.used = true;
+  if (cur?.cautivo) cur.cautivo.liberado = true;
+  EventBus.emit('npc_rescatado', C.rescateId); // señal (en pasado); el encendido llega al volver al hub
+  const dist = DataDB.ciudad?.distritos?.find(d => d.id === C.barrio);
+  const dcol = dist?.acento ?? '#ffce6a';
+  FX.burst(C.altar.x, C.altar.y - 10, { n: 28, color: dcol, speed: 110, life: 1.0, size: 2.6, glow: true, gravity: -30 });
+  FX.addShake(3);
+  flash('¡LIBERADO!', (dist?.vecino ?? 'Un vecino') + ' — +' + mem + ' ◆ · vuelve a Cuerdaqueda');
+  AudioManager.sfx('clear');
+  cerrojo = null; mode = 'play';
+}
+function drawCerrojo() {
+  ctx.fillStyle = 'rgba(8,5,16,0.88)'; ctx.fillRect(0, 0, VW, VH);
+  const C = cerrojo;
+  const tMs = C.t * 1000;
+  const dcol = DataDB.ciudad?.distritos?.find(d => d.id === C.barrio)?.acento ?? '#ffd54f';
+  font(12); ctx.textAlign = 'center'; ctx.fillStyle = '#ffd54f';
+  ctx.fillText('EL CERROJO', VW / 2, 60);
+  font(8); ctx.fillStyle = '#8d82ad';
+  ctx.fillText('PARADA (E / tap) al compás · ' + C.need + ' de ' + C.beats + ' rompen el cerrojo', VW / 2, 78);
+  const cx = VW / 2, cy = VH / 2 - 6;
+  // Aro que se contrae hacia el beat (rojo, como el contraataque)
+  const nb = Math.round(tMs / C.beatMs);
+  if (nb >= 1 && nb <= C.beats) {
+    const prox = 1 - Math.min(1, Math.abs(tMs - nb * C.beatMs) / C.beatMs * 2);
+    ctx.strokeStyle = `rgba(255,80,60,${0.25 + prox * 0.75})`; ctx.lineWidth = 2 + prox * 3;
+    ctx.beginPath(); ctx.arc(cx, cy, 22 + (1 - prox) * 40, 0, 7); ctx.stroke();
+  }
+  // Candado en el centro (se tiñe del color del distrito)
+  ctx.strokeStyle = dcol; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(cx, cy - 10, 9, Math.PI, 0); ctx.stroke();
+  ctx.fillStyle = '#2a2340'; ctx.fillRect(cx - 12, cy - 2, 24, 18);
+  ctx.strokeStyle = dcol; ctx.lineWidth = 2; ctx.strokeRect(cx - 12, cy - 2, 24, 18);
+  ctx.fillStyle = dcol; ctx.beginPath(); ctx.arc(cx, cy + 6, 2.4, 0, 7); ctx.fill();
+  // Pips de tumbler: roto (color) / fallado (rojo apagado) / pendiente (oscuro)
+  const beatIdx = Math.floor(tMs / C.beatMs);
+  for (let i = 1; i <= C.beats; i++) {
+    const bx = VW / 2 - (C.beats * 18) / 2 + (i - 0.5) * 18;
+    ctx.fillStyle = C.hitBeats.has(i) ? dcol : C.claimed.has(i) ? '#7a4048' : i <= beatIdx ? '#5a5470' : '#2a2340';
+    ctx.beginPath(); ctx.arc(bx, VH / 2 + 42, 5, 0, 7); ctx.fill();
+  }
+  font(11); ctx.fillStyle = '#e9e2f5';
+  ctx.fillText(C.hits + ' / ' + C.need, VW / 2, VH / 2 + 72);
+  if (C.feedT > 0) {
+    font(12); ctx.fillStyle = C.feed.startsWith('¡') ? dcol : C.feed === 'cede' ? '#7ee8e0' : '#e0556b';
+    ctx.fillText(C.feed, VW / 2, VH / 2 - 60);
   }
 }
 
@@ -691,8 +787,16 @@ function drawBiomaExtras(t) {
       ctx.fillRect(x - 7, y - 8, 14, 14);
       font(10); ctx.textAlign = 'center';
       // Color/glifo por kind, con FALLBACK para altares-evento (traen su propio glifo/color).
-      ctx.fillStyle = al.used ? '#5a5470' : (al.color ?? { corazon: '#e0556b', fusion: '#b678e8', metronomo: '#7ee8e0', apuesta: '#ffd54f' }[al.kind] ?? '#c9a24a');
-      ctx.fillText(al.glifo ?? ({ corazon: '♥', fusion: '◇', metronomo: '△', apuesta: '◈' }[al.kind] ?? '?'), x, y + 3);
+      const alCol = al.used ? '#5a5470' : (al.color ?? { corazon: '#e0556b', fusion: '#b678e8', metronomo: '#7ee8e0', apuesta: '#ffd54f', cerrojo: '#ff6a5a' }[al.kind] ?? '#c9a24a');
+      ctx.fillStyle = alCol;
+      if (al.kind === 'cerrojo') {
+        // Candado dibujado (sin glifo unicode, que salía tofu en Gelica)
+        ctx.strokeStyle = alCol; ctx.lineWidth = 1.6;
+        ctx.beginPath(); ctx.arc(x, y - 3, 3, Math.PI, 0); ctx.stroke();
+        ctx.fillRect(x - 4, y - 1, 8, 6);
+      } else {
+        ctx.fillText(al.glifo ?? ({ corazon: '♥', fusion: '◇', metronomo: '△', apuesta: '◈' }[al.kind] ?? '?'), x, y + 3);
+      }
       if (!al.used && Math.hypot(p.x - al.x, p.y - al.y) < 26) {
         font(7); ctx.fillStyle = '#e9e2f5';
         const evDef = al.kind === 'evento' ? DataDB.eventos?.eventos?.find(e => e.id === al.evId) : null;
@@ -700,11 +804,32 @@ function drawBiomaExtras(t) {
           corazon: 'ATAQUE: 1 corazón → 1 engranaje',
           fusion: 'ATAQUE: 2 reliquias comunes → 1 rara',
           metronomo: 'ATAQUE: reto de ritmo → reliquia',
-          apuesta: 'ATAQUE: apostar ' + DataDB.balance.camaras.apuesta_coste + ' oro'
+          apuesta: 'ATAQUE: apostar ' + DataDB.balance.camaras.apuesta_coste + ' oro',
+          cerrojo: room.cleared ? 'ATAQUE: romper el cerrojo al compás' : 'Vence a los guardias primero'
         }[al.kind] ?? 'ATAQUE: interactuar';
         ctx.fillText(label, x, y - 18);
       }
     }
+  }
+  // F1: vecino CAUTIVO (figura gris tras una reja de engranajes). Al limpiar la celda, la
+  // reja se difumina y sus ojos prenden con el color del distrito: el cerrojo ya se puede romper.
+  if (room.cautivo && !room.cautivo.liberado) {
+    const cx = SX(room.cautivo.x), cy = SY(room.cautivo.y);
+    const dcol = DataDB.ciudad?.distritos?.find(d => d.id === room.cautivo.id)?.acento ?? '#8a86a0';
+    const listo = room.cleared;
+    ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(cx, cy + 11, 12, 4, 0, 0, 7); ctx.fill();
+    // figura encapuchada gris
+    ctx.fillStyle = '#454060';
+    ctx.beginPath(); ctx.moveTo(cx - 8, cy + 11); ctx.quadraticCurveTo(cx - 9, cy - 13, cx, cy - 16); ctx.quadraticCurveTo(cx + 9, cy - 13, cx + 8, cy + 11); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#2a2740'; ctx.beginPath(); ctx.arc(cx, cy - 12, 5, 0, 7); ctx.fill();
+    ctx.globalAlpha = listo ? 0.95 : 0.4; ctx.fillStyle = dcol;
+    ctx.beginPath(); ctx.arc(cx - 2, cy - 12, 1, 0, 7); ctx.arc(cx + 2, cy - 12, 1, 0, 7); ctx.fill();
+    ctx.globalAlpha = 1;
+    // reja de engranajes: barrotes + ruedas dentadas (se difuminan al limpiar la sala)
+    ctx.strokeStyle = `rgba(150,140,180,${listo ? 0.3 : 0.85})`; ctx.lineWidth = 2;
+    for (const bx of [-10, -3, 4, 11]) { ctx.beginPath(); ctx.moveTo(cx + bx, cy - 20); ctx.lineTo(cx + bx, cy + 9); ctx.stroke(); }
+    ctx.fillStyle = `rgba(120,110,150,${listo ? 0.35 : 0.75})`;
+    for (const gx of [cx - 8, cx + 8]) { ctx.beginPath(); ctx.arc(gx, cy - 20, 3, 0, 7); ctx.fill(); ctx.beginPath(); ctx.arc(gx, cy + 9, 3, 0, 7); ctx.fill(); }
   }
   // Tuerca
   if (world.pet) {
@@ -750,6 +875,7 @@ function onEnterRoom(room, first) {
   if (first && room.type === 'evento') { const ev = DataDB.eventos?.eventos?.find(e => e.id === room.altars?.[0]?.evId); flash(ev?.nombre ?? 'Un altar aguarda', ev?.desc ?? 'Acércate y decide'); }
   if (first && room.type === 'desafio') flash('EL DESAFÍO DEL COMPÁS', 'Límpiala a tiempo para el bonus · un minijefe acecha');
   if (first && room.type === 'sincronia') flash('CÁMARA DE SINCRONÍA', 'Clava ' + (room.reto?.objetivo ?? 4) + ' PERFECTOS de Cadencia para el premio');
+  if (first && room.type === 'rescate') { const vecino = DataDB.ciudad?.distritos?.find(d => d.id === room.cautivo?.id)?.vecino ?? 'alguien'; flash('CELDA DE CUERDAQUEDA', 'Preso: ' + vecino + '. Vence a los guardias y rompe su cerrojo'); }
   if (first) {
     for (const s of room.pickupSpots) if (Math.random() < 0.5) spawnPickup('coin', s.x, s.y, false);
   }
@@ -1664,6 +1790,10 @@ function update(dt) {
   }
   if (mode === 'metronomo') {
     updateMetronomo(dt);
+    return;
+  }
+  if (mode === 'cerrojo') {
+    updateCerrojo(dt);
     return;
   }
   if (mode === 'pueblo') {
@@ -4836,6 +4966,7 @@ function render() {
   if (mode === 'menu') { menu.draw(t); return; }
   if (mode === 'balance') { drawBalanceScreen(); return; }
   if (mode === 'metronomo') { drawMetronomo(); return; }
+  if (mode === 'cerrojo') { drawCerrojo(); return; }
   const [shx, shy] = FX.shakeOffset();
   ctx.fillStyle = '#0b0916';
   ctx.fillRect(0, 0, VW, VH);
