@@ -29,7 +29,7 @@ import { pickAzar, aplicarEvento } from '../js/eventos.js';
 import { drawItemIcon } from '../js/item_icons.js';
 import { Pactos, calcHeat, calcMemoriaMult, calcEfecto, nivelClamp } from '../js/pactos.js';
 import { FX } from '../js/fx.js';
-import { barrioVivo, distritos as ciudadDistritos } from '../js/ciudad.js';
+import { barrioVivo, distritos as ciudadDistritos, poblarVecinos, vecinos as ciudadVecinos } from '../js/ciudad.js';
 
 const out = document.getElementById('out');
 let failed = 0;
@@ -629,6 +629,17 @@ assert('F1: rescates.json define ≥5 cautivos con barrio/pisos/cerrojo',
   assert('F1: la celda de rescate NO empieza limpia (tiene guardias)', r.cleared === false);
   const guardias = r._spawnGuardias();
   assert('F1: _spawnGuardias siembra guardias.n enemigos', guardias.length === (def.guardias?.n ?? 2));
+})();
+// F2 — vida en las calles: los vecinos pueblan los distritos vivos (y más rescatados → más vecinos)
+(() => {
+  const prev = GameState.rescatados.slice();
+  GameState.rescatados = [];
+  poblarVecinos(); const nBase = ciudadVecinos().length;
+  assert('F2: hay vecinos paseando por la villa viva', nBase >= 4);
+  GameState.rescatados = ['hermanos', 'fragua', 'botica'];
+  poblarVecinos(); const nMas = ciudadVecinos().length;
+  assert('F2: más rescatados → más vecinos (la villa bulle)', nMas > nBase);
+  GameState.rescatados = prev; poblarVecinos();
 })();
 
 // R1 — Reliquias completas: los 6 efectos antes "pendientes" ya se interpretan

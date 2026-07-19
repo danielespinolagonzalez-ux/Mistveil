@@ -504,3 +504,126 @@ export function drawPlazaGround(g, SX, SY, KY) {
     }
   }
 }
+
+// ============ F2 · Profundidad y vida en las calles ============
+
+// Capa LEJANA con parallax: la silueta del Reloj colosal DETENIDO y terrazas en la bruma.
+// Se desplaza más despacio que la calle (par<1) → da profundidad sin arte pintado.
+export function drawCieloLejano(g, camX, SY, t) {
+  const P = plaza();
+  const horizon = SY(P.y) - 6;
+  const par = 0.4;
+  const cx = (P.x + P.w * 0.5) - camX * par; // centro del Reloj, en coords del mundo escalado
+  // Terrazas lejanas escalonadas (bajan hasta el horizonte, nunca por debajo)
+  g.fillStyle = 'rgba(32,28,56,0.75)';
+  for (let i = -3; i <= 4; i++) {
+    const bx = cx + i * 190, h = 46 + (i % 2 ? 0 : 18);
+    g.fillRect(bx - 64, horizon - h, 128, h);
+  }
+  // El Reloj colosal (torre central) — cabe en la banda de cielo sobre el horizonte
+  g.fillStyle = '#22213e';
+  g.fillRect(cx - 46, horizon - 96, 92, 96);
+  g.beginPath(); g.moveTo(cx - 52, horizon - 96); g.lineTo(cx, horizon - 128); g.lineTo(cx + 52, horizon - 96); g.closePath(); g.fill();
+  // Esfera pálida DETENIDA (el tiempo se paró) con manecillas quietas
+  g.fillStyle = 'rgba(184,172,144,0.5)';
+  g.beginPath(); g.arc(cx, horizon - 62, 17, 0, 7); g.fill();
+  g.strokeStyle = 'rgba(38,32,58,0.85)'; g.lineWidth = 3;
+  g.beginPath(); g.arc(cx, horizon - 62, 17, 0, 7); g.stroke();
+  g.lineWidth = 2.4; g.beginPath(); g.moveTo(cx, horizon - 62); g.lineTo(cx, horizon - 74); g.stroke();
+  g.lineWidth = 1.8; g.beginPath(); g.moveTo(cx, horizon - 62); g.lineTo(cx + 9, horizon - 57); g.stroke();
+  // Bruma dorada baja del atardecer
+  const gg = g.createLinearGradient(0, horizon - 34, 0, horizon + 6);
+  gg.addColorStop(0, 'rgba(120,90,110,0)'); gg.addColorStop(1, 'rgba(126,96,116,0.28)');
+  g.fillStyle = gg; g.fillRect(-200, horizon - 34, 4000, 40);
+}
+
+// Motas de polvo dorado que flotan sobre la plaza (ambiente cálido, baratísimo).
+export function drawMotas(g, camX, VW, VH, t) {
+  for (let i = 0; i < 22; i++) {
+    const sx = ((i * 137.5 - camX * 0.6) % (VW + 40) + VW + 40) % (VW + 40) - 20;
+    const sy = (VH * 0.28) + Math.sin(t * 0.5 + i) * 30 + (i % 5) * 34;
+    const a = 0.10 + 0.10 * Math.sin(t * 1.3 + i * 2);
+    g.fillStyle = `rgba(255,224,168,${a})`;
+    g.fillRect(sx, sy, 1.5, 1.5);
+  }
+}
+
+// ---- Fuente-oclusor de primer plano: Pip pasa POR DETRÁS (y-sort en main.js) ----
+export function propsCiudad() {
+  const P = plaza();
+  return [{ kind: 'fuente', x: P.x + 496, y: P.y + 176 }];
+}
+export function drawProp(g, prop, SX, SY, t) {
+  if (prop.kind !== 'fuente') return;
+  const x = SX(prop.x), y = SY(prop.y);
+  // sombra
+  g.fillStyle = 'rgba(0,0,0,0.30)'; g.beginPath(); g.ellipse(x, y + 6, 28, 8, 0, 0, 7); g.fill();
+  // pilón de piedra
+  g.fillStyle = '#2b2540'; g.beginPath(); g.ellipse(x, y, 28, 11, 0, 0, 7); g.fill();
+  g.fillStyle = '#3a3352'; g.beginPath(); g.ellipse(x, y - 3, 26, 9, 0, 0, 7); g.fill();
+  g.fillStyle = '#211c34'; g.beginPath(); g.ellipse(x, y - 4, 20, 6, 0, 0, 7); g.fill();
+  // columna central con engranajes (fuente de RELOJERÍA, sin agua: gira despacio)
+  g.fillStyle = '#3a3352'; g.fillRect(x - 5, y - 30, 10, 26);
+  for (const [gy, r] of [[y - 30, 8], [y - 20, 6]]) {
+    g.save(); g.translate(x, gy); g.rotate(t * (r === 8 ? 0.5 : -0.7));
+    g.fillStyle = '#c9a24a';
+    for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4; g.fillRect(Math.cos(a) * r - 1.4, Math.sin(a) * r - 1.4, 2.8, 2.8); }
+    g.beginPath(); g.arc(0, 0, r * 0.6, 0, 7); g.fill();
+    g.fillStyle = '#6b5a2c'; g.beginPath(); g.arc(0, 0, r * 0.28, 0, 7); g.fill();
+    g.restore();
+  }
+  // brillo cálido en el borde
+  g.strokeStyle = 'rgba(255,206,122,0.35)'; g.lineWidth = 1.5;
+  g.beginPath(); g.ellipse(x, y - 4, 20, 6, 0, Math.PI, Math.PI * 2); g.stroke();
+}
+
+// ---- Vecinos: pasean por los distritos VIVOS (vida). Se repueblan al entrar al hub. ----
+let _vecinos = null;
+function _nuevoVecino(x, y, col, speed, nino = false) {
+  return { x, homeX: x, y, col, speed: speed * 14, dir: Math.random() < 0.5 ? -1 : 1, rango: 34 + Math.random() * 46, t: Math.random() * 6, nino, pausa: Math.random() * 1.5 };
+}
+export function poblarVecinos() {
+  const P = plaza();
+  const T = DataDB.ciudad?.terrazas ?? { baja: 196, media: 132, alta: 74 };
+  const v = [];
+  // Un vecino junto a cada distrito VIVO (menos la Puerta), del color de su acento.
+  for (const d of distritos()) {
+    if (!d.vivo || d.emblema === 'puerta') continue;
+    v.push(_nuevoVecino(d.x + 20, d.y + 6, d.acento, 0.6 + (d.id.charCodeAt(0) % 5) * 0.06));
+  }
+  // Paseantes genéricos por la terraza media (más cuantos más rescatados → la villa bulle).
+  const nStroll = Math.min(4, 1 + (GameState.rescatados?.length ?? 0));
+  const grises = ['#cfc6e8', '#b0a6c8', '#d8cfa0', '#a8b0d0'];
+  for (let i = 0; i < nStroll; i++) v.push(_nuevoVecino(P.x + 240 + i * 150, P.y + T.media + 26, grises[i % grises.length], 0.55));
+  // Niños + Tuerca cuando la villa se anima (≥3 rescatados): corretean por la plaza baja.
+  if ((GameState.rescatados?.length ?? 0) >= 3) {
+    for (let i = 0; i < 2; i++) v.push(_nuevoVecino(P.x + 320 + i * 70, P.y + T.baja + 4, '#ffd9a0', 1.5, true));
+  }
+  _vecinos = v;
+}
+export function updateVecinos(dt) {
+  if (!_vecinos) return;
+  for (const v of _vecinos) {
+    v.t += dt;
+    if (v.pausa > 0) { v.pausa -= dt; continue; }
+    v.x += v.dir * v.speed * dt;
+    if (v.x < v.homeX - v.rango) { v.x = v.homeX - v.rango; v.dir = 1; v.pausa = 0.5 + Math.random() * 1.2; }
+    else if (v.x > v.homeX + v.rango) { v.x = v.homeX + v.rango; v.dir = -1; v.pausa = 0.5 + Math.random() * 1.2; }
+  }
+}
+export function vecinos() { return _vecinos ?? []; }
+export function drawVecino(g, v, SX, SY, t) {
+  const x = SX(v.x), y = SY(v.y);
+  const s = v.nino ? 0.72 : 1;
+  const andando = v.pausa <= 0;
+  const bob = andando ? Math.abs(Math.sin(v.t * 6)) * 2 : 0;
+  const lean = andando ? v.dir * 0.6 : 0;
+  g.fillStyle = 'rgba(0,0,0,0.25)'; g.beginPath(); g.ellipse(x, y + 2, 6 * s, 2.4 * s, 0, 0, 7); g.fill();
+  // cuerpo (capa) con leve inclinación hacia donde camina
+  g.save(); g.translate(x, y - bob); g.rotate(lean * 0.04);
+  g.fillStyle = v.col;
+  g.beginPath(); g.moveTo(-5 * s, 0); g.quadraticCurveTo(-6 * s, -12 * s, 0, -15 * s); g.quadraticCurveTo(6 * s, -12 * s, 5 * s, 0); g.closePath(); g.fill();
+  g.fillStyle = '#2a2740'; g.beginPath(); g.arc(0, -13 * s, 3.1 * s, 0, 7); g.fill();
+  g.fillStyle = 'rgba(255,220,150,0.16)'; g.fillRect(-4 * s, -10 * s, 8 * s, 3 * s);
+  g.restore();
+}

@@ -18,7 +18,7 @@ import { applyItem, rollItem } from './items.js';
 import { aplicarEvento } from './eventos.js';
 import { cast, elementMult } from './spells.js';
 import { FX } from './fx.js';
-import { plaza, distritos, visita, resetVisita, drawDistrito, drawCoro, drawPuebloBackdrop, drawPlazaGround, barrioVivo } from './ciudad.js';
+import { plaza, distritos, visita, resetVisita, drawDistrito, drawCoro, drawPuebloBackdrop, drawPlazaGround, barrioVivo, drawCieloLejano, drawMotas, propsCiudad, drawProp, poblarVecinos, updateVecinos, vecinos, drawVecino } from './ciudad.js';
 import { syncFamiliares, updateFamiliares, drawFamiliar } from './familiares.js';
 import { spawnArt, updateArt, drawArt, romano } from './artes_fx.js';
 import { selloDef, selloEquipado, obtenerSello, rasgoCuraPorSp, rasgoDashBurn, finisherElemental, selloSpPorPerfecto, selloRango } from './sellos.js';
@@ -4254,6 +4254,7 @@ function enterPueblo() {
   resetVisita();
   dlg = null; puebloAviso = null;
   ciudadDetectarNuevos(); // F1: enciende distritos recién rescatados (barrio_iluminado + flash)
+  poblarVecinos();        // F2: vida en las calles (vecinos según distritos vivos)
   if (!world.player) world.player = new Player(0, 0);
   const p = world.player;
   const P = plaza();
@@ -4319,6 +4320,7 @@ function updatePueblo(dt) {
   };
   p.update(dt, Input, roomCtx, puebloStubWorld);
   cam.x += (puebloCamX() - cam.x) * Math.min(1, dt * 7);
+  updateVecinos(dt); // F2: los vecinos pasean
 
   // Interacción con el distrito VIVO más cercano
   const near = nearestNPC(distritos());
@@ -4351,16 +4353,21 @@ function renderPueblo(t) {
   // plaza plana de otra escala → se retira hasta el LOTE CIUDAD de Recraft (F4), que la
   // regenera como capas de parallax que casan con las terrazas (ver docs/ciudad.md §10).
   const P = plaza();
+  drawCieloLejano(ctx, cam.x, SY, t); // F2: silueta lejana del Reloj colosal (parallax)
   drawPuebloBackdrop(ctx, SX, SY, t, VW, VH);
   drawPlazaGround(ctx, SX, SY, KY);
-  // Distritos (ruina + vivos) + Pip con y-sorting. El distrito VIVO más cercano se aviva.
+  // Distritos (ruina + vivos) + props + vecinos + Pip con y-sorting. El distrito VIVO más
+  // cercano se aviva. Todo comparte el mismo orden por Y → Pip pasa por detrás de la fuente.
   const ds = distritos();
   const near = dlg ? null : nearestNPC(ds);
   const sortables = ds.map(n => ({ y: n.y, draw: () => drawDistrito(ctx, n, SX, SY, t, n === near) }));
+  for (const pr of propsCiudad()) sortables.push({ y: pr.y, draw: () => drawProp(ctx, pr, SX, SY, t) });
+  for (const v of vecinos()) sortables.push({ y: v.y, draw: () => drawVecino(ctx, v, SX, SY, t) });
   sortables.push({ y: world.player.y + 10, draw: () => drawPlayer(world.player, t) });
   sortables.sort((a, b) => a.y - b.y);
   for (const s of sortables) s.draw();
   drawCoro(ctx, SX, SY, t);
+  drawMotas(ctx, cam.x, VW / ZOOM, VH / ZOOM, t); // F2: motas de polvo dorado
   FX.draw(ctx, (x, y) => [SX(x), SY(y, 4)]);
   // Prompt de interacción
   if (near) {
