@@ -224,6 +224,14 @@ for (const bioma of ['pendulos', 'archivo', 'invertida', 'truenos']) {
   assert('director de ' + bioma + ' usa su base', crearDirectorJefe(be, rm)?.cfg.base === jd.base);
 }
 assert('los 4 jefes NO repiten base/sprite', basesJefe.size === 4);
+// Cada jefe tiene una MECÁNICA FIRMA única (definida, usada y que NADIE más usa)
+const FIRMAS = { pendulos: 'campanadas', archivo: 'orbes_de_tinta', invertida: 'robo_del_tiempo', truenos: 'rayo_encadenado' };
+for (const [bioma, firma] of Object.entries(FIRMAS)) {
+  const jd = DataDB.jefes.jefes[bioma];
+  const usaEste = jd.fases.some(f => f.mecanicas.includes(firma));
+  const usaOtro = Object.entries(DataDB.jefes.jefes).some(([bb, o]) => bb !== bioma && o.fases.some(f => f.mecanicas.includes(firma)));
+  assert(bioma + ': firma "' + firma + '" definida, usada y EXCLUSIVA', !!DataDB.jefes.mecanicas[firma] && usaEste && !usaOtro);
+}
 const jpl = new Player(208, 120);
 let casteó = false;
 for (let i = 0; i < 400 && !casteó; i++) { jdir.update(1 / 60, jpl); if (jdir.zonas.length) casteó = true; }

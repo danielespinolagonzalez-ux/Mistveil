@@ -473,6 +473,32 @@ function drawBossZonas(dir, t = 0) {
       ctx.globalAlpha = activa ? 0.95 : lineA; ctx.lineWidth = activa ? 5 : 3;
       ctx.strokeStyle = (activa && Math.floor(t * 18) % 2 === 0) ? '#fff' : col;
       ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.stroke();
+    } else if (z.tipo === 'ondas') { // FIRMA CAMPANERO: anillo de campana que se expande
+      if (z.fase === 'activa') {
+        ctx.globalAlpha = 0.9; ctx.lineWidth = Math.max(3, z.ancho * 0.8);
+        ctx.beginPath(); ctx.ellipse(sx, sy, z.r, z.r * KY, 0, 0, 7); ctx.stroke();
+        ctx.globalAlpha = 0.3; ctx.lineWidth = z.ancho * 1.6; ctx.stroke();
+      } else { const rr = 18 + 8 * Math.sin(t * 12); ctx.globalAlpha = 0.35 + 0.4 * k; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(sx, sy, rr, rr * KY, 0, 0, 7); ctx.stroke(); }
+    } else if (z.tipo === 'cadena') { // FIRMA CARILLÓN: rayo encadenado por nodos
+      ctx.globalAlpha = aviso ? lineA : 0.95; ctx.lineWidth = aviso ? 2 : 4;
+      ctx.strokeStyle = (!aviso || blink) && Math.floor(t * 20) % 2 === 0 ? '#fff' : col;
+      ctx.beginPath();
+      for (let i = 0; i < z.puntos.length; i++) { const px = SX(z.puntos[i].x), py = SY(z.puntos[i].y); i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); }
+      ctx.stroke();
+      ctx.globalAlpha = lineA; ctx.fillStyle = col;
+      for (const pt of z.puntos) { ctx.beginPath(); ctx.ellipse(SX(pt.x), SY(pt.y), 4, 4 * KY, 0, 0, 7); ctx.fill(); }
+    } else if (z.tipo === 'proyectiles') { // FIRMA ARCHIVERA: trayectorias de los orbes
+      ctx.globalAlpha = 0.3 + 0.5 * k; ctx.lineWidth = 2; ctx.setLineDash([6, 5]);
+      const L = z.largo * (0.3 + 0.7 * k);
+      for (const a of z.angs) { ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + Math.cos(a) * L, sy + Math.sin(a) * L * KY); ctx.stroke(); }
+      ctx.setLineDash([]);
+    } else if (z.tipo === 'roba') { // FIRMA RELOJERO: remolino-reloj (robo de compás)
+      const rr = z.r * (0.6 + 0.4 * k);
+      ctx.globalAlpha = 0.4 + 0.5 * k; ctx.lineWidth = inminente ? 3 : 2;
+      ctx.beginPath(); ctx.ellipse(sx, sy, rr, rr * KY, 0, 0, 7); ctx.stroke();
+      const ha = t * 6;
+      ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + Math.cos(ha) * rr * 0.8, sy + Math.sin(ha) * rr * 0.8 * KY);
+      ctx.moveTo(sx, sy); ctx.lineTo(sx + Math.cos(ha * 0.5) * rr * 0.5, sy + Math.sin(ha * 0.5) * rr * 0.5 * KY); ctx.stroke();
     }
     ctx.restore();
   }
@@ -873,6 +899,20 @@ EventBus.on('jefe_adds', (quien, n, x, y) => {
   AudioManager.sfx?.('enemy_spawn');
 });
 EventBus.on('jefe_golpe', () => FX.addShake(2));
+// FIRMA ARCHIVERA: descarga de orbes de tinta telegrafiados (los lanza el director)
+EventBus.on('jefe_proyectiles', (angs, cx, cy, dano, color, vel) => {
+  for (const a of angs) world.bullets.spawn({ x: cx, y: cy, vx: Math.cos(a) * (vel ?? 160), vy: Math.sin(a) * (vel ?? 160), damage: dano ?? 1, color: color || '#5c6bc0' });
+  AudioManager.sfx?.('cast_onda'); FX.addShake(1);
+});
+// FIRMA RELOJERO: roba el compás un rato (reconecta la mecánica legacy roba_compas)
+EventBus.on('jefe_roba_compas', (dur = 6) => {
+  if (RunState.compasRobado || RunState.compas === 'tic_tac') return; // no hay nada que robar
+  RunState.compasRobado = RunState.compas;
+  RunState.compas = 'tic_tac';
+  flash('¡El Relojero te roba el compás!', 'Lo recuperas en unos segundos');
+  AudioManager.sfx?.('cad_fail');
+  setTimeout(() => { if (RunState.compasRobado) { RunState.compas = RunState.compasRobado; RunState.compasRobado = null; flash('Recuperas tu compás'); } }, dur * 1000);
+});
 EventBus.on('sinergia', (a, b) => flash('SINERGIA: ' + a, b));
 // El Primer Relojero: roba tu compás en su primera campanada; se recupera con su derrota
 EventBus.on('boss_campanada', (e) => {

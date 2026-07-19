@@ -1,5 +1,5 @@
 {
-  "_doc": "Jefes de raid (uno por bioma, distintos entre sí: base/sprite, paleta y mecánicas propias) + biblioteca de mecánicas telegrafiadas estilo FFXIV. El motor (js/jefes.js) las interpreta; main.js dibuja director.zonas. tipo: circulos | donut | cono | linea | barrido | safe | adds.",
+  "_doc": "Jefes de raid (uno por bioma, distintos entre sí: base/sprite, paleta y mecánicas propias) + biblioteca de mecánicas telegrafiadas estilo FFXIV. El motor (js/jefes.js) las interpreta; main.js dibuja director.zonas. tipo: circulos | donut | cono | linea | barrido | safe | adds | ondas (anillos que se expanden, FIRMA Campanero) | cadena (rayo encadenado por nodos, FIRMA Carillón) | proyectiles (abanico de orbes, FIRMA Archivera) | roba (roba el compás, FIRMA Relojero).",
   "jefes": {
     "pendulos": {
       "base": "campanero",
@@ -8,8 +8,8 @@
       "sello": "sello_ascuas", "elemento": "trueno",
       "respiro_s": 1.6,
       "fases": [
-        { "hp": 1.0, "cadencia_s": 2.7, "mecanicas": ["anillo_campana", "cuna_doble", "lluvia_de_cera"] },
-        { "hp": 0.5, "cadencia_s": 2.1, "mecanicas": ["barrido_manecilla", "lluvia_de_cera", "cuna_doble", "tanda_velones"] }
+        { "hp": 1.0, "cadencia_s": 2.7, "mecanicas": ["anillo_campana", "cuna_doble", "campanadas"] },
+        { "hp": 0.5, "cadencia_s": 2.1, "mecanicas": ["campanadas", "barrido_manecilla", "lluvia_de_cera", "tanda_velones"] }
       ]
     },
     "archivo": {
@@ -19,8 +19,8 @@
       "sello": "sello_marea", "elemento": "oscuridad",
       "respiro_s": 1.7,
       "fases": [
-        { "hp": 1.0, "cadencia_s": 2.6, "mecanicas": ["columnas_de_tinta", "pagina_barrida", "remolino_de_tinta"] },
-        { "hp": 0.5, "cadencia_s": 2.0, "mecanicas": ["marea_de_tinta", "columnas_de_tinta", "invocar_remoras", "pagina_barrida"] }
+        { "hp": 1.0, "cadencia_s": 2.6, "mecanicas": ["columnas_de_tinta", "orbes_de_tinta", "remolino_de_tinta"] },
+        { "hp": 0.5, "cadencia_s": 2.0, "mecanicas": ["orbes_de_tinta", "marea_de_tinta", "invocar_remoras", "pagina_barrida"] }
       ]
     },
     "invertida": {
@@ -30,8 +30,8 @@
       "elemento": "neutro",
       "respiro_s": 1.5,
       "fases": [
-        { "hp": 1.0, "cadencia_s": 2.5, "mecanicas": ["manecilla_horaria", "numeros_romanos", "cono_horario"] },
-        { "hp": 0.55, "cadencia_s": 1.9, "mecanicas": ["doble_manecilla", "engranaje_central", "numeros_romanos", "cono_horario"] }
+        { "hp": 1.0, "cadencia_s": 2.5, "mecanicas": ["manecilla_horaria", "robo_del_tiempo", "cono_horario"] },
+        { "hp": 0.55, "cadencia_s": 1.9, "mecanicas": ["robo_del_tiempo", "doble_manecilla", "engranaje_central", "numeros_romanos"] }
       ]
     },
     "truenos": {
@@ -41,8 +41,8 @@
       "elemento": "trueno",
       "respiro_s": 1.6,
       "fases": [
-        { "hp": 1.0, "cadencia_s": 2.6, "mecanicas": ["descarga_carillon", "tanido", "resonancia"] },
-        { "hp": 0.5, "cadencia_s": 2.0, "mecanicas": ["arco_electrico", "descarga_carillon", "invocar_cimbalos", "tanido"] }
+        { "hp": 1.0, "cadencia_s": 2.6, "mecanicas": ["descarga_carillon", "rayo_encadenado", "resonancia"] },
+        { "hp": 0.5, "cadencia_s": 2.0, "mecanicas": ["rayo_encadenado", "arco_electrico", "invocar_cimbalos", "tanido"] }
       ]
     }
   },
@@ -70,6 +70,12 @@
     "resonancia": { "tipo": "donut", "telegraph_s": 1.8, "r_int": 50, "r_ext": 330, "dano": 1, "color": "#b98fd0" },
     "tanido": { "tipo": "cono", "telegraph_s": 1.4, "n": 1, "arco": 1.0, "largo": 260, "dano": 1, "color": "#AB47BC" },
     "arco_electrico": { "tipo": "barrido", "telegraph_s": 1.1, "vueltas": 1.25, "vel": 1.6, "ancho": 0.16, "largo": 280, "dano": 1, "color": "#b98fd0" },
-    "invocar_cimbalos": { "tipo": "adds", "quien": "cimbalo", "n": 2 }
+    "invocar_cimbalos": { "tipo": "adds", "quien": "cimbalo", "n": 2 },
+
+    "_firmas": "Una mecánica ÚNICA por jefe (ningún otro la usa) para que se sientan distintos:",
+    "campanadas": { "tipo": "ondas", "telegraph_s": 1.2, "n": 3, "gap_s": 0.55, "r_max": 300, "vel": 320, "ancho": 26, "dano": 1, "color": "#ffd54f" },
+    "orbes_de_tinta": { "tipo": "proyectiles", "telegraph_s": 1.3, "n": 7, "spread": 2.0, "largo": 320, "vel": 150, "dano": 1, "color": "#5c6bc0" },
+    "robo_del_tiempo": { "tipo": "roba", "telegraph_s": 1.8, "r": 46, "dur_s": 6, "dano": 0, "color": "#c8905a" },
+    "rayo_encadenado": { "tipo": "cadena", "telegraph_s": 1.4, "n": 4, "seg": 100, "ancho": 22, "dano": 1, "color": "#b98fd0" }
   }
 }
