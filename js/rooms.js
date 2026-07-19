@@ -44,8 +44,16 @@ export function isDoorFront(tx, ty) {
          (tx === RW - 1 && ty >= 2 && ty <= 4);
 }
 
-function pickTemplate() {
-  const list = DataDB.salas_piso1.plantillas;
+// D1: el pool de plantillas se filtra por BIOMA. Una plantilla es "genérica" (vale en
+// cualquier bioma) salvo que su campo `pisos` nombre un bioma concreto → entonces solo
+// sale en ESE bioma. Así cada bioma suma sus plantillas propias (obstáculos que casan con
+// su mecánica de zona) a las genéricas, y una run de 12 pisos no se repite tan pronto.
+const BIOMAS_ID = ['pendulos', 'archivo', 'invertida', 'truenos'];
+function pickTemplate(biomaId) {
+  const all = DataDB.salas_piso1.plantillas;
+  const esGenerica = p => !(p.pisos ?? []).some(x => BIOMAS_ID.includes(x));
+  const pool = all.filter(p => esGenerica(p) || (p.pisos ?? []).includes(biomaId));
+  const list = pool.length ? pool : all;
   const total = list.reduce((s, p) => s + p.peso, 0);
   let r = Math.random() * total;
   for (const p of list) { r -= p.peso; if (r <= 0) return p; }
@@ -138,7 +146,7 @@ export class Room {
     }
 
     this._walls = null;
-    if (['normal', 'camara', 'galeria', 'maldita', 'desafio'].includes(type)) this._applyTemplate(pickTemplate(), Math.random() < 0.5);
+    if (['normal', 'camara', 'galeria', 'maldita', 'desafio'].includes(type)) this._applyTemplate(pickTemplate(this.bioma?.id), Math.random() < 0.5);
     // El Archivo Anegado: charcos de tinta que frenan (el fuego los seca)
     if (this.bioma?.tinta && ['camara', 'galeria', 'normal'].includes(type)) {
       const tc = this.bioma.tinta;

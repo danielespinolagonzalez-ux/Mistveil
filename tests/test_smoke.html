@@ -167,6 +167,30 @@ assert('cada evento tiene id, glifo y color', DataDB.eventos.eventos.every(e => 
   assert('sala desafío es de combate (no pre-limpia) con spawns', rd.cleared === false && rd.spawnPts.length > 0);
 })();
 
+// Fase D — D1: plantillas de sala POR BIOMA (obstáculos que casan con la mecánica de zona)
+assert('D1: roster de plantillas ampliado (≥25)', DataDB.salas_piso1.plantillas.length >= 25);
+assert('D1: todas las plantillas son 13×7 con símbolos legales', (() => {
+  const LEG = new Set('.#POEe$');
+  return DataDB.salas_piso1.plantillas.every(p => Array.isArray(p.layout) && p.layout.length === 7
+    && p.layout.every(r => r.length === 13 && [...r].every(c => LEG.has(c))));
+})());
+(() => {
+  const BIOMAS = ['pendulos', 'archivo', 'invertida', 'truenos'];
+  const propias = b => DataDB.salas_piso1.plantillas.filter(p => (p.pisos ?? []).includes(b));
+  assert('D1: cada bioma tiene ≥4 plantillas propias', BIOMAS.every(b => propias(b).length >= 4));
+  // pickTemplate (vía Room) respeta el bioma: una sala de Péndulos (piso 1) NUNCA usa una
+  // plantilla exclusiva de otro bioma.
+  const otras = new Set(['archivo', 'invertida', 'truenos'].flatMap(b => propias(b).map(p => p.id)));
+  let ok = true, usadas = new Set();
+  for (let i = 0; i < 40; i++) {
+    const rm = new Room(0, i, 'camara', 1); // piso 1 = Péndulos
+    const id = (rm.template || '').replace(' (espejo)', '');
+    usadas.add(id);
+    if (otras.has(id)) { ok = false; break; }
+  }
+  assert('D1: una sala de Péndulos no usa plantillas de otros biomas', ok);
+})();
+
 // Ampliación de OBJETOS + apariencia (cada reliquia con silueta distinta)
 assert('roster de reliquias ampliado (≥50)', DataDB.items.items.length >= 50); // C1: ~50-60
 assert('toda reliquia tiene icono_forma (silueta propia)', DataDB.items.items.every(i => typeof i.icono_forma === 'string'));

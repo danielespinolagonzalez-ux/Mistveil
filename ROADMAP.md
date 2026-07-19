@@ -33,7 +33,7 @@ Auditoría por 9 analistas comparando Mistveil con el género (Hades, Dead Cells
 **Criterio C:** dos runs se juegan distinto, la build "despega", y "ya gané" pasa a "gané a nivel N, ahora N+1".
 
 ### Fase D — Ancho de contenido de la Torre (cruza R3)
-- [ ] D1 ≥4 plantillas de sala **por bioma** con obstáculos que incorporen su mecánica de zona (= R3.1, carencia #7).
+- [x] D1 ≥4 plantillas de sala **por bioma** con obstáculos que incorporen su mecánica de zona (= R3.1, carencia #7). `pickTemplate(bioma)` filtra por bioma (activa el campo `pisos`, antes ignorado): las genéricas valen en todos, las de bioma solo en el suyo. +16 plantillas temáticas (9→25): Péndulos=columnas/pilares, Archivo=estanterías+charcos de tinta, Invertida=engranajes de cera en diagonal, Truenos=rejilla/arena para las descargas. Cada bioma pasa de 9 a 13 candidatas.
 - [ ] D2 Modificador de **elite/campeón** de spawn que reusa los 19 enemigos (más HP/aura/recompensa; "elite afinado" que exija combo perfecto) (carencia #13, bajo).
 - [ ] D3 Filtrar el pool de spawn por el campo `pisos` existente para escalonar debuts al descender (carencia #13, bajo).
 - [ ] D4 Reservar el jefe de raid al último piso del mundo (3/6/9/12) + minijefes intermedios; jefes por fase (= R3.2).
