@@ -678,6 +678,7 @@ function descendFloor() {
   if ((RunState.piso - 1) % 3 === 0 && bio) flash(bio.nombre.toUpperCase(), bio.sub);
   else flash('Piso ' + RunState.piso, 'La Torre desciende...');
   AudioManager.sfx('door_open');
+  AudioManager.sample('sting_piso', 0.85); // stinger de descenso de piso
 }
 
 // ---------- Balance del piso: XP por desempeño al pisar la trampilla (estilo FFX) ----------
@@ -1113,6 +1114,7 @@ EventBus.on('boss_summon', (e) => {
 // Ignición en TRES ACTOS (dirección de arte): estallido → arder → serenarse.
 EventBus.on('ignicion_started', (p) => {
   flash('¡IGNICIÓN!', 'El alma de Pip arde sin cera');
+  AudioManager.sample('sting_ignicion', 0.9); // stinger del encendido del alma
   // Acto 1 — el estallido: el mundo se detiene un instante y estalla en oro
   for (const [r1, dt2, col] of [[70, 0.35, '#fff3d6'], [110, 0.5, '#ffd54f'], [150, 0.65, '#ffb547']]) {
     world.shockwaves.push({ x: p.x, y: p.y, r0: 8, r1, t: dt2, tmax: dt2, color: col });
@@ -1179,8 +1181,31 @@ bufInput.justPressed = (a) => (a in inputBuf && inputBuf[a] > 0) || Input.justPr
 bufInput.consume = (a) => { if (a in inputBuf) inputBuf[a] = 0; };
 
 // ---------- Update ----------
+// Director de música: cada escena/bioma/jefe tiene su pista (assets/audio/*.mp3).
+// Devuelve [id, loop] o null (no cambiar: menú/pausa/balance mantienen la actual).
+function musicaEscena() {
+  switch (mode) {
+    case 'title': return ['mus_titulo', true];
+    case 'pueblo': return ['mus_pueblo', true];
+    case 'santuario': return ['mus_santuario', true];
+    case 'batalla': return ['mus_redoble', true];
+    case 'dead': return ['mus_derrota', false];
+    case 'victory': return ['mus_victoria', false];
+    case 'play': {
+      if (world.bossDir && !world.bossDir.boss.health.dead) return ['mus_jefe', true];
+      const b = floorMap?.current?.bioma?.id;
+      return [{ pendulos: 'mus_pendulos', archivo: 'mus_archivo', invertida: 'mus_invertida', truenos: 'mus_truenos' }[b] ?? 'mus_pendulos', true];
+    }
+  }
+  return null;
+}
+
 function update(dt) {
   if (Input.f5Pressed()) DataDB.reload();
+  // Música de fondo por escena (crossfade automático; el AudioManager ignora la
+  // repetición de la misma pista y cae al dron procedural si falta el fichero).
+  const mt = musicaEscena();
+  if (mt) AudioManager.playTrack(mt[0], { loop: mt[1] });
   // Feedback de pulsación: un "tick" suave al tocar CUALQUIER botón táctil (el
   // pulso visual y la vibración ya los da input.js; esto añade el eco sonoro).
   if (Input.touchState().enabled) {
@@ -4250,6 +4275,7 @@ function paintFatal(err) {
   // La música ambiental necesita un gesto del usuario (política de autoplay)
   const kick = () => {
     AudioManager.startAmbient();
+    AudioManager.unlockMusic(); // arranca la pista real de la escena actual
     window.removeEventListener('pointerdown', kick);
     window.removeEventListener('keydown', kick);
     window.removeEventListener('touchstart', kick);

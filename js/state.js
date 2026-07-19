@@ -197,6 +197,77 @@ export const AudioManager = {
     } catch { this.music = null; }
   },
 
+  // ---- Pistas de música REALES (assets/audio/*.mp3). Se cargan por separado (no
+  // van en el bundle); si faltan o el autoplay está bloqueado, se mantiene el dron
+  // procedural de arriba. El director de escena (main.js) pide la pista por evento. ----
+  _musicUnlocked: false,
+  _trackEls: {},
+  _curTrack: null,
+  _curId: null,
+  _desiredId: null,
+  _desiredOpts: null,
+  musicBase: 'assets/audio/',
+  _rampVol(el, to, secs) {
+    if (!el) return;
+    if (el._rampTimer) clearInterval(el._rampTimer);
+    const from = el.volume, steps = Math.max(1, Math.round(secs * 30));
+    let i = 0;
+    el._rampTimer = setInterval(() => {
+      i++; const k = i / steps;
+      try { el.volume = Math.max(0, Math.min(1, from + (to - from) * k)); } catch {}
+      if (i >= steps) { clearInterval(el._rampTimer); el._rampTimer = null; if (to <= 0) { try { el.pause(); } catch {} } }
+    }, 33);
+  },
+  _duckAmbient(to, secs) {
+    if (!this.music) return;
+    try {
+      const g = this.music.out.gain, t = this.ctx.currentTime;
+      g.cancelScheduledValues(t); g.setValueAtTime(g.value, t);
+      g.linearRampToValueAtTime(to, t + secs);
+    } catch {}
+  },
+  unlockMusic() { this._musicUnlocked = true; if (this._desiredId) this.playTrack(this._desiredId, this._desiredOpts || {}); },
+  // Pide una pista de fondo; hace crossfade desde la actual y baja el dron procedural.
+  playTrack(id, opts = {}) {
+    const loop = opts.loop !== false, fade = opts.fade ?? 1.4;
+    this._desiredId = id; this._desiredOpts = opts;
+    if (!this._musicUnlocked) return; // se aplicará en unlockMusic()
+    const cur = this._curTrack;
+    if (this._curId === id && cur) {
+      if (!loop && cur._playedOnce) return; // one-shot ya reproducido: no repetir
+      if (!cur.paused) return;              // loop ya sonando
+    }
+    const vol = 0.85 * GameState.opciones.vol_musica;
+    let el = this._trackEls[id];
+    if (!el) { el = new Audio(this.musicBase + id + '.mp3'); el.preload = 'auto'; this._trackEls[id] = el; }
+    el.loop = loop; el.volume = 0; el._playedOnce = true;
+    const prev = cur, prevId = this._curId;
+    this._curTrack = el; this._curId = id;
+    try { el.currentTime = 0; } catch {}
+    el.play().then(() => {
+      this._duckAmbient(0, fade);            // aparta el dron procedural
+      this._rampVol(el, vol, fade);          // entra la pista real
+      if (prev && prev !== el) this._rampVol(prev, 0, fade); // sale la anterior
+    }).catch(() => {                         // falta el fichero (bundle) o autoplay: deja el dron
+      if (this._curId === id) { this._curId = prevId; this._curTrack = prev; }
+    });
+  },
+  crossfadeTo(id, seg = 1.4) { this.playTrack(id, { fade: seg }); },
+  stopMusic(fade = 1.0) {
+    this._desiredId = null;
+    if (this._curTrack) this._rampVol(this._curTrack, 0, fade);
+    this._curTrack = null; this._curId = null;
+    this._duckAmbient(0.9 * GameState.opciones.vol_musica, fade); // vuelve el dron
+  },
+  // One-shot (stingers/eventos): no interrumpe la música de fondo.
+  sample(id, vol = 1) {
+    try {
+      const el = new Audio(this.musicBase + id + '.mp3');
+      el.volume = Math.max(0, Math.min(1, vol * GameState.opciones.vol_sfx));
+      el.play().catch(() => {});
+    } catch {}
+  },
+
   sfx(name) {
     switch (name) {
       case 'tear': this.beep(760, 0.045, 'triangle', 0.03); break;
