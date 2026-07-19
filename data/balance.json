@@ -144,6 +144,13 @@
     "cerrojo_aciertos": 3,
     "cerrojo_beat_ms": 620
   },
+  "ciudad_servicios": {
+    "_doc": "F3: costes en Memoria de los servicios de los distritos rescatados de Cuerdaqueda. Botica (Nébula): ungüento = +1 corazón + cura al descender. Conservatorio (Sostenido): +usos de ensayo a cada compás (suben de nivel antes). Atalaya (Alondra): revela el mapa del próximo piso. La Fragua (Yelmo) abre la Forja de Sellos (sin coste propio; la Forja ya cobra).",
+    "botica_coste": 12,
+    "conservatorio_coste": 14,
+    "conservatorio_usos": 3,
+    "atalaya_coste": 10
+  },
   "elite": {
     "prob_base": 0.06,
     "prob_por_piso": 0.014,

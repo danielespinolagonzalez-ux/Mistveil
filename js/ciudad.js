@@ -169,35 +169,69 @@ const SERVICIOS = {
     },
     onDone() { return { accion: 'run' }; }
   },
-  // --- Distritos rescatables sin servicio real todavía (se cablean en F3). Al vivir,
-  //     agradecen el rescate y adelantan su oficio futuro. ---
+  // --- F3: servicios de los distritos rescatados (Memoria como moneda meta). ---
   fragua: {
-    lines() { return [
-      { who: 'YELMO', text: 'La fragua aún se caldea. El fuelle recuerda cómo respirar.' },
-      { who: 'YELMO', text: 'Pronto reavivaré aquí tus sellos, autómata. Un sello frío no es más que una piedra con nostalgia.' }
-    ]; },
-    onDone() { return {}; }
+    lines() {
+      return [
+        { who: 'YELMO', text: 'La fragua respira nueva. El fuelle ya recuerda cómo abrigar el hierro.' },
+        { who: 'YELMO', text: 'Aquí despierto tus sellos con Memoria, les subo el rango y los ajusto a tu alma.' },
+        { who: '', text: '¿Abrir la Forja de Sellos?' }
+      ];
+    },
+    onDone() { return { accion: 'sellos' }; }
   },
   botica: {
-    lines() { return [
-      { who: 'NÉBULA', text: 'Huele a mirra y a cera nueva. Ya casi soy yo otra vez.' },
-      { who: 'NÉBULA', text: 'Cuando encienda del todo la Botica, te fundiré velas que son medio hechizo para el descenso.' }
-    ]; },
-    onDone() { return {}; }
+    lines() {
+      const c = DataDB.balance.ciudad_servicios?.botica_coste ?? 12;
+      if (RunState.bendiciones.includes('unguento')) return [{ who: 'NÉBULA', text: 'Ya llevas tu ungüento para el descenso. Que la cera te abrigue ahí abajo.' }];
+      return [
+        { who: 'NÉBULA', text: 'Fundo velas que son medio hechizo. Esta cera balsámica cierra hasta las heridas del alma.' },
+        { who: '', text: '¿Un ungüento para el próximo descenso? (' + c + ' ◆ Memoria)' }
+      ];
+    },
+    onDone() {
+      if (RunState.bendiciones.includes('unguento')) return {};
+      const c = DataDB.balance.ciudad_servicios?.botica_coste ?? 12;
+      if (GameState.memoria < c) { AudioManager.sfx('no_sp'); return { aviso: ['Memoria insuficiente', 'necesitas ' + c + ' ◆'] }; }
+      GameState.memoria -= c; RunState.bendiciones.push('unguento'); SaveManager.save(); AudioManager.sfx('heart');
+      return { aviso: ['Ungüento de Nébula', '+1 corazón y cura al descender'] };
+    }
   },
   conservatorio: {
-    lines() { return [
-      { who: 'SOSTENIDO', text: 'Un dedo de menos y aun así marco mejor el compás que nadie. Ja.' },
-      { who: 'SOSTENIDO', text: 'Vuelve cuando el Conservatorio esté afinado: te enseñaré a subir tus compases.' }
-    ]; },
-    onDone() { return {}; }
+    lines() {
+      const c = DataDB.balance.ciudad_servicios?.conservatorio_coste ?? 14;
+      return [
+        { who: 'SOSTENIDO', text: 'Un dedo de menos y aun así marco el compás mejor que nadie. Deja que te afine.' },
+        { who: '', text: '¿Ensayar tus compases? Suben de nivel antes. (' + c + ' ◆ Memoria)' }
+      ];
+    },
+    onDone() {
+      const cfg = DataDB.balance.ciudad_servicios ?? {};
+      const c = cfg.conservatorio_coste ?? 14, add = cfg.conservatorio_usos ?? 3;
+      if (GameState.memoria < c) { AudioManager.sfx('no_sp'); return { aviso: ['Memoria insuficiente', 'necesitas ' + c + ' ◆'] }; }
+      GameState.memoria -= c;
+      GameState.usoCompases = GameState.usoCompases ?? {};
+      for (const cm of DataDB.compases?.compases ?? []) GameState.usoCompases[cm.id] = (GameState.usoCompases[cm.id] ?? 0) + add;
+      SaveManager.save(); AudioManager.sfx('tome');
+      return { aviso: ['El Conservatorio te afina', '+' + add + ' de ensayo a cada compás'] };
+    }
   },
   atalaya: {
-    lines() { return [
-      { who: 'ALONDRA', text: 'Desde aquí veo la niebla moverse. Casi entiendo lo que oculta.' },
-      { who: 'ALONDRA', text: 'Cuando la Atalaya alumbre, te prestaré mis ojos: sabrás qué te espera antes de bajar.' }
-    ]; },
-    onDone() { return {}; }
+    lines() {
+      const c = DataDB.balance.ciudad_servicios?.atalaya_coste ?? 10;
+      if (RunState.bendiciones.includes('vigia')) return [{ who: 'ALONDRA', text: 'Ya te presté mis ojos. Baja con ellos, autómata.' }];
+      return [
+        { who: 'ALONDRA', text: 'Veo en la niebla lo que otros no. Deja que mire por ti antes de que bajes.' },
+        { who: '', text: '¿Revelar el mapa del próximo piso? (' + c + ' ◆ Memoria)' }
+      ];
+    },
+    onDone() {
+      if (RunState.bendiciones.includes('vigia')) return {};
+      const c = DataDB.balance.ciudad_servicios?.atalaya_coste ?? 10;
+      if (GameState.memoria < c) { AudioManager.sfx('no_sp'); return { aviso: ['Memoria insuficiente', 'necesitas ' + c + ' ◆'] }; }
+      GameState.memoria -= c; RunState.bendiciones.push('vigia'); SaveManager.save(); AudioManager.sfx('equip');
+      return { aviso: ['Ojos de Alondra', 'El próximo piso: mapa revelado'] };
+    }
   }
 };
 

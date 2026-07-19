@@ -250,6 +250,18 @@ function newRun() {
     p0.health.hp = p0.health.max;
     flash('Pan de ayer', 'El pecho abriga: +1 corazón');
   }
+  // F3 — Botica (Nébula): ungüento = +1 corazón y cura completa al descender.
+  if (RunState.bendiciones.includes('unguento')) {
+    p0.mods.statAdd.max_hp = (p0.mods.statAdd.max_hp ?? 0) + 1;
+    p0.recomputeStats();
+    p0.health.hp = p0.health.max;
+    flash('Ungüento de Nébula', 'Cera balsámica: +1 corazón, curado del todo');
+  }
+  // F3 — Atalaya (Alondra): revela el mapa del piso (todas las salas visibles en el minimapa).
+  if (RunState.bendiciones.includes('vigia')) {
+    for (const r of floorMap.rooms.values()) r.visited = true;
+    flash('Ojos de Alondra', 'La Atalaya te presta la vista: el mapa del piso, revelado');
+  }
   RunState.bendiciones = [];
   RunState.oro += esferaBonos().oroInicial; // Bolsa del relojero (Esfera)
   world.enemies = [...floorMap.roamers];
@@ -4294,6 +4306,7 @@ function updatePueblo(dt) {
         dlgCd = 0.5;
         if (res.aviso) puebloAviso = { titulo: res.aviso[0], sub: res.aviso[1], t: 2.6 };
         if (res.accion === 'santuario') { mode = 'santuario'; santIdx = 0; }
+        if (res.accion === 'sellos') { selloIdx = 0; mode = 'sellos'; } // F3: la Fragua abre la Forja de Sellos
         if (res.accion === 'run') { SaveManager.clearRun(); newRun(); } // descenso nuevo: abandona la partida a medias
         if (res.accion === 'batalla') {
           let enc = res.encuentro ?? 'vigilia';
@@ -4498,7 +4511,11 @@ function updateSantuario() {
   if (UIK.hit(santuarioDescendRect(), tap)) { santIdx = n + 1; act = n + 1; }
   if (Input.justPressed('restart')) act = n + 1;           // R = descender directo
   if (act < 0 && UIK.confirmo(Input)) act = santIdx;        // A del mando / Enter sobre el foco
-  if (act === n) { selloIdx = 0; mode = 'sellos'; return; } // Forja de Sellos (C5)
+  if (act === n) { // Forja de Sellos (C5) — F3: su hogar es la Fragua; aquí solo abre si rescataste a Yelmo
+    if (GameState.rescatados.includes('fragua')) { selloIdx = 0; mode = 'sellos'; }
+    else { AudioManager.sfx('no_sp'); flash('La Forja está fría', 'Rescata a la herrera Yelmo en la Torre'); }
+    return;
+  }
   if (act === n + 1) { SaveManager.clearRun(); newRun(); return; } // descenso nuevo desde el Santuario
   if (act >= 0 && act < n) activarNodoSantuario(nodos[act]);
 }
@@ -4566,7 +4583,8 @@ function drawSantuario(t) {
 
   const N = nodos.length;
   const fr = santuarioForjaRect();
-  UIK.boton(ctx, font, { ...fr, label: 'FORJA DE SELLOS', sub: 'gasta Memoria', tono: 'ghost', foco: santIdx === N, t });
+  const forjaLista = GameState.rescatados.includes('fragua');
+  UIK.boton(ctx, font, { ...fr, label: forjaLista ? 'FORJA DE SELLOS' : 'FORJA (fría)', sub: forjaLista ? 'gasta Memoria' : 'rescata a Yelmo', tono: 'ghost', activo: forjaLista, foco: santIdx === N, t });
   const dr = santuarioDescendRect();
   UIK.boton(ctx, font, { ...dr, label: 'DESCENDER', sub: 'a la Torre', tono: 'primary', foco: santIdx === N + 1, t });
   ctx.textAlign = 'center';

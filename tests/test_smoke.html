@@ -641,6 +641,27 @@ assert('F1: rescates.json define ≥5 cautivos con barrio/pisos/cerrojo',
   assert('F2: más rescatados → más vecinos (la villa bulle)', nMas > nBase);
   GameState.rescatados = prev; poblarVecinos();
 })();
+// F3 — servicios de los distritos rescatados (Fragua→Forja, Botica, Conservatorio, Atalaya)
+(() => {
+  const prevR = GameState.rescatados.slice(), prevM = GameState.memoria;
+  const prevB = RunState.bendiciones.slice(), prevU = { ...GameState.usoCompases };
+  GameState.rescatados = ['fragua', 'botica', 'conservatorio', 'atalaya'];
+  const byId = id => ciudadDistritos().find(d => d.id === id);
+  assert('F3: la Fragua abre la Forja de Sellos', byId('fragua').onDone().accion === 'sellos');
+  GameState.memoria = 60; RunState.bendiciones = [];
+  byId('botica').onDone();
+  assert('F3: la Botica cobra Memoria y da el ungüento', RunState.bendiciones.includes('unguento') && GameState.memoria < 60);
+  GameState.memoria = 60; const u0 = GameState.usoCompases?.tic_tac ?? 0;
+  byId('conservatorio').onDone();
+  assert('F3: el Conservatorio añade ensayo a los compases', (GameState.usoCompases.tic_tac ?? 0) > u0);
+  GameState.memoria = 60; RunState.bendiciones = [];
+  byId('atalaya').onDone();
+  assert('F3: la Atalaya da la bendición de revelar mapa', RunState.bendiciones.includes('vigia'));
+  GameState.memoria = 5; RunState.bendiciones = [];
+  const r = byId('botica').onDone();
+  assert('F3: sin Memoria suficiente, el servicio no cobra ni concede', !RunState.bendiciones.includes('unguento') && GameState.memoria === 5);
+  GameState.rescatados = prevR; GameState.memoria = prevM; RunState.bendiciones = prevB; GameState.usoCompases = prevU; SaveManager.save();
+})();
 
 // R1 — Reliquias completas: los 6 efectos antes "pendientes" ya se interpretan
 const p3 = new Player(100, 100);
