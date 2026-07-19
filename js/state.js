@@ -206,6 +206,7 @@ export const AudioManager = {
   _curId: null,
   _desiredId: null,
   _desiredOpts: null,
+  _iosTag: null,   // <audio> silencioso en bucle: desmuta WebAudio en iOS (ver _desilenciarIOS)
   musicBase: 'assets/audio/',
   _rampVol(el, to, secs) {
     if (!el) return;
@@ -226,7 +227,36 @@ export const AudioManager = {
       g.linearRampToValueAtTime(to, t + secs);
     } catch {}
   },
-  unlockMusic() { this._musicUnlocked = true; if (this._desiredId) this.playTrack(this._desiredId, this._desiredOpts || {}); },
+  // WAV de ~0.5 s de silencio (16-bit mono 8 kHz) como URL de datos, sin fichero.
+  _silenceURL() {
+    if (this._silURL) return this._silURL;
+    const sr = 8000, n = Math.floor(sr * 0.5);
+    const buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
+    const ws = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+    ws(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); ws(8, 'WAVE'); ws(12, 'fmt ');
+    v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true); v.setUint16(32, 2, true);
+    v.setUint16(34, 16, true); ws(36, 'data'); v.setUint32(40, n * 2, true); // datos = 0 → silencio
+    return (this._silURL = URL.createObjectURL(new Blob([buf], { type: 'audio/wav' })));
+  },
+  // iOS enmudece el WebAudio con el interruptor físico de silencio (canal "timbre"),
+  // pero NO los <audio> HTML (canal "media"). Un <audio> silencioso en bucle pone la
+  // sesión en categoría "playback", y eso arrastra también al WebAudio al canal media:
+  // así los SFX (disparo, golpes) suenan con el móvil en silencio, como la música.
+  // (Truco estándar tipo howler/unmute; solo en dispositivos táctiles.) Debe llamarse
+  // dentro de un gesto del usuario.
+  _desilenciarIOS() {
+    if (!('ontouchstart' in window) && !(navigator.maxTouchPoints > 0)) return; // solo táctil
+    try {
+      if (!this._iosTag) {
+        const a = new Audio(this._silenceURL());
+        a.loop = true; a.preload = 'auto'; a.setAttribute('playsinline', '');
+        this._iosTag = a;
+      }
+      if (this._iosTag.paused) this._iosTag.play().catch(() => {});
+    } catch {}
+  },
+  unlockMusic() { this._musicUnlocked = true; this._desilenciarIOS(); if (this._desiredId) this.playTrack(this._desiredId, this._desiredOpts || {}); },
   // Pide una pista de fondo. Garantiza UNA sola sonando: para las demás en el acto
   // (no dependemos del async play().then, que en iOS puede no resolver y dejaba
   // pistas apiladas → el bug de "las músicas se solapan").

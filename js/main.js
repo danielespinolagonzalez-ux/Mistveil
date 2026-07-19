@@ -4296,7 +4296,7 @@ function paintFatal(err) {
   // PERSISTENTE lo reanuda en cada interacción (moverse, disparar, tocar) para que no
   // se apaguen. (El silencio total con música ok en iPhone suele ser el interruptor
   // de silencio: WebAudio lo respeta; la solución real son muestras por el canal media.)
-  const keepAudioAlive = () => { try { const c = AudioManager.ctx; if (c && c.state === 'suspended') c.resume(); } catch {} };
+  const keepAudioAlive = () => { try { AudioManager._desilenciarIOS(); const c = AudioManager.ctx; if (c && c.state === 'suspended') c.resume(); } catch {} };
   window.addEventListener('pointerdown', keepAudioAlive);
   window.addEventListener('touchstart', keepAudioAlive);
   window.addEventListener('keydown', keepAudioAlive);
