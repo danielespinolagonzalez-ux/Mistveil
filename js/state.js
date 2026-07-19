@@ -227,30 +227,29 @@ export const AudioManager = {
     } catch {}
   },
   unlockMusic() { this._musicUnlocked = true; if (this._desiredId) this.playTrack(this._desiredId, this._desiredOpts || {}); },
-  // Pide una pista de fondo; hace crossfade desde la actual y baja el dron procedural.
+  // Pide una pista de fondo. Garantiza UNA sola sonando: para las demás en el acto
+  // (no dependemos del async play().then, que en iOS puede no resolver y dejaba
+  // pistas apiladas → el bug de "las músicas se solapan").
   playTrack(id, opts = {}) {
     const loop = opts.loop !== false, fade = opts.fade ?? 1.4;
     this._desiredId = id; this._desiredOpts = opts;
     if (!this._musicUnlocked) return; // se aplicará en unlockMusic()
-    const cur = this._curTrack;
-    if (this._curId === id && cur) {
-      if (!loop && cur._playedOnce) return; // one-shot ya reproducido: no repetir
-      if (!cur.paused) return;              // loop ya sonando
+    const same = this._trackEls[id];
+    if (this._curId === id && same && !same.paused) return; // ya suena la correcta
+    // Silencia y PARA cualquier otra pista ya mismo (síncrono).
+    for (const k in this._trackEls) {
+      const e = this._trackEls[k];
+      if (!e || k === id) continue;
+      if (e._rampTimer) { clearInterval(e._rampTimer); e._rampTimer = null; }
+      try { e.pause(); } catch {}
     }
     const vol = 0.85 * GameState.opciones.vol_musica;
-    let el = this._trackEls[id];
+    let el = same;
     if (!el) { el = new Audio(this.musicBase + id + '.mp3'); el.preload = 'auto'; this._trackEls[id] = el; }
-    el.loop = loop; el.volume = 0; el._playedOnce = true;
-    const prev = cur, prevId = this._curId;
+    el.loop = loop; el._playedOnce = true;
     this._curTrack = el; this._curId = id;
-    try { el.currentTime = 0; } catch {}
-    el.play().then(() => {
-      this._duckAmbient(0, fade);            // aparta el dron procedural
-      this._rampVol(el, vol, fade);          // entra la pista real
-      if (prev && prev !== el) this._rampVol(prev, 0, fade); // sale la anterior
-    }).catch(() => {                         // falta el fichero (bundle) o autoplay: deja el dron
-      if (this._curId === id) { this._curId = prevId; this._curTrack = prev; }
-    });
+    if (el.paused) { el.volume = 0; try { el.currentTime = 0; } catch {} } // no reiniciar si ya sonaba
+    el.play().then(() => { this._duckAmbient(0, fade); this._rampVol(el, vol, fade); }).catch(() => {});
   },
   crossfadeTo(id, seg = 1.4) { this.playTrack(id, { fade: seg }); },
   stopMusic(fade = 1.0) {

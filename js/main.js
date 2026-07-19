@@ -112,6 +112,7 @@ const TOUCH_BTNS_NONE = [];
 let floorMap = null;
 let cur = null;      // sala bajo los pies del jugador
 let mode = 'play';
+let musicaActual = null; // pista de música pedida ahora mismo (el director solo cambia al variar)
 let showDebug = false;
 let fps = 60, fpsAcc = 0, fpsN = 0;
 let flashMsg = '', flashT = 0, flashSub = '';
@@ -1212,7 +1213,7 @@ function update(dt) {
   // Música de fondo por escena (crossfade automático; el AudioManager ignora la
   // repetición de la misma pista y cae al dron procedural si falta el fichero).
   const mt = musicaEscena();
-  if (mt) AudioManager.playTrack(mt[0], { loop: mt[1] });
+  if (mt && mt[0] !== musicaActual) { musicaActual = mt[0]; AudioManager.playTrack(mt[0], { loop: mt[1] }); }
   // Feedback de pulsación: un "tick" suave al tocar CUALQUIER botón táctil (el
   // pulso visual y la vibración ya los da input.js; esto añade el eco sonoro).
   if (Input.touchState().enabled) {
