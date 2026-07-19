@@ -3276,9 +3276,18 @@ function drawHUD(t) {
     ctx.fillText(hint, VW / 2, hy);
   }
 
+  // Efectos de MUNDO (peligros de bioma + telegrafías del jefe): se dibujan con el
+  // MISMO zoom/cámara que el mundo. Antes iban en coords de pantalla (sin ZOOM) y en
+  // móvil (ZOOM≠1) se desalineaban — las áreas del jefe parecían "seguir" al jugador.
+  const [shkx, shky] = FX.shakeOffset();
+  ctx.save();
+  ctx.translate(Math.round(shkx), Math.round(shky));
+  ctx.scale(ZOOM, ZOOM);
   drawBiomaExtras(t);
-  if (world.bossDir) { drawBossZonas(world.bossDir); drawBossHP(world.bossDir); }
+  if (world.bossDir) drawBossZonas(world.bossDir);
   if (showDebug) drawHitboxes();
+  ctx.restore();
+  if (world.bossDir) drawBossHP(world.bossDir); // barra de vida grande = HUD de pantalla
   drawMinimap();
 
   if (flashT > 0) {
