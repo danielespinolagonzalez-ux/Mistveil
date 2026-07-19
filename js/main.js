@@ -4148,48 +4148,35 @@ function nearestNPC() {
 }
 function renderPueblo(t) {
   const fondoP = Sprites.get('fondo_pueblo');
-  // Fondo pintado a pantalla completa (estilo FFIX: escenario fijo + sprites
-  // encima); leve parallax horizontal con la cámara. La cámara del pueblo está
-  // ajustada para que Pip y los NPCs caminen sobre el adoquinado inferior.
-  if (fondoP) {
-    const par = (cam.x - puebloCamX()) * 0.06; // parallax sutil
-    // Cubre el lienzo con margen; recorta casas arriba, adoquinado abajo
-    const w = VW * 1.14, h = w * fondoP.height / fondoP.width;
-    ctx.drawImage(fondoP, Math.round((VW - w) / 2 - par), Math.round(VH - h + 6), Math.round(w), Math.round(h));
-  } else {
-    // Cielo del atardecer perpetuo (fallback procedural)
-    const sky = ctx.createLinearGradient(0, 0, 0, VH);
-    sky.addColorStop(0, '#141126');
-    sky.addColorStop(0.5, '#231c3e');
-    sky.addColorStop(1, '#3a2c50');
-    ctx.fillStyle = sky;
-    ctx.fillRect(0, 0, VW, VH);
-    for (let i = 0; i < 30; i++) {
-      const sx2 = ((i * 89) % VW), sy2 = ((i * 53) % Math.floor(VH * 0.5));
-      ctx.fillStyle = `rgba(220,215,240,${0.15 + (i % 4) * 0.08 + Math.sin(t * 2 + i) * 0.05})`;
-      ctx.fillRect(sx2, sy2, 1.5, 1.5);
-    }
-    ctx.fillStyle = '#e8dfc8';
-    ctx.beginPath(); ctx.arc(VW * 0.18, 52, 15, 0, 7); ctx.fill();
-    ctx.fillStyle = '#d0c5a8';
-    ctx.beginPath(); ctx.arc(VW * 0.18 - 4, 48, 4, 0, 7); ctx.fill();
-  }
+  // Base: cielo del atardecer (se ve en los bordes que la lámina no cubra).
+  const sky = ctx.createLinearGradient(0, 0, 0, VH);
+  sky.addColorStop(0, '#241c3e'); sky.addColorStop(0.6, '#3a2c50'); sky.addColorStop(1, '#4a3a5c');
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, VW, VH);
 
   ctx.save();
   ctx.scale(ZOOM, ZOOM);
-  if (!fondoP) {
+  // Lámina pintada ANCLADA AL MUNDO (dentro del scale(ZOOM), vía SX/SY): se desplaza con la
+  // cámara EXACTAMENTE igual que las estaciones → en móvil (que hace scroll) todo queda
+  // pegado a su sitio del cuadro, no como antes (lámina fija + muñecos deslizándose).
+  if (fondoP) {
+    const bgX0 = PLAZA.x - 100, bgW = PLAZA.w + 200;           // el cuadro cubre la plaza + margen
+    const bgH = Math.round(bgW * fondoP.height / fondoP.width); // aspecto respetado (sin distorsión)
+    const dx = SX(bgX0);                                       // ANCLADO EN X al mundo → scroll pegado a las estaciones
+    const dyBottom = VH / ZOOM + 2;                            // borde inferior de pantalla (cámara-y fija en el pueblo)
+    ctx.drawImage(fondoP, dx, dyBottom - bgH, bgW, bgH);
+  } else {
     drawPuebloBackdrop(ctx, SX, SY, t, VW, VH);
     drawPlazaGround(ctx, SX, SY, KY);
   }
-  // NPCs + Pip con y-sorting
-  const sortables = NPCS.map(n => ({ y: n.y, draw: () => drawNPC(ctx, n, SX, SY, t) }));
+  // NPCs + Pip con y-sorting. La estación del NPC más cercano se aviva (near).
+  const near = dlg ? null : nearestNPC();
+  const sortables = NPCS.map(n => ({ y: n.y, draw: () => drawNPC(ctx, n, SX, SY, t, n === near) }));
   sortables.push({ y: world.player.y + 10, draw: () => drawPlayer(world.player, t) });
   sortables.sort((a, b) => a.y - b.y);
   for (const s of sortables) s.draw();
   drawCoro(ctx, SX, SY, t);
   FX.draw(ctx, (x, y) => [SX(x), SY(y, 4)]);
   // Prompt de interacción
-  const near = dlg ? null : nearestNPC();
   if (near) {
     const nx = SX(near.x), ny = SY(near.y) - 42;
     font(8); ctx.textAlign = 'center';
