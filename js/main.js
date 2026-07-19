@@ -1202,6 +1202,13 @@ function musicaEscena() {
 
 function update(dt) {
   if (Input.f5Pressed()) DataDB.reload();
+  // Mando (MFi/Xbox/PS) recién conectado: pasa a twin-stick, esconde el táctil y
+  // avisa. Volver a tocar la pantalla reactiva el control táctil (lo último manda).
+  if (Input.padJustConnected()) {
+    if (Input.scheme() === 'una_mano') { Input.setScheme('raton'); GameState.opciones.esquema_control = 'raton'; SaveManager.save(); }
+    Input.hideTouch();
+    flash('Mando conectado', 'Sticks: mover + apuntar · A golpe · LB parada · X arte · Y ignición');
+  }
   // Música de fondo por escena (crossfade automático; el AudioManager ignora la
   // repetición de la misma pista y cae al dron procedural si falta el fichero).
   const mt = musicaEscena();

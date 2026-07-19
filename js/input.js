@@ -20,7 +20,9 @@ export const INPUT_MAP = {
   debug_info: ['F3'],
   toggle_scheme: ['F2']
 };
-const PAD = { melee: 5, parry: 4, dash: 1, hechizo: 2, ignicion: 3, pause: 9, menu: 8 }; // índices de botón
+// Índices de botón (mapeo "standard" de la Gamepad API — Xbox/PS/MFi lo cumplen):
+// 0=A/✕ 1=B/○ 2=X/□ 3=Y/△ 4=LB 5=RB 8=View/Select 9=Menu/Start.
+const PAD = { melee: 0, dash: 1, hechizo: 2, ignicion: 3, parry: 4, activo: 5, menu: 8, pause: 9 };
 
 // Esquema de disparo. 'raton': WASD/flechas mueven, ratón apunta/dispara.
 // 'flechas': flechas mueven, WASD dispara en 4/8 dir (twin-stick de teclado, sin ratón).
@@ -63,6 +65,8 @@ const just = new Set();
 let mouse = { x: 320, y: 180, left: false, right: false };
 let padState = { move: [0, 0], aim: [0, 0], buttons: new Set(), justButtons: new Set() };
 let padRest = null; // línea base de ejes en reposo (auto-calibración anti-deriva)
+let padPresent = false;  // ¿hay un mando conectado? (MFi/Xbox/PS por Gamepad API)
+let padJustConn = false; // flanco de conexión (one-shot que main.js consume para el aviso)
 let scaleFn = (x, y) => [x, y];
 // Tamaño LÓGICO del lienzo (VW×VH). El backing puede ser mayor (supersampling),
 // así que los toques se mapean a coords lógicas para casar con botones/sticks.
@@ -74,6 +78,12 @@ export const Input = {
   init(canvas, toWorld, logicalW, logicalH) {
     scaleFn = toWorld;
     LW = logicalW || canvas.width; LH = logicalH || canvas.height;
+    // Mando (MFi/Xbox/PS por Gamepad API): el evento salta al primer botón. En iOS
+    // exige HTTPS + una pulsación antes de aparecer en getGamepads().
+    window.addEventListener('gamepadconnected', () => { padPresent = true; padJustConn = true; });
+    window.addEventListener('gamepaddisconnected', () => {
+      padPresent = Array.from(navigator.getGamepads?.() ?? []).some(p => p && p.connected);
+    });
     // Todas las teclas mapeadas: preventDefault evita que el navegador haga scroll
     // (flechas/Espacio) y se trague el keyup, dejando una tecla "pegada".
     const GAME_CODES = new Set(Object.values(INPUT_MAP).flat());
@@ -259,6 +269,9 @@ export const Input = {
     let gp = null;
     for (const p of pads) { if (p && p.connected && p.axes?.length >= 2) { gp = p; break; } }
     padState.justButtons.clear();
+    // Red de seguridad si el evento gamepadconnected no llegó (iOS lo lanza al
+    // primer input): lo detectamos por sondeo y avisamos igual.
+    if (gp && !padPresent) { padPresent = true; padJustConn = true; }
     if (!gp) { padState.move = [0, 0]; padState.aim = [0, 0]; padRest = null; return; }
     // Auto-calibración: el primer sondeo de un mando define su "reposo". Restamos esa
     // línea base siempre, así un stick con deriva o un eje que descansa en ±1 no empuja solo.
@@ -288,6 +301,9 @@ export const Input = {
   vibrar(p) { if (touchUI.enabled) vib(p); },
   touchState() { return touchUI; },
   forceTouch() { touchUI.enabled = true; },
+  hideTouch() { touchUI.enabled = false; }, // al conectar un mando (se reactiva al tocar)
+  padPresent() { return padPresent; },
+  padJustConnected() { const v = padJustConn; padJustConn = false; return v; }, // one-shot
   consumeTap() { const t = touchUI.tap; touchUI.tap = null; return t; },
   flickDir() { return flickDir; },
 
@@ -330,8 +346,10 @@ export const Input = {
   // Vector de apuntado: táctil > stick derecho > WASD (esquema flechas) > ratón
   aimVector(px, py) {
     if (scheme === 'una_mano') {
-      // una_mano no apunta con stick: main/Player fijan el objetivo (auto-aim);
-      // devolvemos el último aim como inerte — active=false para no interferir
+      // Si hay mando, el stick derecho manda incluso en una_mano (twin-stick real).
+      const [pax, pay] = padState.aim;
+      if (pax || pay) { const l = Math.hypot(pax, pay); lastAim = { x: pax / l, y: pay / l }; return { x: lastAim.x, y: lastAim.y, active: true }; }
+      // Sin stick: main/Player fijan el objetivo (auto-aim); devolvemos el último inerte.
       return { x: lastAim.x, y: lastAim.y, active: false };
     }
     if (touchUI.aim.id !== null) {
@@ -347,6 +365,9 @@ export const Input = {
       if (fx || fy) { const l = Math.hypot(fx, fy); lastAim = { x: fx / l, y: fy / l }; return { x: lastAim.x, y: lastAim.y, active: true }; }
       return { x: lastAim.x, y: lastAim.y, active: false };
     }
+    // Con mando conectado no caemos al ratón (evita que Pip "mire al centro" al
+    // soltar el stick en móvil, donde el ratón descansa en el medio de la pantalla).
+    if (padPresent) return { x: lastAim.x, y: lastAim.y, active: false };
     const dx = mouse.x - px, dy = mouse.y - py;
     const l = Math.hypot(dx, dy) || 1;
     lastAim = { x: dx / l, y: dy / l };
@@ -356,10 +377,10 @@ export const Input = {
   setAim(x, y) { lastAim = { x, y }; }, // una_mano: el fijado escribe el aim
 
   shooting() {
+    const [pax, pay] = padState.aim;
+    if (pax !== 0 || pay !== 0) return true; // el stick derecho del mando dispara siempre
     if (scheme === 'una_mano') return false; // el autofire lo decide Player (enemigo fijado)
     if (touchUI.aim.id !== null) return Math.hypot(touchUI.aim.x, touchUI.aim.y) > 0.25;
-    const [ax, ay] = padState.aim;
-    if (ax !== 0 || ay !== 0) return true;
     if (scheme === 'flechas') {
       return down.has(FIRE_CODES.up) || down.has(FIRE_CODES.down) ||
              down.has(FIRE_CODES.left) || down.has(FIRE_CODES.right);
