@@ -26,6 +26,7 @@ import { syncFamiliares, updateFamiliares } from '../js/familiares.js';
 import { spawnArt, updateArt, romano } from '../js/artes_fx.js';
 import { selloDef, obtenerSello, rasgoCuraPorSp, finisherElemental } from '../js/sellos.js';
 import { pickAzar, aplicarEvento } from '../js/eventos.js';
+import { drawItemIcon } from '../js/item_icons.js';
 
 const out = document.getElementById('out');
 let failed = 0;
@@ -163,6 +164,19 @@ assert('cada evento tiene id, glifo y color', DataDB.eventos.eventos.every(e => 
   const rd = new Room(1, 1, 'desafio', 3);
   assert('sala desafío tiene reto con límite de tiempo', !!rd.reto && rd.reto.limite > 0 && rd.reto.activo === false);
   assert('sala desafío es de combate (no pre-limpia) con spawns', rd.cleared === false && rd.spawnPts.length > 0);
+})();
+
+// Ampliación de OBJETOS + apariencia (cada reliquia con silueta distinta)
+assert('roster de reliquias ampliado (≥30)', DataDB.items.items.length >= 30);
+assert('toda reliquia tiene icono_forma (silueta propia)', DataDB.items.items.every(i => typeof i.icono_forma === 'string'));
+(() => {
+  const pit = new Player(0, 0);
+  const r0 = pit.stats.tear_range_px;
+  applyItem(DataDB.item('cristal_enfoque'), pit);
+  assert('reliquia nueva cristal_enfoque aumenta el alcance', pit.stats.tear_range_px > r0);
+  const cv = document.createElement('canvas'), g2 = cv.getContext('2d');
+  let ok = true; try { for (const it of DataDB.items.items) drawItemIcon(g2, it.icono_forma, it.icono_color, 8, 8, 5); drawItemIcon(g2, 'forma_inexistente', '#fff', 8, 8, 5); } catch { ok = false; }
+  assert('drawItemIcon pinta todas las formas (y una desconocida) sin romper', ok);
 })();
 
 // Player existe y responde a la física

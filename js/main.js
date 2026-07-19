@@ -25,6 +25,7 @@ import { selloDef, selloEquipado, obtenerSello, rasgoCuraPorSp, rasgoDashBurn, f
 import { crearDirectorJefe } from './jefes.js';
 import { Sprites } from './sprites.js';
 import * as UIK from './ui_kit.js';
+import { drawItemIcon } from './item_icons.js';
 
 const PORTRAIT = !!window.MISTVEIL_PORTRAIT;
 const MOBILE = !!window.MISTVEIL_MOBILE;
@@ -2634,12 +2635,15 @@ function drawPickup(pk, t) {
     ctx.fillStyle = col; ctx.fillRect(x - 4, y - 3, 8, 7);
     ctx.fillStyle = '#fff2c8'; ctx.fillRect(x - 1, y - 3, 1, 7);
   } else if (pk.type.startsWith('item:')) {
-    const it = DataDB.item(pk.type.slice(5));
-    const col = TAG_COLORS[it?.tags?.[0]] ?? '#e9e2f5';
-    ctx.save(); ctx.translate(x, y); ctx.rotate(Math.PI / 4);
-    ctx.fillStyle = col; ctx.fillRect(-4, -4, 8, 8);
-    ctx.restore();
-    ctx.fillStyle = '#fff'; ctx.fillRect(x - 1, y - 1, 2, 2);
+    const id = pk.type.slice(5), it = DataDB.item(id);
+    const spr = Sprites.get('icono_' + id);
+    if (spr) { // icono PINTADO de la reliquia (antes solo en el menú; ahora también en el suelo)
+      const inf = Sprites.info('icono_' + id), s = Math.min(13 / inf.w, 13 / inf.h);
+      ctx.drawImage(spr, x - inf.w * s / 2, y - inf.h * s / 2, inf.w * s, inf.h * s);
+    } else { // sin arte pintado → icono PROCEDURAL distinto por forma (regla 6)
+      const col = it?.icono_color ?? TAG_COLORS[it?.tags?.[0]] ?? '#e9e2f5';
+      drawItemIcon(ctx, it?.icono_forma, col, x, y, 5.5);
+    }
   }
 }
 
@@ -3717,11 +3721,9 @@ function drawHUD(t) {
       const dw = inf.w * s, dh = inf.h * s;
       ctx.drawImage(spr, ix + (11 - dw) / 2, iy + (11 - dh) / 2, dw, dh);
     } else {
-      const col = TAG_COLORS[it?.tags?.[0]] ?? '#e9e2f5';
-      ctx.fillStyle = col; ctx.fillRect(ix + 2, iy + 2, 7, 7);
-      ctx.fillStyle = '#141120';
-      font(6); ctx.textAlign = 'center';
-      ctx.fillText((it?.nombre ?? '?')[0].toUpperCase(), ix + 5.5, iy + 9);
+      // Sin sprite pintado → icono PROCEDURAL por forma (cada reliquia se ve distinta).
+      const col = it?.icono_color ?? TAG_COLORS[it?.tags?.[0]] ?? '#e9e2f5';
+      drawItemIcon(ctx, it?.icono_forma, col, ix + 5.5, iy + 5.5, 4.2);
     }
   });
 
