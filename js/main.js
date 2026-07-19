@@ -23,6 +23,7 @@ import { spawnArt, updateArt, drawArt, romano } from './artes_fx.js';
 import { selloDef, selloEquipado, obtenerSello, rasgoCuraPorSp, rasgoDashBurn, finisherElemental } from './sellos.js';
 import { crearDirectorJefe } from './jefes.js';
 import { Sprites } from './sprites.js';
+import * as UIK from './ui_kit.js';
 
 const PORTRAIT = !!window.MISTVEIL_PORTRAIT;
 const MOBILE = !!window.MISTVEIL_MOBILE;
@@ -112,6 +113,7 @@ const TOUCH_BTNS_NONE = [];
 let floorMap = null;
 let cur = null;      // sala bajo los pies del jugador
 let mode = 'play';
+let pauseIdx = 0;        // foco del menú de pausa (navegable por toque/mando/teclado)
 let musicaActual = null; // pista de música pedida ahora mismo (el director solo cambia al variar)
 let showDebug = false;
 let fps = 60, fpsAcc = 0, fpsN = 0;
@@ -1393,21 +1395,20 @@ function update(dt) {
     tut.update(dt);
     if (Input.justPressed('pause')) { tut.skip(); return; } // Esc salta el tutorial
   }
-  if (Input.justPressed('pause')) mode = (mode === 'paused') ? 'play' : 'paused';
+  if (Input.justPressed('pause')) {
+    mode = (mode === 'paused') ? 'play' : 'paused';
+    if (mode === 'paused') pauseIdx = 0;
+    return; // no procesar el mismo frame (evita que Esc/Start abra-y-cierre la pausa)
+  }
   if (mode === 'paused') {
-    // Táctil: botón "UNA MANO" en pausa alterna el esquema de un pulgar
-    const tap0 = Input.touchState().enabled ? Input.consumeTap() : null;
-    if (tap0 && Math.abs(tap0.x - VW / 2) < 80 && Math.abs(tap0.y - (VH / 2 + 56)) < 16) {
-      const nuevo = Input.scheme() === 'una_mano' ? 'raton' : 'una_mano';
-      Input.setScheme(nuevo);
-      GameState.opciones.esquema_control = nuevo;
-      SaveManager.save();
-      flash(nuevo === 'una_mano' ? 'MODO UNA MANO' : 'Twin-stick táctil',
-        nuevo === 'una_mano' ? 'auto-disparo · tap: golpe · mantén: Arte · doble-tap: Ignición' : 'dos pulgares: mover + apuntar');
-      mode = 'play';
-      return;
-    }
-    if (tap0 && !Input.justCode('TouchPause')) mode = 'play';
+    const opts = pauseOptions(); const n = opts.length;
+    pauseIdx = UIK.mover1D(Input, Math.min(pauseIdx, n - 1), n);
+    if (UIK.cancelo(Input)) { mode = 'play'; return; } // B del mando (Esc lo cierra arriba)
+    const tap = Input.consumeTap();
+    let elegido = -1;
+    for (let i = 0; i < n; i++) if (UIK.hit(pauseRect(i, n), tap)) { pauseIdx = i; elegido = i; }
+    if (elegido < 0 && UIK.confirmo(Input)) elegido = pauseIdx;
+    if (elegido >= 0) opts[elegido].act();
     return;
   }
 
@@ -4004,7 +4005,31 @@ function drawSantuario(t) {
   ctx.fillText('R / Enter / toca · Esc: volver al pueblo', VW / 2, dr.y + dr.h + 14);
 }
 
-function drawOverlay() {
+// Opciones del menú de pausa (botones grandes navegables por toque/mando/teclado).
+function pauseOptions() {
+  const opts = [{ label: 'Continuar', tono: 'primary', act: () => { mode = 'play'; } }];
+  if (Input.touchState().enabled) {
+    const um = Input.scheme() === 'una_mano';
+    opts.push({
+      label: um ? 'Control: Una Mano' : 'Control: Twin-stick', sub: 'cambiar esquema táctil',
+      act: () => {
+        const nuevo = um ? 'raton' : 'una_mano';
+        Input.setScheme(nuevo); GameState.opciones.esquema_control = nuevo; SaveManager.save();
+        flash(nuevo === 'una_mano' ? 'MODO UNA MANO' : 'Twin-stick táctil',
+          nuevo === 'una_mano' ? 'auto-disparo · tap: golpe · mantén: Arte · doble-tap: Ignición' : 'dos pulgares: mover + apuntar');
+        mode = 'play';
+      },
+    });
+  }
+  return opts;
+}
+function pauseRect(i, n) {
+  const w = 260, h = UIK.UI.BTN_H, gap = 12;
+  const y0 = Math.round(VH / 2 - (n * h + (n - 1) * gap) / 2 + 16);
+  return { x: Math.round((VW - w) / 2), y: y0 + i * (h + gap), w, h };
+}
+
+function drawOverlay(t = 0) {
   if (mode === 'play') return;
   ctx.fillStyle = 'rgba(8,5,16,0.8)';
   ctx.fillRect(0, 0, VW, VH);
@@ -4036,18 +4061,15 @@ function drawOverlay() {
     return;
   }
   if (mode === 'paused') {
-    font(16); ctx.fillStyle = '#e9e2f5';
-    ctx.fillText('PAUSA', VW / 2, VH / 2);
-    font(10); ctx.fillStyle = '#8d82ad';
-    ctx.fillText(Input.touchState().enabled ? 'toca para continuar' : 'Esc para continuar', VW / 2, VH / 2 + 26);
-    if (Input.touchState().enabled) {
-      const um = Input.scheme() === 'una_mano';
-      ctx.fillStyle = 'rgba(24,18,46,0.92)'; ctx.fillRect(VW / 2 - 80, VH / 2 + 40, 160, 32);
-      ctx.strokeStyle = um ? '#ffd54f' : '#5a4fa0'; ctx.lineWidth = 1.5;
-      ctx.strokeRect(VW / 2 - 79, VH / 2 + 41, 158, 30);
-      font(9); ctx.fillStyle = um ? '#ffd54f' : '#e9e2f5';
-      ctx.fillText(um ? '✋ MODO UNA MANO: SÍ' : '✋ MODO UNA MANO: NO', VW / 2, VH / 2 + 60);
+    const opts = pauseOptions(), n = opts.length;
+    font(16); ctx.fillStyle = '#e9e2f5'; ctx.textBaseline = 'alphabetic';
+    ctx.fillText('PAUSA', VW / 2, pauseRect(0, n).y - 22);
+    for (let i = 0; i < n; i++) {
+      const r = pauseRect(i, n), o = opts[i];
+      UIK.boton(ctx, font, { ...r, label: o.label, sub: o.sub, tono: o.tono, foco: i === pauseIdx, t });
     }
+    UIK.glyphBar(ctx, font, Input, [{ k: 'nav', txt: 'mover' }, { k: 'confirm', txt: 'elegir' }, { k: 'cancel', txt: 'volver' }], VW, VH);
+    ctx.textAlign = 'center';
   } else if (mode === 'dead') {
     fitFont(t9('ui.muerte'), VW - 40, [18, 16, 14]); ctx.fillStyle = '#e9e2f5';
     ctx.fillText(t9('ui.muerte'), VW / 2, VH / 2 - 12);
@@ -4219,7 +4241,7 @@ function render() {
     drawTouchUI(t);
     if (Input.touchState().enabled) drawTouchEcos();
   }
-  drawOverlay();
+  drawOverlay(t);
 }
 
 // ---------- Bucle ----------
