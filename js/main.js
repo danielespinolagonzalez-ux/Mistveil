@@ -91,6 +91,7 @@ const batalla = new RelojBatalla(ctx, VW, VH, font);
 const menu = new MenuEquipo(VW, VH, font, ctx);
 const tut = new Tutorial({ world, cad, Input, flash, font, ctx, VW, VH, Enemy, currentRoom: () => floorMap.current });
 let titleT = 0;
+let titleIdx = 0; // foco del título cuando hay partida guardada (0 Reanudar / 1 Pueblo)
 let menuReturn = 'play';
 let pendingBalance = null; // pantalla de XP al pisar la trampilla
 let lastDeathXP = null;
@@ -176,6 +177,9 @@ function gainMemoria(n) {
 }
 
 function newRun() {
+  // OJO: newRun también se llama como andamiaje al arrancar (detrás del título), así que
+  // NO borra aquí la partida guardada — eso lo hace cada sitio donde el JUGADOR decide
+  // empezar de cero (descenso desde pueblo/Santuario, tutorial). Ver descartarRunGuardada.
   RunState.reset();
   GameState.stats.runs++;
   floorMap = buildTower(RunState.piso, RunState.semilla);
@@ -704,6 +708,7 @@ function descendFloor() {
     mode = 'victory';
     GameState.stats.victorias++;
     gainMemoria(DataDB.balance.meta.memoria_por_jefe);
+    SaveManager.clearRun(); // run terminada: no hay nada que reanudar
     return;
   }
   floorMap = buildTower(RunState.piso, RunState.semilla);
@@ -721,6 +726,135 @@ function descendFloor() {
   else flash('Piso ' + RunState.piso, 'La Torre desciende...');
   AudioManager.sfx('door_open');
   AudioManager.sample('sting_piso', 0.85); // stinger de descenso de piso
+  autosaveRun(); // punto seguro: piso nuevo, sala inicial ya limpia
+}
+
+// ---------- B1: guardar/reanudar la run a mitad (localStorage 'mistveil_run') ----------
+// La geometría es determinista en TOPOLOGÍA (buildTower con mulberry32 por piso^semilla),
+// pero los INTERIORES (plantillas, item del pedestal, stock de tienda) usan Math.random,
+// así que NO se reproducen exactos. Estrategia: regenerar la torre desde la semilla y
+// restaurar solo los flags MUTABLES percibidos (salas limpias/visitadas, consumibles
+// cogidos, corazones, build). El Player se RECONSTRUYE re-aplicando items (patrón fusión).
+let prevAutoKey = null; // anti-repetición del autosave por cambio de sala
+
+function buildSnapshot() {
+  if (!floorMap || !world.player) return null;
+  const p = world.player;
+  const key = r => r.gx + ',' + r.gy;
+  const rooms = [];
+  for (const r of floorMap.rooms.values()) {
+    const e = { k: key(r) };
+    if (r.visited) e.v = 1;
+    if (r.cleared) e.c = 1;
+    if (r.looted) e.l = 1;
+    if (r.pedestal?.taken) e.pt = 1;
+    if (r.pedestal2?.taken) e.p2 = 1;
+    if (r.stock) e.st = r.stock.map(s => (s.taken ? 1 : 0));
+    if (r.altars?.length) e.al = r.altars.map(a => (a.used ? 1 : 0));
+    if (Object.keys(e).length > 1) rooms.push(e); // solo salas con algo que restaurar
+  }
+  return {
+    piso: RunState.piso, semilla: RunState.semilla, oro: RunState.oro, sp: RunState.sp,
+    items: [...RunState.items], tomos: [...RunState.tomos], hechizo: RunState.hechizo,
+    compas: RunState.compasRobado ?? RunState.compas, // resuelve el robo temporal del compás
+    mejoras: [...RunState.mejoras], activoSalas: RunState.activoSalas,
+    selloSpAcum: RunState.selloSpAcum, arteGratis: !!RunState.arteGratis,
+    floorStats: RunState.floorStats ? { ...RunState.floorStats } : null,
+    contrato: RunState.contrato ? { ...RunState.contrato } : null,
+    hp: p.health.hp, maxHp: p.health.max,
+    px: Math.round(p.x), py: Math.round(p.y), cur: key(floorMap.current), rooms
+  };
+}
+
+// Guarda un punto de la run. No guarda en tutorial (su estado no se serializa) ni si el
+// jugador está muerto o no hay torre. Se llama en puntos SEGUROS (sala limpia, descenso,
+// pausa, cambio a sala no sellada) para no capturar un combate a medias.
+function autosaveRun() {
+  if (tut.active || !floorMap || !world.player || world.player.health.dead) return;
+  const snap = buildSnapshot();
+  if (snap) SaveManager.saveRun(snap);
+}
+
+function restoreSnapshot(snap) {
+  // 1. RunState (GameState ya está cargado por SaveManager.load — cuerdaTensa/llave alteran el RNG del piso)
+  RunState.reset();
+  RunState.piso = snap.piso ?? 1;
+  RunState.semilla = (snap.semilla ?? 0) >>> 0;
+  RunState.oro = snap.oro ?? 0; RunState.sp = snap.sp ?? 0;
+  RunState.items = Array.isArray(snap.items) ? [...snap.items] : [];
+  RunState.tomos = (Array.isArray(snap.tomos) && snap.tomos.length) ? [...snap.tomos] : ['estallido_de_tinta'];
+  RunState.hechizo = snap.hechizo ?? RunState.tomos[0];
+  RunState.compas = snap.compas ?? 'tic_tac';
+  RunState.mejoras = Array.isArray(snap.mejoras) ? [...snap.mejoras] : [];
+  RunState.activoSalas = snap.activoSalas ?? 0;
+  RunState.selloSpAcum = snap.selloSpAcum ?? 0;
+  RunState.arteGratis = !!snap.arteGratis;
+  if (snap.floorStats) RunState.floorStats = { ...RunState.floorStats, ...snap.floorStats };
+  RunState.contrato = snap.contrato ?? null;
+  RunState.bendiciones = []; // ya se consumieron en la run original
+
+  // 2. Regenerar la torre (determinista en topología)
+  floorMap = buildTower(RunState.piso, RunState.semilla);
+
+  // 3. Restaurar los flags mutables percibidos de cada sala
+  const byKey = new Map((snap.rooms || []).map(e => [e.k, e]));
+  for (const r of floorMap.rooms.values()) {
+    const e = byKey.get(r.gx + ',' + r.gy);
+    if (!e) continue;
+    if (e.v) r.visited = true;
+    if (e.c) { r.cleared = true; r.sealed = false; for (const d of Object.values(r.doors)) if (d) d.open = true; }
+    if (e.l) r.looted = true;
+    if (e.pt && r.pedestal) r.pedestal.taken = true;
+    if (e.p2 && r.pedestal2) r.pedestal2.taken = true;
+    if (e.st && r.stock) e.st.forEach((v, i) => { if (v && r.stock[i]) r.stock[i].taken = true; });
+    if (e.al && r.altars) e.al.forEach((v, i) => { if (v && r.altars[i]) r.altars[i].used = true; });
+  }
+
+  // 4. Reconstruir el Player desde los items (mods derivados, NO serializados)
+  const p = new Player(0, 0); world.player = p;
+  if (GameState.tiene('recuerdo_de_cuerda')) p.mods.statAdd.max_hp = (p.mods.statAdd.max_hp ?? 0) + 1; // bono pasivo del Santuario
+  RunState.items = [];
+  for (const id of (snap.items || [])) { const it = DataDB.item(id); if (it) applyItem(it, p); } // re-puebla RunState.items + mods
+  p.applyBalance();
+  p.health.max = snap.maxHp ?? p.health.max;               // corazones exactos (cubre deltas de altar/pan fuera de items)
+  p.health.hp = Math.max(1, Math.min(snap.hp ?? p.health.max, p.health.max));
+
+  // 5. Mundo, roamers (los de galerías YA visitadas se dan por limpiados) y colocación
+  world.enemies = floorMap.roamers.filter(e => !e.room?.visited);
+  world.pickups = []; world.dmgNumbers = []; world.shockwaves = [];
+  world.tears.clear(); world.bullets.clear();
+  cad.reset();
+  freezeT = 0; hitStopT = 0; slowmoT = 0; nearmissCd = 0;
+  world.familiares = []; world.trails = []; world.artFx = [];
+  pendingUpgrades = null;
+  const [cgx, cgy] = snap.cur ? snap.cur.split(',').map(Number) : [1, 0];
+  const curRoom = floorMap.at(cgx, cgy) ?? floorMap.current;
+  floorMap.current = curRoom; cur = curRoom; curRoom.visited = true;
+  p.x = snap.px ?? (curRoom.bounds.x + curRoom.bounds.w / 2);
+  p.y = snap.py ?? (curRoom.bounds.y + curRoom.bounds.h / 2);
+  p.vx = p.vy = 0;
+  const [gx, gy] = camGoal(); cam.x = gx; cam.y = gy;
+  world.player.onRoomEntered();
+  prevAutoKey = curRoom.gx + ',' + curRoom.gy;
+  musicaActual = null; // el director repone la pista del bioma
+  mode = 'play';
+  hudHintT = 0;
+}
+
+// Reanuda la partida guardada; si no hay o falla, empieza una run nueva.
+function resumeRun() {
+  const snap = SaveManager.loadRun();
+  if (!snap) { newRun(); return false; }
+  try {
+    restoreSnapshot(snap);
+    flash('Partida reanudada', 'Piso ' + RunState.piso + ' — el Reloj sigue su marcha');
+    return true;
+  } catch (err) {
+    console.warn('resumeRun: snapshot corrupto, empiezo run nueva', err);
+    SaveManager.clearRun();
+    newRun();
+    return false;
+  }
 }
 
 // ---------- Balance del piso: XP por desempeño al pisar la trampilla (estilo FFX) ----------
@@ -1032,6 +1166,7 @@ EventBus.on('player_hurt', () => {
 });
 EventBus.on('player_died', () => {
   mode = 'dead'; GameState.stats.muertes++;
+  SaveManager.clearRun(); // muerte permanente: la run no se reanuda
   // La Torre recuerda: media experiencia aunque caigas
   const res = computeFloorXP();
   const xp = Math.max(5, Math.round(res.total * DataDB.balance.xp.muerte_mult));
@@ -1093,6 +1228,7 @@ EventBus.on('cadencia_hit', ({ x, y, quality, dmg, finisher, hitIndex }) => {
     hitStopT = Math.max(hitStopT, 0.09);
   }
 });
+EventBus.on('room_cleared', () => autosaveRun()); // B1: punto seguro de guardado (sala recién limpiada)
 EventBus.on('cadencia_early', (x, y) => pushPopup(x, y - 24, 'aún no...', '#8d82ad', 8));
 EventBus.on('cadencia_counter_started', (e) => {
   inputBuf.melee = 0; // un melé bufado de antes no debe fallar el contraataque
@@ -1316,8 +1452,18 @@ function update(dt) {
   if (mode === 'title') {
     titleT += dt;
     FX.update(dt);
-    const tap = Input.touchState().enabled && Input.justCode('TouchTap');
-    if (titleT > 0.6 && (Input.justPressed('melee') || Input.justCode('Enter') || tap)) {
+    if (titleT <= 0.6) return;
+    const tap = Input.touchState().enabled ? Input.consumeTap() : null;
+    const hayRun = GameState.flags.tutorialHecho && SaveManager.hasRun(); // ¿partida a medias?
+    if (hayRun) {
+      // Dos opciones: Reanudar la run guardada / ir al Pueblo (nueva partida)
+      titleIdx = UIK.mover1D(Input, titleIdx, 2);
+      let elegido = -1;
+      if (tap) { for (let i = 0; i < 2; i++) if (UIK.hit(titleOptRect(i), tap)) { titleIdx = i; elegido = i; } }
+      if (Input.justPressed('melee') || Input.justCode('Enter') || UIK.confirmo(Input)) elegido = titleIdx;
+      if (elegido === 0) { AudioManager.sfx('door_open'); resumeRun(); }
+      else if (elegido === 1) { AudioManager.sfx('door_open'); mode = 'pueblo'; }
+    } else if (Input.justPressed('melee') || Input.justCode('Enter') || tap) {
       AudioManager.sfx('door_open');
       if (!GameState.flags.tutorialHecho) {
         newRun();          // el tutorial es la primera cámara de una run real
@@ -1406,7 +1552,7 @@ function update(dt) {
   }
   if (Input.justPressed('pause')) {
     mode = (mode === 'paused') ? 'play' : 'paused';
-    if (mode === 'paused') pauseIdx = 0;
+    if (mode === 'paused') { pauseIdx = 0; autosaveRun(); } // guarda al pausar (salir sin perder progreso)
     return; // no procesar el mismo frame (evita que Esc/Start abra-y-cierre la pausa)
   }
   if (mode === 'paused') {
@@ -1435,6 +1581,12 @@ function update(dt) {
       const first = cur.enter(world);
       onEnterRoom(cur, first);
     }
+  }
+  // Autosave B1: al llegar a una sala SEGURA (no sellada) distinta, guarda. Captura las
+  // reliquias del pedestal/tienda recogidas en la sala anterior (que no emiten room_cleared).
+  if (cur && !cur.sealed && !tut.active) {
+    const ck = cur.gx + ',' + cur.gy;
+    if (ck !== prevAutoKey) { prevAutoKey = ck; autosaveRun(); }
   }
 
   // Jugador: colisiona con muros/rejas/obstáculos de las salas activas
@@ -3542,6 +3694,9 @@ function drawMinimap() {
 const ECO_COL = { golpe: '#ffd54f', ritmo: '#ffd54f', dash: '#8fa2ff', arte: '#b678e8', ignicion: '#ffb547' };
 const ECO_TXT = { golpe: 'golpe', ritmo: '♪', dash: 'dash', arte: 'ARTE', ignicion: '¡IGNICIÓN!' };
 // ---------- Pantalla de título ----------
+// Rects de las dos opciones del título cuando hay partida guardada (Reanudar / Pueblo).
+function titleOptRect(i) { return { x: (VW - 220) / 2, y: VH / 2 + 30 + i * 52, w: 220, h: 44 }; }
+
 function drawTitle(t) {
   const port = Sprites.get('portada_titulo');
   if (port) {
@@ -3579,18 +3734,35 @@ function drawTitle(t) {
   ctx.fillText('MISTVEIL', VW / 2, VH / 2 - 26);
   font(11); ctx.fillStyle = '#b9aee0';
   ctx.fillText('El Reloj de las Almas', VW / 2, VH / 2 - 4);
-  font(9);
-  ctx.fillStyle = `rgba(233,226,245,${0.55 + Math.sin(t * 3) * 0.35})`;
-  const touch = Input.touchState().enabled;
-  ctx.fillText(touch ? 'toca para ' : 'Enter para ', VW / 2, VH / 2 + 46);
-  font(11); ctx.fillStyle = '#7ee8e0';
-  ctx.fillText(GameState.flags.tutorialHecho ? 'CONTINUAR' : 'DAR CUERDA (tutorial)', VW / 2, VH / 2 + 62);
-  if (GameState.flags.tutorialHecho) {
-    font(7); ctx.fillStyle = '#6c6193';
-    ctx.fillText('Nv.' + GameState.nivel + ' · ' + GameState.engranajes + ' engranajes · ◆ ' + GameState.memoria, VW / 2, VH / 2 + 78);
+  const hayRun = GameState.flags.tutorialHecho && SaveManager.hasRun();
+  if (hayRun) {
+    // Menú de dos botones con foco: Reanudar (dorado) / Pueblo. El input lo gestiona el título.
+    const rs = SaveManager.loadRun();
+    const labels = ['REANUDAR — Piso ' + (rs?.piso ?? 1), 'PUEBLO (nueva partida)'];
+    for (let i = 0; i < 2; i++) {
+      const r = titleOptRect(i);
+      UIK.boton(ctx, font, { x: r.x, y: r.y, w: r.w, h: r.h, label: labels[i], foco: i === titleIdx, tono: i === 0 ? 'primary' : 'normal', t });
+    }
+    UIK.glyphBar(ctx, font, Input, [{ k: 'nav', txt: 'elegir' }, { k: 'confirm', txt: 'aceptar' }], VW, VH);
+  } else {
+    font(9); ctx.textAlign = 'center';
+    ctx.fillStyle = `rgba(233,226,245,${0.55 + Math.sin(t * 3) * 0.35})`;
+    const touch = Input.touchState().enabled;
+    ctx.fillText(touch ? 'toca para ' : 'Enter para ', VW / 2, VH / 2 + 46);
+    font(11); ctx.fillStyle = '#7ee8e0';
+    ctx.fillText(GameState.flags.tutorialHecho ? 'CONTINUAR' : 'DAR CUERDA (tutorial)', VW / 2, VH / 2 + 62);
   }
-  font(7); ctx.fillStyle = '#4a4468';
-  ctx.fillText('un roguelite de relojería y ritmo', VW / 2, VH - 18);
+  if (GameState.flags.tutorialHecho) {
+    ctx.textAlign = 'center';
+    font(7); ctx.fillStyle = '#6c6193';
+    // Con menú, las estadísticas van entre subtítulo y botones (abajo lo ocupa la barra de glifos).
+    const statsY = hayRun ? VH / 2 + 16 : VH / 2 + 78;
+    ctx.fillText('Nv.' + GameState.nivel + ' · ' + GameState.engranajes + ' engranajes · ◆ ' + GameState.memoria, VW / 2, statsY);
+  }
+  if (!hayRun) { // la coletilla estorbaría a la barra de glifos del menú
+    font(7); ctx.fillStyle = '#4a4468';
+    ctx.fillText('un roguelite de relojería y ritmo', VW / 2, VH - 18);
+  }
 }
 
 // ---------- Pantalla de título (fin) ----------
@@ -3745,7 +3917,7 @@ function updatePueblo(dt) {
         dlgCd = 0.5;
         if (res.aviso) puebloAviso = { titulo: res.aviso[0], sub: res.aviso[1], t: 2.6 };
         if (res.accion === 'santuario') { mode = 'santuario'; santIdx = 0; }
-        if (res.accion === 'run') newRun();
+        if (res.accion === 'run') { SaveManager.clearRun(); newRun(); } // descenso nuevo: abandona la partida a medias
         if (res.accion === 'batalla') {
           let enc = res.encuentro ?? 'vigilia';
           if (enc === 'liga') {
@@ -3957,7 +4129,7 @@ function updateSantuario() {
   if (UIK.hit(santuarioDescendRect(), tap)) { santIdx = n; act = n; }
   if (Input.justPressed('restart')) act = n;               // R = descender directo
   if (act < 0 && UIK.confirmo(Input)) act = santIdx;        // A del mando / Enter sobre el foco
-  if (act === n) { newRun(); return; }
+  if (act === n) { SaveManager.clearRun(); newRun(); return; } // descenso nuevo desde el Santuario
   if (act >= 0) activarNodoSantuario(nodos[act]);
 }
 function drawSantuario(t) {

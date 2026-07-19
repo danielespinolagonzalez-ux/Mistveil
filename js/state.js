@@ -84,7 +84,29 @@ export const SaveManager = {
       Object.assign(GameState.opciones, d.opciones ?? {});
       return true;
     } catch { return false; }
-  }
+  },
+
+  // ---- Guardado de la RUN en curso (B1). KEY aparte para no mezclar con el meta;
+  // el snapshot lo construye main.js (buildSnapshot). schema propio, tolerante. ----
+  RUN_KEY: 'mistveil_run',
+  RUN_SCHEMA: 1,
+  saveRun(snap) {
+    try {
+      if (!snap || typeof snap.piso !== 'number') return;
+      localStorage.setItem(this.RUN_KEY, JSON.stringify({ schema: this.RUN_SCHEMA, ...snap }));
+    } catch (e) { console.warn('SaveManager: no se pudo guardar la run', e); }
+  },
+  loadRun() {
+    try {
+      const raw = localStorage.getItem(this.RUN_KEY);
+      if (!raw) return null;
+      const d = JSON.parse(raw);
+      if (d.schema !== this.RUN_SCHEMA || typeof d.piso !== 'number') return null;
+      return d;
+    } catch { return null; }
+  },
+  hasRun() { return !!this.loadRun(); },
+  clearRun() { try { localStorage.removeItem(this.RUN_KEY); } catch {} }
 };
 
 // AudioManager — beeps por código (WebAudio) hasta tener SFX reales.

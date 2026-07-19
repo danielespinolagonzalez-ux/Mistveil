@@ -16,11 +16,11 @@
 import { DataDB } from '../js/data_db.js';
 import { Player, Enemy, TearPool, BulletPool } from '../js/entities.js';
 import { computeQuality, Cadencia } from '../js/cadencia.js';
-import { buildTestFloor, isDoorFront, TILE, RW, RH } from '../js/rooms.js';
+import { buildTestFloor, buildTower, isDoorFront, TILE, RW, RH } from '../js/rooms.js';
 import { applyItem, applyItemEffects } from '../js/items.js';
 import { elementMult } from '../js/spells.js';
 import { EventBus } from '../js/event_bus.js';
-import { GameState, RunState, AudioManager } from '../js/state.js';
+import { GameState, RunState, AudioManager, SaveManager } from '../js/state.js';
 import { nodoDisponible, activarNodo, esferaBonos } from '../js/esfera.js';
 import { syncFamiliares, updateFamiliares } from '../js/familiares.js';
 import { spawnArt, updateArt, romano } from '../js/artes_fx.js';
@@ -63,6 +63,35 @@ assert('beatClock inactivo sin pista sonando', AudioManager.beatClock().active =
   assert('beatClock avanza el índice de beat', b1.beat === 1 && Math.abs(b1.phase) < 0.02);
   assert('beatClock pulse decae dentro del beat', b0.pulse === 1 && A.beatClock() && (A.ctx.currentTime = 0.75, A.beatClock().pulse < 0.6));
   A.ctx = guardado.ctx; A._musSrc = guardado.src; A._musStartTime = guardado.t0; A._musBpm = guardado.bpm; A._musBeatOffset = guardado.off;
+})();
+
+// B1 — Guardar/reanudar run: roundtrip de SaveManager y determinismo de la torre
+(() => {
+  SaveManager.clearRun();
+  assert('sin partida guardada al empezar', SaveManager.hasRun() === false && SaveManager.loadRun() === null);
+  SaveManager.saveRun({ piso: 3, semilla: 12345, oro: 42, items: ['a', 'b'], cur: '1,2' });
+  const l = SaveManager.loadRun();
+  assert('loadRun recupera piso/semilla/items/sala', l?.piso === 3 && l?.semilla === 12345 && l.items.length === 2 && l.cur === '1,2');
+  assert('hasRun true con partida', SaveManager.hasRun() === true);
+  SaveManager.saveRun({ basura: 1 }); // sin piso numérico → se ignora, la anterior sigue
+  assert('saveRun ignora snapshot inválido', SaveManager.loadRun()?.piso === 3);
+  SaveManager.clearRun();
+  assert('clearRun borra la partida', SaveManager.hasRun() === false);
+})();
+// La torre es determinista en TOPOLOGÍA y posiciones de roamers (base de la reconstrucción B1)
+(() => {
+  const a = buildTower(3, 777), b = buildTower(3, 777);
+  const keysA = [...a.rooms.keys()].sort().join('|'), keysB = [...b.rooms.keys()].sort().join('|');
+  assert('buildTower reproduce las mismas salas', keysA === keysB && keysA.length > 0);
+  const typA = [...a.rooms.values()].map(r => r.gx + ',' + r.gy + ':' + r.type).sort().join('|');
+  const typB = [...b.rooms.values()].map(r => r.gx + ',' + r.gy + ':' + r.type).sort().join('|');
+  assert('buildTower reproduce los mismos tipos de sala', typA === typB);
+  assert('buildTower reproduce la sala inicial (current)', (a.current.gx + ',' + a.current.gy) === (b.current.gx + ',' + b.current.gy));
+  // NOTA B1: las posiciones/nº de roamers NO son deterministas (las plantillas de sala usan
+  // Math.random y desincronizan el RNG sembrado al colocar roamers). Por eso restoreSnapshot
+  // DESCARTA los roamers de galerías ya visitadas en vez de fiarse de reproducirlos exactos.
+  const bossA = [...a.rooms.values()].find(r => r.type === 'jefe'), bossB = [...b.rooms.values()].find(r => r.type === 'jefe');
+  assert('buildTower reproduce la sala del jefe', bossA && bossB && bossA.gx === bossB.gx && bossA.gy === bossB.gy);
 })();
 
 // Player existe y responde a la física
