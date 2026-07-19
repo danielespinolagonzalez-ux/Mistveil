@@ -168,7 +168,7 @@ Auditoría con capturas de TODAS las pantallas; causa raíz: `font(size)` pinta 
 - [ ] R5.3 Export/import del guardado (el localStorage se pierde al limpiar el navegador).
 - [ ] R5.4 QA móvil real: iOS Safari + Android Chrome, modo Una Mano, rendimiento (partículas/luz), háptica.
 - [ ] R5.5 Página de itch.io: subida HTML, capturas, texto, **divulgación de IA generativa** marcada.
-- [ ] R5.6 Ronda de balance final con Daniel usando F5 + playground (documento corto de valores tocados).
+- [ ] R5.6 Ronda de balance final con Daniel usando F5 + playground (documento corto de valores tocados). — Arrancado: `docs/balance_torre.md` (curva medida + diales de F5 de la Torre/dificultad); falta la ronda final con Daniel jugando.
 - [ ] R5.7 (auditoría IA) **Carga diferida de arte por bioma/escena** cuando el volumen lo pida: no cargar todos los fondos/sprites de golpe en el arranque, sino el arte de cada bioma al entrar. Es lo que permite "arte sin límite" sin penalizar la primera carga (Daniel: no hay tope de peso). Fondos ya en JPEG (opacos, ~1/5 del peso). Adelantable si el bundle se hace lento de arrancar.
 
 **Criterio:** un desconocido lo juega en su móvil desde itch.io sin instrucciones y sin conexión tras la primera carga.

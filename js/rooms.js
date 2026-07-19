@@ -376,7 +376,7 @@ export class Room {
     const inv = this.bioma?.invertida; // Relojería Invertida: telegrafía doble, zarpazo feroz
     const out = [];
     const pts = [...this.spawnPts].sort(() => Math.random() - 0.5);
-    let pairSeq = 0;
+    let pairSeq = 0, eliteN = 0; // élites ya colocados en esta sala (tope para que no sea un slog)
     for (const pt of pts) {
       if (!pt.req && Math.random() < (this.type === 'maldita' ? 0.2 : 0.5)) continue;
       if (budget <= 0 && out.length) break;
@@ -387,8 +387,9 @@ export class Room {
       // Élite (minijefe): un enemigo normal puede promocionar a élite con un rasgo. Prob
       // sube por piso. Los gemelos (minuteros) nunca son élite (ya vienen en pareja).
       const EL = DataDB.balance.elite;
-      if (EL && !def.gemelo && Math.random() < Math.min(EL.prob_max ?? 0.4, (EL.prob_base ?? 0.1) + (this.piso - 1) * (EL.prob_por_piso ?? 0.035))) {
+      if (EL && !def.gemelo && eliteN < (EL.max_por_sala ?? 2) && Math.random() < Math.min(EL.prob_max ?? 0.2, (EL.prob_base ?? 0.06) + (this.piso - 1) * (EL.prob_por_piso ?? 0.014))) {
         ov.elite = (EL.rasgos ?? ['acorazado', 'veloz', 'iracundo'])[Math.floor(Math.random() * (EL.rasgos?.length ?? 3))];
+        eliteN++;
         budget -= 2; // un élite consume presupuesto extra (cuenta como más peligro)
       }
       if (def.gemelo) {

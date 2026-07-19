@@ -116,9 +116,10 @@
     "bonus_corazon_pct": 45
   },
   "elite": {
-    "prob_base": 0.1,
-    "prob_por_piso": 0.035,
-    "prob_max": 0.4,
+    "prob_base": 0.06,
+    "prob_por_piso": 0.014,
+    "prob_max": 0.2,
+    "max_por_sala": 2,
     "hp_mult": 2.4,
     "r_mult": 1.25,
     "rasgos": ["acorazado", "veloz", "iracundo"],
