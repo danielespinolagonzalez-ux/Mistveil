@@ -16,13 +16,19 @@ export const INPUT_MAP = {
   menu:       ['Tab', 'KeyI', 'TouchMenu'],
   pause:      ['Escape', 'KeyP', 'TouchPause'],
   restart:    ['KeyR', 'TouchTap'],
+  ui_confirm: ['Enter', 'Space'],   // menús: confirmar (A del mando)
+  ui_cancel:  ['Escape', 'Backspace'], // menús: atrás/cerrar (B del mando)
+  ui_tab_prev: ['KeyQ'],            // menús: pestaña anterior (LB del mando)
+  ui_tab_next: ['KeyE'],            // menús: pestaña siguiente (RB del mando)
   debug_wave: ['KeyT'],
   debug_info: ['F3'],
   toggle_scheme: ['F2']
 };
 // Índices de botón (mapeo "standard" de la Gamepad API — Xbox/PS/MFi lo cumplen):
 // 0=A/✕ 1=B/○ 2=X/□ 3=Y/△ 4=LB 5=RB 8=View/Select 9=Menu/Start.
-const PAD = { melee: 0, dash: 1, hechizo: 2, ignicion: 3, parry: 4, activo: 5, menu: 8, pause: 9 };
+// A=confirmar, B=atrás, LB/RB=cambiar pestaña, View/Start abren/cierran (menu/pause).
+const PAD = { melee: 0, dash: 1, hechizo: 2, ignicion: 3, parry: 4, activo: 5, menu: 8, pause: 9,
+  ui_confirm: 0, ui_cancel: 1, ui_tab_prev: 4, ui_tab_next: 5 };
 
 // Esquema de disparo. 'raton': WASD/flechas mueven, ratón apunta/dispara.
 // 'flechas': flechas mueven, WASD dispara en 4/8 dir (twin-stick de teclado, sin ratón).
@@ -67,6 +73,13 @@ let padState = { move: [0, 0], aim: [0, 0], buttons: new Set(), justButtons: new
 let padRest = null; // línea base de ejes en reposo (auto-calibración anti-deriva)
 let padPresent = false;  // ¿hay un mando conectado? (MFi/Xbox/PS por Gamepad API)
 let padJustConn = false; // flanco de conexión (one-shot que main.js consume para el aviso)
+// Navegación direccional DISCRETA para menús (mando): d-pad (btns 12-15) + flanco del
+// stick izquierdo, con anti-rebote + auto-repeat. navJust = direcciones que "pulsaron"
+// este frame; navNext = instante (ms) del próximo disparo por dirección (0 = suelta).
+const navJust = new Set();
+const navNext = { up: 0, down: 0, left: 0, right: 0 };
+const NAV_DELAY = 380, NAV_REPEAT = 140, NAV_DZ = 0.55; // ms, ms, umbral de stick
+const NAV_ACTION = { move_up: 'up', move_down: 'down', move_left: 'left', move_right: 'right' };
 let scaleFn = (x, y) => [x, y];
 // Tamaño LÓGICO del lienzo (VW×VH). El backing puede ser mayor (supersampling),
 // así que los toques se mapean a coords lógicas para casar con botones/sticks.
@@ -269,10 +282,11 @@ export const Input = {
     let gp = null;
     for (const p of pads) { if (p && p.connected && p.axes?.length >= 2) { gp = p; break; } }
     padState.justButtons.clear();
+    navJust.clear();
     // Red de seguridad si el evento gamepadconnected no llegó (iOS lo lanza al
     // primer input): lo detectamos por sondeo y avisamos igual.
     if (gp && !padPresent) { padPresent = true; padJustConn = true; }
-    if (!gp) { padState.move = [0, 0]; padState.aim = [0, 0]; padRest = null; return; }
+    if (!gp) { padState.move = [0, 0]; padState.aim = [0, 0]; padRest = null; navNext.up = navNext.down = navNext.left = navNext.right = 0; return; }
     // Auto-calibración: el primer sondeo de un mando define su "reposo". Restamos esa
     // línea base siempre, así un stick con deriva o un eje que descansa en ±1 no empuja solo.
     const ax = gp.axes;
@@ -292,6 +306,21 @@ export const Input = {
     gp.buttons.forEach((b, i) => { if (b.pressed) now.add(i); });
     for (const i of now) if (!padState.buttons.has(i)) padState.justButtons.add(i);
     padState.buttons = now;
+    // Navegación de menús: d-pad (12=arriba,13=abajo,14=izq,15=dcha) o stick izq.
+    // Flanco inmediato + auto-repeat si se mantiene (para recorrer listas largas).
+    const activa = {
+      up: now.has(12) || padState.move[1] < -NAV_DZ,
+      down: now.has(13) || padState.move[1] > NAV_DZ,
+      left: now.has(14) || padState.move[0] < -NAV_DZ,
+      right: now.has(15) || padState.move[0] > NAV_DZ,
+    };
+    const tms = performance.now();
+    for (const d of ['up', 'down', 'left', 'right']) {
+      if (activa[d]) {
+        if (navNext[d] === 0) { navJust.add(d); navNext[d] = tms + NAV_DELAY; }      // flanco
+        else if (tms >= navNext[d]) { navJust.add(d); navNext[d] = tms + NAV_REPEAT; } // repetición
+      } else navNext[d] = 0;
+    }
   },
 
   // Táctil: main.js define los botones y dibuja el overlay con este estado
@@ -320,8 +349,15 @@ export const Input = {
   justPressed(action) {
     for (const c of codesFor(action)) if (just.has(c)) return true;
     if (action in PAD && padState.justButtons.has(PAD[action])) return true;
+    // Mando: la navegación direccional de menús alimenta move_* (los menús ya usan
+    // justPressed('move_up'...) para mover el foco; con esto heredan el mando gratis).
+    const nd = NAV_ACTION[action];
+    if (nd && navJust.has(nd)) return true;
     return false;
   },
+
+  // Navegación direccional discreta del mando (para menús): 'up'|'down'|'left'|'right'
+  justDir(dir) { return navJust.has(dir); },
 
   justCode(code) { return just.has(code); },
 
