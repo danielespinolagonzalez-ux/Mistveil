@@ -3,9 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <title>Mistveil — Cadencia playground</title>
-<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
 <style>
-  body { margin: 0; background: #0a0812; color: #cfc6e8; font: 15px VT323, monospace; display: flex; height: 100vh; overflow: hidden; }
+  /* Fuente local del juego (sin dependencia de Google Fonts). */
+  @font-face { font-family: 'Gelica'; src: url('../assets/fonts/Gelica-Regular.otf') format('opentype'); font-display: swap; }
+  body { margin: 0; background: #0a0812; color: #cfc6e8; font: 15px Gelica, monospace; display: flex; height: 100vh; overflow: hidden; }
   #left { flex: 1; display: grid; place-items: center; }
   canvas { image-rendering: pixelated; background: #141120; cursor: crosshair; }
   #panel { width: 260px; background: #14111f; border-left: 2px solid #2b2440; padding: 14px; overflow-y: auto; }
@@ -17,7 +18,7 @@
   #hist { margin-top: 14px; letter-spacing: 2px; font-size: 20px; min-height: 24px; }
   .stat { display: flex; justify-content: space-between; margin-top: 4px; }
   .stat b { color: #e9e2f5; }
-  button { background: #2b2440; color: #cfc6e8; border: 1px solid #4c4070; font: 14px VT323, monospace; padding: 4px 10px; margin-top: 12px; cursor: pointer; }
+  button { background: #2b2440; color: #cfc6e8; border: 1px solid #4c4070; font: 14px Gelica, monospace; padding: 4px 10px; margin-top: 12px; cursor: pointer; }
   button:hover { background: #3d3358; }
   .hint { color: #55496e; margin-top: 12px; line-height: 1.4; }
 </style>
@@ -220,11 +221,11 @@ function frame(now) {
   ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(bounds.x, 20, 160, 8);
   ctx.fillStyle = k >= 1 ? '#ffe28a' : '#b08d57';
   ctx.fillRect(bounds.x, 20, 160 * k, 8);
-  ctx.font = '16px VT323, monospace'; ctx.fillStyle = '#8d82ad'; ctx.textAlign = 'left';
+  ctx.font = '16px Gelica, monospace'; ctx.fillStyle = '#8d82ad'; ctx.textAlign = 'left';
   ctx.fillText('SP', bounds.x + 166, 28);
 
   for (const p of popups) {
-    ctx.font = (p.size ?? 18) + 'px VT323, monospace';
+    ctx.font = (p.size ?? 18) + 'px Gelica, monospace';
     ctx.textAlign = 'center';
     ctx.globalAlpha = Math.min(1, p.t * 2.5);
     ctx.strokeStyle = 'rgba(0,0,0,0.8)'; ctx.lineWidth = 3;

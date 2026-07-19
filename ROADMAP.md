@@ -6,17 +6,17 @@ Auditoría por 9 analistas comparando Mistveil con el género (Hades, Dead Cells
 
 ### Fase A — Cerrar la promesa de RITMO (lo que más diferencia) · EN CURSO
 - [x] A1 Reloj de beat global en `AudioManager` (`beatClock()`) con BPM por pista medido offline (`data/musica.json`); latido visual del HUD (marco SP + pip del compás) y halo del anillo de Cadencia al pulso; tic-tac ambiental callado bajo pista real. **Pendiente por diseño** (riesgo sobre el feel testeado): anclar `ring_contract_ms`/ventanas de Cadencia a subdivisiones del beat (A4 ambicioso, a validar con Daniel jugando).
-- [ ] A2 SFX de golpe **en escala** que ascienden con `hitIndex` (arpegio que culmina en el finisher) + variación de tono ±semitonos en tear/hit (anti-ametralladora) (carencia #8, bajo).
-- [ ] A3 **Juice del disparo**: micro-hit-stop 2-3 frames + chispazo en el impacto teñido por elemento; escalar hit-stop con good/kill (hoy solo en perfect) (carencia #8, bajo).
-- [ ] A4 Latido visual tenue del HUD/engranajes al pulso para "coger el ritmo" antes de atacar (ancla móvil).
+- [x] A2 SFX de golpe **en escala** que ascienden con `hitIndex` (arpegio, `cadencia.js` con `{pitch}`) + variación de tono ±semitonos en tear (`entities.js`, `_playSample` con `playbackRate`).
+- [x] A3 **Juice del disparo**: micro-hit-stop + chispazo direccional teñido por elemento en el impacto de la lágrima + shake; hit-stop extra al rematar (`main.js` impacto de tear).
+- [x] A4 Latido visual del HUD al pulso (hecho junto a A1: marco SP + pip del compás + halo del anillo de Cadencia, alimentados por `beatInfo`/`beatClock`).
 - [ ] A5 Música reactiva a la racha (capa procedural de campanas `bell()` que sube con perfects/allPerfect).
 
 **Criterio A:** golpear a compás con la música se nota (audio + recompensa); el disparo impacta; el HUD late.
 
 ### Fase B — Plataforma móvil comercializable (retención y justicia) · prerrequisito de lanzar
 - [x] B1 **Serializar `RunState`** (piso/oro/SP/items/compás/posición + hp/maxHp + estado de salas; la semilla regenera la topología) → `SaveManager.saveRun/loadRun`, autosave en puntos seguros, botón REANUDAR en el título. Guardar y reanudar a mitad, probado recarga→reanudar.
-- [ ] B2 **Pantalla de Opciones + Pausa completa** como contenedor: sliders de volumen música/SFX, esquema de control, y "Modo Metrónomo Suave" reusando `window_scale`/`ventanaMult` (carencia #3, crítica).
-- [ ] B3 **Calibración de latencia** (offset en opciones que desplaza la ventana; reusar la Cámara del Metrónomo como UI) (carencia #4, crítica).
+- [x] B2 **Pantalla de Opciones + Pausa** (modo `opciones` desde Pausa): sliders de volumen música/SFX, toggle de control táctil, y "Asistencia de ritmo" reusando `escala_ventanas`/`ventanaMult`. Navegable por toque/mando/teclado.
+- [x] B3 **Calibración de latencia** (slider ±120 ms en Opciones que desplaza la ventana en el punto de uso: `computeQuality(this.t - lat, …)`, sin tocar la función pura).
 - [ ] B4 Export/import de guardado por código copiar/pegar contra el desalojo ITP de iOS (carencia #9, bajo; enlaza R5.3).
 - [ ] B5 Acumulador de **paso fijo** para la lógica de Cadencia + timestamp de input (carencia #11).
 - [ ] B6 **PWA** (manifest + service worker de precache + icono de Pip) y fuente VT323 local; safe-area/notch en el layout de botones (carencia #16; enlaza R5.1/R5.2).
@@ -163,7 +163,7 @@ Auditoría con capturas de TODAS las pantallas; causa raíz: `font(size)` pinta 
 **Criterio:** ningún archivo >1200 líneas; el smoke pasa idéntico antes/después. (Puede adelantarse si una fase anterior lo exige.)
 
 ## Fase R5 — Lanzamiento
-- [ ] R5.1 Fuente VT323 servida en local (hoy Google Fonts: el juego depende de red).
+- [x] R5.1 Fuente del juego servida en local: se migró a **Gelica** (`assets/fonts/Gelica-Regular.otf`, `@font-face`) — el juego NO depende de red para la fuente. (Pendiente NO técnico: verificar licencia comercial de Gelica para redistribución; ver B6.)
 - [ ] R5.2 PWA mínima: manifest + íconos + service worker de caché (jugable offline tras primera carga).
 - [ ] R5.3 Export/import del guardado (el localStorage se pierde al limpiar el navegador).
 - [ ] R5.4 QA móvil real: iOS Safari + Android Chrome, modo Una Mano, rendimiento (partículas/luz), háptica.

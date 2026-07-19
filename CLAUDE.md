@@ -52,7 +52,7 @@ Sistemas-firma (todos ya implementados):
 - `buildFloor` (layout Isaac) es código muerto funcional: no confundir con `buildTower`, que es el real.
 - `data/sellos.json` se carga pero NADIE lo lee (feature planificada). Tres cosas distintas comparten el nombre "sello": nodos-puente de la Esfera, desbloqueo `sello_de_marea` del Santuario y los sellos elementales de ese JSON.
 - `orbit_shoot` (polilla_del_polvo) solo existe en El Redoble; en tiempo real cae al default y se queda quieta.
-- `index.html`/`movil.html` cargan la fuente VT323 desde Google Fonts (dependencia de red).
+- (Histórico, ya resuelto) `index.html`/`movil.html` usan **Gelica local** (`assets/fonts/Gelica-Regular.otf`, `@font-face`), no VT323 ni Google Fonts: no hay dependencia de red de fuente en el juego. Solo `tests/cadencia_playground.html` tiraba de Google Fonts (dev). OJO: Gelica es fuente **comercial** (Zetafonts) — verificar con Daniel la licencia de redistribución antes de publicar el repo/bundle.
 - Hooks de depuración en `window.__mistveil` (sonda, testCad, step, xp…): útiles en desarrollo, retirarlos en release.
 
 ## Contexto de Daniel (el humano)
