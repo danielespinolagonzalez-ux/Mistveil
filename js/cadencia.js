@@ -380,6 +380,18 @@ export class Cadencia {
     const dodging = (this.player?.dashT > 0) || this.dashGraceT > 0;
     const col = dodging ? '#5ad1ff' : this.counter ? '#ff3b30' : inPerfect ? '#ffffff' : inGood ? '#ffd54f' : '#b9aee0';
 
+    // Acento de beat de la PISTA (latido con la música): halo pulsante en torno al
+    // anillo interior. Es 100% visual — el juicio del golpe va por this.t/computeQuality,
+    // que NO se toca; solo hace VER que la música es el reloj (auditoría A1).
+    const bp = this.beat;
+    if (bp && bp.active && bp.pulse > 0.03 && !dodging && !this.counter) {
+      ctx.save();
+      ctx.globalAlpha = bp.pulse * 0.5;
+      ctx.strokeStyle = '#fff6d0'; ctx.lineWidth = 2.2;
+      ctx.beginPath(); ctx.arc(x, y, innerR + 2 + bp.pulse * 3, 0, 7); ctx.stroke();
+      ctx.restore();
+    }
+
     // Anillo interior fijo
     ctx.strokeStyle = dodging ? 'rgba(90,209,255,0.9)' : this.counter ? 'rgba(255,80,60,0.9)' : 'rgba(233,226,245,0.9)';
     ctx.lineWidth = 1.5;

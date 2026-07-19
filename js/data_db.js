@@ -16,7 +16,8 @@ const FILES = {
   sellos: 'data/sellos.json',
   textos: 'data/textos_es.json',
   salas_piso1: 'data/salas/piso1_plantillas.json',
-  jefes: 'data/jefes.json'
+  jefes: 'data/jefes.json',
+  musica: 'data/musica.json'
 };
 
 // Claves mínimas requeridas por archivo (validación con errores claros)
@@ -83,6 +84,11 @@ export const DataDB = {
   },
   nodo(id) {
     return this.santuario?.nodos.find(n => n.id === id) ?? null;
+  },
+  // BPM/desfase de una pista para el reloj de beat; null si no está medida.
+  musicaBpm(id) {
+    const m = this.musica?.[id];
+    return (m && m.bpm > 0) ? m : null;
   },
   texto(clave) {
     return this.textos?.[clave] ?? `[${clave}]`;

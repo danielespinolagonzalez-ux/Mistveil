@@ -115,6 +115,7 @@ let cur = null;      // sala bajo los pies del jugador
 let mode = 'play';
 let pauseIdx = 0;        // foco del menú de pausa (navegable por toque/mando/teclado)
 let musicaActual = null; // pista de música pedida ahora mismo (el director solo cambia al variar)
+let beatInfo = { active: false, pulse: 0, phase: 0, beat: 0 }; // reloj de beat de la pista (latido HUD)
 let showDebug = false;
 let fps = 60, fpsAcc = 0, fpsN = 0;
 let flashMsg = '', flashT = 0, flashSub = '';
@@ -1280,6 +1281,9 @@ function update(dt) {
   // repetición de la misma pista y cae al dron procedural si falta el fichero).
   const mt = musicaEscena();
   if (mt && mt[0] !== musicaActual) { musicaActual = mt[0]; AudioManager.playTrack(mt[0], { loop: mt[1] }); }
+  // Reloj de beat: una lectura por frame (sample-accurate desde el AudioContext). Solo
+  // alimenta el latido visual del HUD; el input de Cadencia NO depende de esto.
+  beatInfo = AudioManager.beatClock();
   // Feedback de pulsación: un "tick" suave al tocar CUALQUIER botón táctil (el
   // pulso visual y la vibración ya los da input.js; esto añade el eco sonoro).
   if (Input.touchState().enabled) {
@@ -1607,6 +1611,7 @@ function update(dt) {
   // Cadencia: fija por línea de visión (getSolids) — nunca a través de paredes,
   // pero sí a vagabundos que cruzan límites de bloque (galerías)
   cad.getSolids = () => solids;
+  cad.beat = beatInfo; // reloj de beat de la pista (SOLO acento visual del anillo, no el juicio)
   cad.tapEsParry = Input.scheme() === 'una_mano' && Input.touchState().enabled;
   cad.update(dt, bufInput, p, alive);
   // El Afinador desafina tus ventanas mientras siga vivo en tu cámara
@@ -3328,6 +3333,14 @@ function drawHUD(t) {
   const spGr = ctx.createLinearGradient(0, 38, 0, 45);
   spGr.addColorStop(0, '#e9c877'); spGr.addColorStop(1, '#8a6a2c');
   ctx.strokeStyle = spGr; ctx.lineWidth = 1; ctx.strokeRect(27.5, 38.5, 73, 6);
+  // Latido de beat: destello suave del marco al ritmo de la pista (aditivo, sin lógica).
+  if (beatInfo.active && beatInfo.pulse > 0.02) {
+    ctx.save();
+    ctx.globalAlpha = beatInfo.pulse * 0.55;
+    ctx.strokeStyle = '#fff2c0'; ctx.lineWidth = 1.4;
+    ctx.strokeRect(26.5, 37.5, 75, 8);
+    ctx.restore();
+  }
 
   // Groove/racha (G7c): barra fina bajo el SP, solo si hay racha. Al llenar el
   // umbral late y cambia a rojo-ámbar (buff de daño y velocidad activo).
@@ -3353,13 +3366,26 @@ function drawHUD(t) {
   if (comp) {
     font(8); ctx.textAlign = 'left';
     const txt = '♪ ' + comp.nombre + ' (C)';
+    // Pip de beat: un puntito que se enciende en cada golpe de la pista, junto al
+    // banner del compás → refuerza "el compás late con la música". Puro adorno.
+    const pip = (px, py) => {
+      if (!beatInfo.active) return;
+      const r = 1.6 + beatInfo.pulse * 2.2;
+      ctx.save();
+      ctx.globalAlpha = 0.35 + beatInfo.pulse * 0.6;
+      ctx.fillStyle = comp.color;
+      ctx.beginPath(); ctx.arc(px, py, r, 0, 7); ctx.fill();
+      ctx.restore();
+    };
     if (PORTRAIT) {
       ctx.fillStyle = comp.color;
       ctx.fillText(txt, 110, 31);
+      pip(104, 31);
     } else {
       const b = hudBanner(txt, VW / 2, 3, { side: 'center' });
       ctx.fillStyle = comp.color;
       ctx.fillText(txt, b.tx, b.cy);
+      pip(b.tx + ctx.measureText(txt).width + 8, b.cy);
     }
   }
 

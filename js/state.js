@@ -1,5 +1,6 @@
 // GameState (meta persistente) + RunState (estado de la run) + SaveManager + AudioManager
 // Stubs funcionales: crecen en fases 6-10.
+import { DataDB } from './data_db.js';   // solo para el BPM por pista del reloj de beat (lectura)
 
 export const GameState = {
   memoria: 0,
@@ -229,8 +230,9 @@ export const AudioManager = {
       let tic = false;
       const tick = () => {
         if (!this.music) return;
-        this.beep(tic ? 1900 : 1520, 0.012, 'square', 0.007);
-        tic = !tic;
+        // Mientras suena una pista REAL, ella es el reloj: callamos el tic-tac para no
+        // pelear dos tempos (la pista ya tiene su propio beat, ver beatClock()).
+        if (!this._musSrc && !this._musFallbackEl) { this.beep(tic ? 1900 : 1520, 0.012, 'square', 0.007); tic = !tic; }
         this.music.timers[1] = setTimeout(tick, 1000);
       };
       this.music.timers[1] = setTimeout(tick, 1200);
@@ -308,6 +310,21 @@ export const AudioManager = {
   // Si WebAudio/decode falla, cae a <audio> loop (con costura, pero suena). ----
   _musMaster: null, _musSrc: null, _musGain: null, _musFallbackEl: null,
   _loopCache: {}, _loopOrder: [],
+  // --- Reloj de beat: ancla ctx.currentTime (sample-accurate) al arranque de la pista
+  // + su BPM medido (data/musica.json). SOLO latido visual/ambiental; jamás toca el
+  // juicio de input de Cadencia (eso vive en cadencia.js con su propio reloj testeado).
+  _musStartTime: 0, _musBpm: 0, _musBeatOffset: 0,
+  // Devuelve {active, bpm, phase(0..1 dentro del beat), beat(índice), pulse(1→0 por beat)}.
+  // Inactivo si no hay pista WebAudio sonando o la pista no tiene BPM medido.
+  beatClock() {
+    if (!this._musSrc || !this._musBpm || !this.ctx) return { active: false, bpm: 0, phase: 0, beat: 0, pulse: 0 };
+    const pos = (this.ctx.currentTime - this._musStartTime) - this._musBeatOffset;
+    const beats = pos * this._musBpm / 60;
+    const b = Math.floor(beats), phase = beats - b;
+    // pulso: brillo que decae desde el downbeat (curva rápida → sensación de golpe)
+    const pulse = Math.max(0, 1 - phase * 3.2);
+    return { active: true, bpm: this._musBpm, phase, beat: b, pulse };
+  },
   _musNode() {
     this._ensure();
     if (!this._musMaster) {
@@ -329,7 +346,7 @@ export const AudioManager = {
       const src = this._musSrc, g = this._musGain;
       this._rampParam(g.gain, 0, fade);
       try { src.stop(this.ctx.currentTime + fade + 0.06); } catch {}
-      this._musSrc = null; this._musGain = null;
+      this._musSrc = null; this._musGain = null; this._musBpm = 0; // reloj de beat inactivo
     }
     if (this._musFallbackEl) { this._rampVol(this._musFallbackEl, 0, fade); this._musFallbackEl = null; }
   },
@@ -352,6 +369,9 @@ export const AudioManager = {
         src.connect(g); g.connect(this._musNode());
         src.start();
         this._musSrc = src; this._musGain = g;
+        // ancla el reloj de beat a este arranque (BPM medido por pista; 0 si no hay dato)
+        const bd = DataDB.musicaBpm?.(id);
+        this._musStartTime = c.currentTime; this._musBpm = bd ? bd.bpm : 0; this._musBeatOffset = bd ? (bd.offset_s || 0) : 0;
         this._duckAmbient(0, fade);         // aparta el dron SOLO cuando suena la pista real
         this._rampParam(g.gain, 1, fade);   // entra la pista
       })

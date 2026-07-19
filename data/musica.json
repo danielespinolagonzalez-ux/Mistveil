@@ -1,0 +1,14 @@
+{
+  "_nota": "BPM y desfase del primer beat (relativo al inicio recortado del bucle, modulo un beat) medidos offline por análisis de onset+autocorrelación. Alimentan el RELOJ DE BEAT (AudioManager.beatClock): SOLO latido visual/ambiental, jamás el juicio de input de Cadencia. Pista sin entrada aquí (o bpm 0) => reloj inactivo, sin romper nada.",
+  "mus_titulo":    { "bpm": 143.6, "offset_s": 0.382 },
+  "mus_pueblo":    { "bpm": 92.3,  "offset_s": 0.645 },
+  "mus_pendulos":  { "bpm": 117.5, "offset_s": 0.0 },
+  "mus_archivo":   { "bpm": 69.8,  "offset_s": 0.275 },
+  "mus_invertida": { "bpm": 66.3,  "offset_s": 0.88 },
+  "mus_truenos":   { "bpm": 69.8,  "offset_s": 0.0 },
+  "mus_jefe":      { "bpm": 69.8,  "offset_s": 0.853 },
+  "mus_redoble":   { "bpm": 129.2, "offset_s": 0.0 },
+  "mus_santuario": { "bpm": 136.0, "offset_s": 0.432 },
+  "mus_victoria":  { "bpm": 112.3, "offset_s": 0.085 },
+  "mus_derrota":   { "bpm": 143.6, "offset_s": 0.418 }
+}

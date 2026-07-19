@@ -20,7 +20,7 @@ import { buildTestFloor, isDoorFront, TILE, RW, RH } from '../js/rooms.js';
 import { applyItem, applyItemEffects } from '../js/items.js';
 import { elementMult } from '../js/spells.js';
 import { EventBus } from '../js/event_bus.js';
-import { GameState, RunState } from '../js/state.js';
+import { GameState, RunState, AudioManager } from '../js/state.js';
 import { nodoDisponible, activarNodo, esferaBonos } from '../js/esfera.js';
 import { syncFamiliares, updateFamiliares } from '../js/familiares.js';
 import { spawnArt, updateArt, romano } from '../js/artes_fx.js';
@@ -46,6 +46,24 @@ assert('balance.player.move_speed existe y es número', typeof DataDB.balance?.p
 assert('elementos define color para neutro', typeof DataDB.elementos?.neutro?.color === 'string');
 assert('enemigos incluye cera_andante', !!DataDB.enemigo('cera_andante'));
 assert('textos_es tiene ui.muerte', DataDB.texto('ui.muerte') !== '[ui.muerte]');
+
+// A1 — Reloj de beat: datos de BPM y método beatClock() defensivo
+assert('musica.json carga con BPM por pista', DataDB.musicaBpm('mus_pendulos')?.bpm > 0);
+assert('musicaBpm devuelve null para pista sin medir', DataDB.musicaBpm('inexistente_xyz') === null);
+assert('beatClock inactivo sin pista sonando', AudioManager.beatClock().active === false);
+// Con una pista simulada (ctx + _musSrc + BPM), la fase avanza y el índice de beat crece
+(() => {
+  const A = AudioManager;
+  const guardado = { ctx: A.ctx, src: A._musSrc, t0: A._musStartTime, bpm: A._musBpm, off: A._musBeatOffset };
+  A.ctx = { currentTime: 0 }; A._musSrc = {}; A._musBpm = 120; A._musBeatOffset = 0; A._musStartTime = 0;
+  const b0 = A.beatClock();            // t=0 → beat 0, fase 0
+  A.ctx.currentTime = 0.5;             // 120 BPM → medio segundo = 1 beat exacto
+  const b1 = A.beatClock();
+  assert('beatClock activo con pista simulada', b0.active === true && b0.bpm === 120);
+  assert('beatClock avanza el índice de beat', b1.beat === 1 && Math.abs(b1.phase) < 0.02);
+  assert('beatClock pulse decae dentro del beat', b0.pulse === 1 && A.beatClock() && (A.ctx.currentTime = 0.75, A.beatClock().pulse < 0.6));
+  A.ctx = guardado.ctx; A._musSrc = guardado.src; A._musStartTime = guardado.t0; A._musBpm = guardado.bpm; A._musBeatOffset = guardado.off;
+})();
 
 // Player existe y responde a la física
 const room = { x: 0, y: 0, w: 416, h: 224 };
