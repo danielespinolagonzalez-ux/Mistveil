@@ -132,7 +132,7 @@ export class MenuEquipo {
   }
   _nodeToward(fromId, dir) {
     const [fx, fy] = this._pos(nodoEsfera(fromId));
-    let best = null, bestDot = 0.25;
+    let best = null, bestDot = 0.35; // umbral más alto = navegación radial por mando menos ambigua
     for (const vid of vecinosEsfera(fromId)) {
       const [x, y] = this._pos(nodoEsfera(vid));
       const dx = x - fx, dy = y - fy, d = Math.hypot(dx, dy) || 1;
@@ -144,11 +144,11 @@ export class MenuEquipo {
   _nodeAt(x, y) {
     for (const n of nodosEsfera()) {
       const [nx, ny] = this._pos(n);
-      if (Math.hypot(x - nx, y - ny) < 13) return n.id;
+      if (Math.hypot(x - nx, y - ny) < 22) return n.id; // radio táctil (antes 13, imposible con el pulgar)
     }
     return null;
   }
-  _tabRect(i) { const w = (this.VW - 32) / 3; return { x: 16 + i * w, y: 30, w, h: 16 }; }
+  _tabRect(i) { const w = (this.VW - 32) / 3; return { x: 16 + i * w, y: 28, w, h: 22 }; }
 
   _gear(g, x, y, r, col) {
     g.save(); g.translate(x, y); g.fillStyle = col;
@@ -341,7 +341,7 @@ export class MenuEquipo {
       const act = nodoActivado(n.id), disp = nodoDisponible(n.id);
       const afford = GameState.engranajes >= n.coste;
       const col = CAT_COLOR[n.cat] ?? '#e9e2f5';
-      const R = n.ring === 1.5 ? 6 : 7;
+      const R = n.ring === 1.5 ? 8 : 9;
       const shape = (fill, stroke, lw) => {
         if (n.ring === 1.5) {
           g.save(); g.translate(x, y); g.rotate(Math.PI / 4);
