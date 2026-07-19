@@ -400,6 +400,19 @@ export class Enemy {
     this.id = id;
     this.x = x; this.y = y; this.vx = 0; this.vy = 0;
     this.r = overrides.r ?? 10;
+    // Élite (minijefe ligero): +vida, mayor y un RASGO peligroso (data-driven, marcado en
+    // _rollSpawns). Sube la dificultad sin tocar el daño base; recompensa extra al caer.
+    this.elite = this.def.elite ?? null;
+    if (this.elite) {
+      const E = DataDB.balance.elite ?? {};
+      this.def.hp = Math.round(this.def.hp * (E.hp_mult ?? 2.4));
+      this.r *= (E.r_mult ?? 1.25);
+      if (this.elite === 'veloz') this.def.velocidad = (this.def.velocidad ?? 60) * (E.veloz_speed_mult ?? 1.55);
+      else if (this.elite === 'iracundo') {
+        this.def.velocidad = (this.def.velocidad ?? 60) * (E.iracundo_speed_mult ?? 1.3);
+        if (this.def.proyectil) this.def.proyectil = { ...this.def.proyectil, cadencia_s: (this.def.proyectil.cadencia_s ?? 1) * (E.iracundo_cadencia_mult ?? 0.6) };
+      }
+    }
     this.health = new HealthComponent(this.def.hp);
     this.flash = 0;
     this.fireCd = (this.def.proyectil?.cadencia_s ?? 1) * (0.5 + Math.random() * 0.5);
@@ -862,6 +875,8 @@ export class Enemy {
     }
     // Gemelos vinculados: mientras ambos viven, se protegen (mitad de daño)
     if (this.def.gemelo && this.twin && !this.twin.health.dead) base *= 0.5;
+    // Élite ACORAZADO: encaja mucho menos daño → aguanta más ciclos de Cadencia (minijefe)
+    if (this.elite === 'acorazado') base *= (DataDB.balance.elite?.acorazado_dano_mult ?? 0.55);
     const dmg = Math.max(1, Math.round(base)); // redondeo final, mínimo 1
     if (!this.health.takeDamage(dmg)) return 0;
     this.flash = 0.08;

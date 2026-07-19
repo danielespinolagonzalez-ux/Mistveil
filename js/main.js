@@ -1050,6 +1050,17 @@ EventBus.on('enemy_died', (e) => {
   hitStopT = Math.max(hitStopT, 0.03);
   // Los vagabundos de galería sueltan calderilla a veces
   if (e.room?.type === 'galeria' && Math.random() < 0.4) spawnPickup('coin', e.x, e.y);
+  // Élite (minijefe): botín garantizado — oro + espíritu, y opción de corazón. Compensa
+  // el riesgo extra sin regalar sostén (el % de corazón es tunable).
+  if (e.elite) {
+    const E = DataDB.balance.elite ?? {};
+    RunState.oro += (E.recompensa_oro ?? 6);
+    RunState.sp = Math.min(DataDB.balance.ignicion.sp_max, RunState.sp + (E.recompensa_sp ?? 10));
+    AudioManager.sfx('gold'); FX.addShake(2.4);
+    FX.burst(e.x, e.y, { n: 16, color: '#ffd54f', speed: 130, life: 0.6, size: 2.5, glow: true });
+    if (Math.random() * 100 < (E.recompensa_corazon_pct ?? 24)) spawnPickup('heart', e.x, e.y);
+    flash('¡Élite abatido!', '+' + (E.recompensa_oro ?? 6) + ' oro · el alma se enciende');
+  }
   // Los caídos dejan mecha: el Cerero Errante puede reavivarlos
   if (!e.def.jefe) world.corpses.push({ id: e.id, x: e.x, y: e.y, hp: e.def.hp, t: 11 });
   // Núcleos que se DIVIDEN: al morir sueltan crías (gestión de multitud)
@@ -3030,15 +3041,22 @@ function drawEnemy(e, t) {
     ctx.fillStyle = `rgba(255,255,255,${0.5 * mk})`;
     ctx.beginPath(); ctx.ellipse(SX(e.x), SY(e.y), rr, rr * KY, 0, 0, 7); ctx.fill();
   }
-  // Élites (gemelo enfurecido) y jefes: aura latiente que impone
-  if (e.enraged || e.def.jefe) {
+  // Élites (minijefe con rasgo), gemelo enfurecido y jefes: aura latiente que impone.
+  // El color del aura DELATA el rasgo del élite (acorazado azul acero, veloz cian, iracundo rojo).
+  if (e.enraged || e.def.jefe || e.elite) {
+    const AURA_ELITE = { acorazado: '110,150,210', veloz: '120,230,220', iracundo: '255,120,60' };
+    const rgb = e.def.jefe ? '255,181,71' : e.elite ? (AURA_ELITE[e.elite] ?? '224,140,60') : '224,90,79';
     const pul = 0.6 + Math.sin(t * 6 + e.x) * 0.4;
-    ctx.strokeStyle = e.def.jefe ? `rgba(255,181,71,${0.3 * pul})` : `rgba(224,90,79,${0.35 * pul})`;
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = `rgba(${rgb},${(e.def.jefe ? 0.3 : 0.4) * pul})`;
+    ctx.lineWidth = e.elite ? 2.4 : 2;
     ctx.beginPath(); ctx.ellipse(SX(e.x), SY(e.y) + 4, e.r * 1.5 + pul * 3, (e.r * 1.5 + pul * 3) * 0.4, 0, 0, 7); ctx.stroke();
-    if (Math.random() < 0.15) {
+    if (e.elite) { // segundo aro interior para que el minijefe destaque entre la horda
+      ctx.strokeStyle = `rgba(${rgb},${0.22 * pul})`; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.ellipse(SX(e.x), SY(e.y) + 4, e.r * 1.15, e.r * 1.15 * 0.4, 0, 0, 7); ctx.stroke();
+    }
+    if (Math.random() < (e.elite ? 0.2 : 0.15)) {
       FX.burst(e.x + (Math.random() - 0.5) * e.r * 2, e.y - 4,
-        { n: 1, color: e.def.jefe ? '#ffb547' : '#e05a4f', speed: 14, life: 0.5, size: 1.5, glow: true, gravity: -40 });
+        { n: 1, color: `rgb(${rgb})`, speed: 14, life: 0.5, size: 1.5, glow: true, gravity: -40 });
     }
   }
 

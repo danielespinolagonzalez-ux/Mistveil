@@ -369,6 +369,13 @@ export class Room {
       const def = affordable.length ? pick(affordable) : pick(pool);
       const ov = { hp: Math.round(def.hp * hpMult), danoMult };
       if (inv) { ov.windup_mult = inv.windup_mult; ov.strike_mult = inv.strike_mult; }
+      // Élite (minijefe): un enemigo normal puede promocionar a élite con un rasgo. Prob
+      // sube por piso. Los gemelos (minuteros) nunca son élite (ya vienen en pareja).
+      const EL = DataDB.balance.elite;
+      if (EL && !def.gemelo && Math.random() < Math.min(EL.prob_max ?? 0.4, (EL.prob_base ?? 0.1) + (this.piso - 1) * (EL.prob_por_piso ?? 0.035))) {
+        ov.elite = (EL.rasgos ?? ['acorazado', 'veloz', 'iracundo'])[Math.floor(Math.random() * (EL.rasgos?.length ?? 3))];
+        budget -= 2; // un élite consume presupuesto extra (cuenta como más peligro)
+      }
       if (def.gemelo) {
         // Los minuteros llegan SIEMPRE en pareja vinculada
         const key = 'par' + (pairSeq++);
