@@ -324,5 +324,60 @@
   "w": 38,
   "h": 48,
   "face": "right"
+ },
+ "prop_bloque_cera": {
+  "w": 40,
+  "h": 48,
+  "face": "right"
+ },
+ "prop_candelabro": {
+  "w": 53,
+  "h": 80,
+  "face": "right"
+ },
+ "prop_engranaje_flotante": {
+  "w": 79,
+  "h": 72,
+  "face": "right"
+ },
+ "prop_estanteria_tinta": {
+  "w": 78,
+  "h": 96,
+  "face": "right"
+ },
+ "prop_mostrador_tienda": {
+  "w": 61,
+  "h": 72,
+  "face": "right"
+ },
+ "prop_pedestal": {
+  "w": 54,
+  "h": 56,
+  "face": "right"
+ },
+ "prop_pendulo_colgante": {
+  "w": 58,
+  "h": 96,
+  "face": "right"
+ },
+ "prop_pila_libros": {
+  "w": 50,
+  "h": 56,
+  "face": "right"
+ },
+ "prop_reloj_derretido": {
+  "w": 53,
+  "h": 72,
+  "face": "right"
+ },
+ "prop_roca": {
+  "w": 49,
+  "h": 48,
+  "face": "right"
+ },
+ "prop_trampilla": {
+  "w": 69,
+  "h": 64,
+  "face": "right"
  }
 }

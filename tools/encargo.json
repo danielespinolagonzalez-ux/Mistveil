@@ -474,7 +474,8 @@
       "clase": "prop",
       "targetH": 96,
       "face": "right",
-      "sujeto": "a great bronze pendulum on a chain, seen hanging"
+      "sujeto": "a great bronze pendulum on a chain, seen hanging",
+      "estado": "hecho"
     },
     {
       "id": "prop_candelabro",
@@ -482,7 +483,8 @@
       "clase": "prop",
       "targetH": 80,
       "face": "right",
-      "sujeto": "a standing three-armed candelabrum with lit dripping candles"
+      "sujeto": "a standing three-armed candelabrum with lit dripping candles",
+      "estado": "hecho"
     },
     {
       "id": "prop_estandarte",
@@ -499,7 +501,8 @@
       "clase": "prop",
       "targetH": 96,
       "face": "right",
-      "sujeto": "a tall bookshelf overflowing with old books dripping indigo ink"
+      "sujeto": "a tall bookshelf overflowing with old books dripping indigo ink",
+      "estado": "hecho"
     },
     {
       "id": "prop_pila_libros",
@@ -507,7 +510,8 @@
       "clase": "prop",
       "targetH": 56,
       "face": "right",
-      "sujeto": "an unstable pile of ancient books with an inkwell on top"
+      "sujeto": "an unstable pile of ancient books with an inkwell on top",
+      "estado": "hecho"
     },
     {
       "id": "prop_engranaje_flotante",
@@ -515,7 +519,8 @@
       "clase": "prop",
       "targetH": 72,
       "face": "right",
-      "sujeto": "a large copper gear floating in the air, slightly ghostly"
+      "sujeto": "a large copper gear floating in the air, slightly ghostly",
+      "estado": "hecho"
     },
     {
       "id": "prop_reloj_derretido",
@@ -523,7 +528,8 @@
       "clase": "prop",
       "targetH": 72,
       "face": "right",
-      "sujeto": "a wall clock melting like wax in homage to Dali, numerals dripping"
+      "sujeto": "a wall clock melting like wax in homage to Dali, numerals dripping",
+      "estado": "hecho"
     },
     {
       "id": "prop_trampilla",
@@ -531,7 +537,8 @@
       "clase": "prop",
       "targetH": 64,
       "face": "right",
-      "sujeto": "a circular wood-and-brass trapdoor engraved with a clock face, ajar into darkness"
+      "sujeto": "a circular wood-and-brass trapdoor engraved with a clock face, ajar into darkness",
+      "estado": "hecho"
     },
     {
       "id": "prop_pedestal",
@@ -539,7 +546,8 @@
       "clase": "prop",
       "targetH": 56,
       "face": "right",
-      "sujeto": "a stone and brass pedestal with an empty velvet cushion"
+      "sujeto": "a stone and brass pedestal with an empty velvet cushion",
+      "estado": "hecho"
     },
     {
       "id": "prop_mostrador_tienda",
@@ -547,7 +555,8 @@
       "clase": "prop",
       "targetH": 72,
       "face": "right",
-      "sujeto": "a wooden shop counter with a small purple-and-gold striped awning"
+      "sujeto": "a wooden shop counter with a small purple-and-gold striped awning",
+      "estado": "hecho"
     },
     {
       "id": "prop_roca",
@@ -555,7 +564,8 @@
       "clase": "prop",
       "targetH": 48,
       "face": "right",
-      "sujeto": "a mossy amber stone boulder, obstacle-sized"
+      "sujeto": "a mossy amber stone boulder, obstacle-sized",
+      "estado": "hecho"
     },
     {
       "id": "prop_bloque_cera",
@@ -563,7 +573,8 @@
       "clase": "prop",
       "targetH": 48,
       "face": "right",
-      "sujeto": "a cubic block of translucent amber wax with an unlit wick, breakable"
+      "sujeto": "a cubic block of translucent amber wax with an unlit wick, breakable",
+      "estado": "hecho"
     },
     {
       "id": "suelo_pendulos",

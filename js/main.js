@@ -1987,11 +1987,24 @@ function drawDoor(room, side) {
   }
 }
 
+// Dibuja un prop pintado anclado por su BASE (cx, byY) a una altura dh.
+// Devuelve false si no hay sprite cargado → el llamante pinta su versión vectorial.
+function drawPropSprite(id, cx, byY, dh, alpha = 1) {
+  const spr = Sprites.get(id); if (!spr) return false;
+  const inf = Sprites.info(id);
+  const dw = Math.round(inf.w * dh / inf.h);
+  const a = ctx.globalAlpha; if (alpha !== 1) ctx.globalAlpha = a * alpha;
+  ctx.drawImage(spr, Math.round(cx - dw / 2), Math.round(byY - dh), dw, dh);
+  ctx.globalAlpha = a;
+  return true;
+}
+
 function drawRock(rect) {
   const x = SX(rect.x), y = SY(rect.y);
   const v = ((rect.x * 7 + rect.y * 13) % 10) / 10;
   ctx.fillStyle = 'rgba(0,0,0,0.35)';
   ctx.beginPath(); ctx.ellipse(x + 16, y + TILE_SY - 2, 15, 5, 0, 0, 7); ctx.fill();
+  if (drawPropSprite('prop_roca', x + 16, y + TILE_SY, 30)) return;
   ctx.fillStyle = '#4a4266';
   ctx.beginPath();
   ctx.moveTo(x + 4, y + TILE_SY - 2);
@@ -2021,18 +2034,20 @@ function drawWaxBlock(w, maxHp) {
   const H = 13;
   ctx.fillStyle = 'rgba(0,0,0,0.35)';
   ctx.beginPath(); ctx.ellipse(x + 16, y + TILE_SY - 2, 15, 4, 0, 0, 7); ctx.fill();
-  ctx.fillStyle = '#d5c8a4';
-  ctx.fillRect(x + 2, y - H + TILE_SY * 0.35, 28, H + TILE_SY * 0.55);
-  ctx.fillStyle = '#efe4c8';
-  ctx.fillRect(x + 2, y - H, 28, TILE_SY * 0.45);
-  ctx.fillStyle = 'rgba(255,255,255,0.25)';
-  ctx.fillRect(x + 2, y - H, 28, 2);
-  ctx.fillStyle = '#bfae87';
-  ctx.fillRect(x + 2, y + TILE_SY - 6, 28, 5);
-  ctx.fillStyle = '#efe4c8';
-  ctx.fillRect(x + 5, y + TILE_SY - 4, 3, 4);
-  ctx.fillRect(x + 23, y + TILE_SY - 5, 3, 5);
-  ctx.fillRect(x + 13, y - H + 4, 2, 6);
+  if (!drawPropSprite('prop_bloque_cera', x + 16, y + TILE_SY, H + TILE_SY * 0.9)) {
+    ctx.fillStyle = '#d5c8a4';
+    ctx.fillRect(x + 2, y - H + TILE_SY * 0.35, 28, H + TILE_SY * 0.55);
+    ctx.fillStyle = '#efe4c8';
+    ctx.fillRect(x + 2, y - H, 28, TILE_SY * 0.45);
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    ctx.fillRect(x + 2, y - H, 28, 2);
+    ctx.fillStyle = '#bfae87';
+    ctx.fillRect(x + 2, y + TILE_SY - 6, 28, 5);
+    ctx.fillStyle = '#efe4c8';
+    ctx.fillRect(x + 5, y + TILE_SY - 4, 3, 4);
+    ctx.fillRect(x + 23, y + TILE_SY - 5, 3, 5);
+    ctx.fillRect(x + 13, y - H + 4, 2, 6);
+  }
   if (w.hp < maxHp) {
     ctx.strokeStyle = 'rgba(60,50,30,0.6)'; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(x + 8, y - H + 5); ctx.lineTo(x + 13, y + 2); ctx.lineTo(x + 9, y + 10); ctx.stroke();
@@ -2046,14 +2061,16 @@ function drawPedestalObj(room, t, pd = room.pedestal) {
   const x = SX(pd.x), y = SY(pd.y);
   ctx.fillStyle = 'rgba(0,0,0,0.35)';
   ctx.beginPath(); ctx.ellipse(x, y + 8, 12, 4, 0, 0, 7); ctx.fill();
-  ctx.fillStyle = '#352d52';
-  ctx.fillRect(x - 6, y - 16, 12, 22);
-  ctx.fillStyle = '#4c4070';
-  ctx.beginPath(); ctx.ellipse(x, y - 16, 9, 3.5, 0, 0, 7); ctx.fill();
-  ctx.fillStyle = '#3d3358';
-  ctx.beginPath(); ctx.ellipse(x, y + 6, 9, 3.5, 0, 0, 7); ctx.fill();
-  ctx.fillStyle = 'rgba(255,255,255,0.06)';
-  ctx.fillRect(x - 6, y - 14, 2, 18);
+  if (!drawPropSprite('prop_pedestal', x, y + 8, 30)) {
+    ctx.fillStyle = '#352d52';
+    ctx.fillRect(x - 6, y - 16, 12, 22);
+    ctx.fillStyle = '#4c4070';
+    ctx.beginPath(); ctx.ellipse(x, y - 16, 9, 3.5, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = '#3d3358';
+    ctx.beginPath(); ctx.ellipse(x, y + 6, 9, 3.5, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.06)';
+    ctx.fillRect(x - 6, y - 14, 2, 18);
+  }
   if (pd.taken) return;
   const it = DataDB.item(pd.itemId);
   const hover = Math.sin(t * 3) * 2;
@@ -2114,12 +2131,20 @@ function drawShopItem(s, t) {
 function drawTrapdoor(room) {
   if (!room.trapdoor) return;
   const x = SX(room.trapdoor.x), y = SY(room.trapdoor.y);
-  ctx.fillStyle = '#07050e';
-  ctx.beginPath(); ctx.ellipse(x, y, 14, 10 * KY + 3, 0, 0, 7); ctx.fill();
-  ctx.strokeStyle = '#6b5a36'; ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.ellipse(x, y, 14, 10 * KY + 3, 0, 0, 7); ctx.stroke();
-  ctx.fillStyle = 'rgba(150,130,220,0.15)';
-  ctx.beginPath(); ctx.ellipse(x, y - 2, 10, 5, 0, 0, 7); ctx.fill();
+  const trapSpr = Sprites.get('prop_trampilla');
+  if (trapSpr) {
+    // Trampilla pintada en el suelo (vista cenital): anclada por su centro
+    const inf = Sprites.info('prop_trampilla');
+    const dh = 34, dw = Math.round(inf.w * dh / inf.h);
+    ctx.drawImage(trapSpr, Math.round(x - dw / 2), Math.round(y - dh * 0.62), dw, dh);
+  } else {
+    ctx.fillStyle = '#07050e';
+    ctx.beginPath(); ctx.ellipse(x, y, 14, 10 * KY + 3, 0, 0, 7); ctx.fill();
+    ctx.strokeStyle = '#6b5a36'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.ellipse(x, y, 14, 10 * KY + 3, 0, 0, 7); ctx.stroke();
+    ctx.fillStyle = 'rgba(150,130,220,0.15)';
+    ctx.beginPath(); ctx.ellipse(x, y - 2, 10, 5, 0, 0, 7); ctx.fill();
+  }
   // Progreso de descenso (dwell): anillo dorado que se cierra
   const dw = room.trapdoor.dwell ?? 0;
   if (dw > 0) {
@@ -2203,54 +2228,83 @@ function drawBiomaDecor(room, t) {
   ctx.globalAlpha = 0.5;
   if (bioma === 'pendulos' && room.type !== 'galeria') {
     // Péndulos decorativos colgando del techo (los de las galerías son el peligro real)
+    const pendSpr = Sprites.get('prop_pendulo_colgante');
     for (let i = 0; i < 2; i++) {
       const px = b.x + b.w * (0.2 + rndAt(i) * 0.6);
       const largo = 26 + rndAt(i + 3) * 16;
       const ang = Math.sin(t * 0.9 + seed % 7 + i * 2.4) * 0.28;
       const x0 = SX(px), y0 = SY(b.y) - 26;
-      const x1 = x0 + Math.sin(ang) * largo, y1 = y0 + Math.cos(ang) * largo;
-      ctx.strokeStyle = '#6d5c42'; ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
-      ctx.fillStyle = '#c8a24f';
-      ctx.beginPath(); ctx.arc(x1, y1, 4, 0, 7); ctx.fill();
-      ctx.fillStyle = '#ffe9b0'; ctx.fillRect(x1 - 1, y1 - 2, 1.5, 1.5);
+      if (pendSpr) {
+        // Sprite pintado colgando del techo: pivota desde el enganche (ang)
+        const inf = Sprites.info('prop_pendulo_colgante');
+        const dh = 30 + largo * 0.4, dw = Math.round(inf.w * dh / inf.h);
+        ctx.save(); ctx.globalAlpha *= 1.5; ctx.translate(x0, y0); ctx.rotate(ang);
+        ctx.drawImage(pendSpr, Math.round(-dw / 2), 0, dw, dh); ctx.restore();
+      } else {
+        const x1 = x0 + Math.sin(ang) * largo, y1 = y0 + Math.cos(ang) * largo;
+        ctx.strokeStyle = '#6d5c42'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+        ctx.fillStyle = '#c8a24f';
+        ctx.beginPath(); ctx.arc(x1, y1, 4, 0, 7); ctx.fill();
+        ctx.fillStyle = '#ffe9b0'; ctx.fillRect(x1 - 1, y1 - 2, 1.5, 1.5);
+      }
     }
+    // Candelabro de pie contra la pared norte
+    drawPropSprite('prop_candelabro', SX(b.x + b.w * (0.09 + rndAt(6) * 0.06)), SY(b.y) + 8, 34, 1.5);
   } else if (bioma === 'archivo') {
     // Estanterías del Archivo sobre la pared norte, con lomos apagados y tinta que gotea
+    const shelfSpr = Sprites.get('prop_estanteria_tinta');
     for (let s = 0; s < 2; s++) {
-      const sx0 = SX(b.x + b.w * (0.18 + s * 0.5) - 34), sy0 = SY(b.y) - 34;
-      ctx.fillStyle = '#3a3a52';
-      ctx.fillRect(sx0, sy0, 68, 26);
-      const lomos = ['#7d90b8', '#a8a2c8', '#6d84a8', '#8d9cb0'];
-      for (let i = 0; i < 8; i++) {
-        ctx.fillStyle = lomos[(i + s) % lomos.length];
-        ctx.fillRect(sx0 + 4 + i * 8, sy0 + 4 + (i % 2), 6, 20 - (i % 3) * 2);
+      const cx = b.x + b.w * (0.22 + s * 0.5);
+      if (shelfSpr) {
+        drawPropSprite('prop_estanteria_tinta', SX(cx), SY(b.y) + 10, 42, 1.5);
+      } else {
+        const sx0 = SX(cx - 34), sy0 = SY(b.y) - 34;
+        ctx.fillStyle = '#3a3a52';
+        ctx.fillRect(sx0, sy0, 68, 26);
+        const lomos = ['#7d90b8', '#a8a2c8', '#6d84a8', '#8d9cb0'];
+        for (let i = 0; i < 8; i++) {
+          ctx.fillStyle = lomos[(i + s) % lomos.length];
+          ctx.fillRect(sx0 + 4 + i * 8, sy0 + 4 + (i % 2), 6, 20 - (i % 3) * 2);
+        }
+        const drip = ((t * 0.55 + rndAt(s + 9)) % 1);
+        ctx.fillStyle = 'rgba(60,80,160,0.8)';
+        ctx.fillRect(sx0 + 12 + s * 30, sy0 + 26 + drip * 26, 2, 4);
       }
-      // Gota de tinta que cae periódicamente
-      const drip = ((t * 0.55 + rndAt(s + 9)) % 1);
-      ctx.fillStyle = 'rgba(60,80,160,0.8)';
-      ctx.fillRect(sx0 + 12 + s * 30, sy0 + 26 + drip * 26, 2, 4);
     }
+    // Pila de libros con tintero en el suelo
+    drawPropSprite('prop_pila_libros', SX(b.x + b.w * 0.5), SY(b.y + b.h * 0.3), 24, 1.4);
   } else if (bioma === 'invertida') {
     // Engranajes flotando al revés y un reloj derretido en la pared
+    const gearSpr = Sprites.get('prop_engranaje_flotante');
     for (let i = 0; i < 3; i++) {
       const gx = SX(b.x + b.w * (0.15 + rndAt(i) * 0.7));
       const gy = SY(b.y + b.h * (0.2 + rndAt(i + 5) * 0.35)) - 30 - Math.sin(t * 0.7 + i * 2.1) * 5;
       const r = 6 + rndAt(i + 2) * 7;
-      ctx.strokeStyle = '#a06848'; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.arc(gx, gy, r, 0, 7); ctx.stroke();
       const rot = t * (i % 2 ? 0.4 : -0.3) + i;
-      for (let d = 0; d < 4; d++) {
-        const a = rot + d * Math.PI / 2;
-        ctx.fillStyle = '#a06848';
-        ctx.fillRect(gx + Math.cos(a) * r - 1.5, gy + Math.sin(a) * r - 1.5, 3, 3);
+      if (gearSpr) {
+        const inf = Sprites.info('prop_engranaje_flotante');
+        const dh = r * 2.8, dw = Math.round(inf.w * dh / inf.h);
+        ctx.save(); ctx.globalAlpha *= 1.4; ctx.translate(gx, gy); ctx.rotate(rot);
+        ctx.drawImage(gearSpr, Math.round(-dw / 2), Math.round(-dh / 2), dw, dh); ctx.restore();
+      } else {
+        ctx.strokeStyle = '#a06848'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(gx, gy, r, 0, 7); ctx.stroke();
+        for (let d = 0; d < 4; d++) {
+          const a = rot + d * Math.PI / 2;
+          ctx.fillStyle = '#a06848';
+          ctx.fillRect(gx + Math.cos(a) * r - 1.5, gy + Math.sin(a) * r - 1.5, 3, 3);
+        }
       }
     }
     // Esfera de reloj derretida chorreando sobre la pared norte
-    const mx = SX(b.x + b.w * (0.3 + rndAt(11) * 0.4)), my = SY(b.y) - 22;
-    ctx.strokeStyle = '#c8b090'; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.ellipse(mx, my, 12, 8 + Math.sin(t * 0.5 + seed) * 1.5, 0.3, 0, 7); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(mx - 4, my + 7); ctx.quadraticCurveTo(mx - 3, my + 15, mx - 5, my + 18); ctx.stroke();
+    const mx = SX(b.x + b.w * (0.3 + rndAt(11) * 0.4));
+    if (!drawPropSprite('prop_reloj_derretido', mx, SY(b.y) + 4, 30, 1.5)) {
+      const my = SY(b.y) - 22;
+      ctx.strokeStyle = '#c8b090'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.ellipse(mx, my, 12, 8 + Math.sin(t * 0.5 + seed) * 1.5, 0.3, 0, 7); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(mx - 4, my + 7); ctx.quadraticCurveTo(mx - 3, my + 15, mx - 5, my + 18); ctx.stroke();
+    }
   } else if (bioma === 'truenos') {
     // El órgano-carillón: tubos de bronce en la pared norte y campanas colgantes
     const nx = SX(b.x + b.w * 0.5), ny = SY(b.y) - 32;
@@ -3842,6 +3896,12 @@ function render() {
     drawDoor(room, 'n'); drawDoor(room, 's'); drawDoor(room, 'e'); drawDoor(room, 'w');
     drawCandles(room, t);
     drawTrapdoor(room);
+    // Mostrador de la tienda: mueble de fondo, detrás de los productos
+    if (room.stock && room.stock.length) {
+      let sx = 0, sy = 1e9;
+      for (const s of room.stock) { sx += s.x; sy = Math.min(sy, s.y); }
+      drawPropSprite('prop_mostrador_tienda', SX(sx / room.stock.length), SY(sy) + 12, 40);
+    }
     drawSpawnMarks(room, t);
   }
 
