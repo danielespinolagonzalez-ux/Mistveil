@@ -137,10 +137,12 @@ export const AudioManager = {
   // bundle sin assets/audio), _sfxBuffers[name] queda vacío y sfx() cae al beep. ----
   _sfxBuffers: {},
   _sfxLoaded: false,
-  _sfxNombres: ['tear', 'hit', 'enemy_die', 'hurt', 'dash', 'parry', 'cad_perfect', 'cad_good', 'gold', 'heart'],
+  _sfxNombres: ['tear', 'hit', 'enemy_die', 'hurt', 'dash', 'parry', 'cad_perfect', 'cad_good', 'gold', 'heart',
+    'cast_nova', 'cast_onda', 'cast_cono', 'explode', 'wax_break', 'door_open', 'cad_fail', 'cad_counter', 'clear'],
   // Ganancia por SFX (los WAV van normalizados a -1 dBFS = altos; aquí se equilibran).
   // tear es más bajo porque se dispara en ráfaga y se solaparía.
-  _sfxGain: { tear: 0.42, hit: 0.6, enemy_die: 0.62, hurt: 0.72, dash: 0.5, parry: 0.62, cad_perfect: 0.72, cad_good: 0.5, gold: 0.55, heart: 0.62 },
+  _sfxGain: { tear: 0.42, hit: 0.6, enemy_die: 0.62, hurt: 0.72, dash: 0.5, parry: 0.62, cad_perfect: 0.72, cad_good: 0.5, gold: 0.55, heart: 0.62,
+    cast_nova: 0.65, cast_onda: 0.65, cast_cono: 0.65, explode: 0.72, wax_break: 0.55, door_open: 0.55, cad_fail: 0.5, cad_counter: 0.72, clear: 0.62 },
   loadSfx() {
     if (this._sfxLoaded || !this.ctx) return;
     this._sfxLoaded = true;
