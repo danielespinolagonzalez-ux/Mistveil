@@ -4290,6 +4290,15 @@ function paintFatal(err) {
   window.addEventListener('pointerdown', kick);
   window.addEventListener('keydown', kick);
   window.addEventListener('touchstart', kick);
+  // iOS puede SUSPENDER el AudioContext al arrancar la música (HTMLAudio), y entonces
+  // los SFX (WebAudio: disparo, golpes…) enmudecen a media partida. Este handler
+  // PERSISTENTE lo reanuda en cada interacción (moverse, disparar, tocar) para que no
+  // se apaguen. (El silencio total con música ok en iPhone suele ser el interruptor
+  // de silencio: WebAudio lo respeta; la solución real son muestras por el canal media.)
+  const keepAudioAlive = () => { try { const c = AudioManager.ctx; if (c && c.state === 'suspended') c.resume(); } catch {} };
+  window.addEventListener('pointerdown', keepAudioAlive);
+  window.addEventListener('touchstart', keepAudioAlive);
+  window.addEventListener('keydown', keepAudioAlive);
   requestAnimationFrame(frame);
   } catch (err) { paintFatal(err); }
 })();
