@@ -126,6 +126,8 @@ let nearmissCd = 0; // anti-spam del bullet-time por esquivar por los pelos
 let ignicionFlashT = 0; // fogonazo dorado del estallido de Ignición
 let hitStopT = 0;  // micro-pausa en golpes perfectos (juice)
 let pendingUpgrades = null; // 3 mejoras ofrecidas al descender
+let upgradeIdx = 0;         // foco de la carta de mejora (toque/mando/teclado)
+let santIdx = 0;           // foco del Santuario (rejilla de nodos + Descender)
 let dlg = null;             // diálogo activo del pueblo {npc, lines, i}
 let puebloAviso = null;     // {titulo, sub, t} recompensa recién ganada
 let now0 = performance.now();
@@ -775,6 +777,7 @@ function updateBalanceScreen(dt) {
     pendingBalance = null;
     if (RunState.piso >= DataDB.balance.run.floors_total) { descendFloor(); return; }
     pendingUpgrades = rollUpgrades();
+    upgradeIdx = 0;
     mode = 'upgrade';
   }
 }
@@ -1376,18 +1379,19 @@ function update(dt) {
   }
   if (mode === 'upgrade') {
     FX.update(dt);
+    const n = pendingUpgrades.length;
+    upgradeIdx = UIK.mover1D(Input, Math.min(upgradeIdx, n - 1), n); // izq/dcha (o arriba/abajo) mueve el foco
     const keys = ['Digit1', 'Digit2', 'Digit3'];
     const tap = Input.consumeTap();
-    for (let i = 0; i < pendingUpgrades.length; i++) {
-      const r = upgradeCardRect(i);
-      const tapped = tap && tap.x > r.x && tap.x < r.x + r.w && tap.y > r.y && tap.y < r.y + r.h;
-      if (Input.justCode(keys[i]) || tapped) {
-        applyUpgrade(pendingUpgrades[i]);
-        pendingUpgrades = null;
-        mode = 'play';
-        descendFloor();
-        return;
-      }
+    let elegido = -1;
+    for (let i = 0; i < n; i++) {
+      if (UIK.hit(upgradeCardRect(i), tap)) { upgradeIdx = i; elegido = i; }
+      if (Input.justCode(keys[i])) elegido = i; // atajos 1/2/3 (teclado)
+    }
+    if (elegido < 0 && UIK.confirmo(Input)) elegido = upgradeIdx; // A del mando / Enter
+    if (elegido >= 0) {
+      applyUpgrade(pendingUpgrades[elegido]);
+      pendingUpgrades = null; mode = 'play'; descendFloor();
     }
     return;
   }
@@ -3707,7 +3711,7 @@ function updatePueblo(dt) {
         dlg = null;
         dlgCd = 0.5;
         if (res.aviso) puebloAviso = { titulo: res.aviso[0], sub: res.aviso[1], t: 2.6 };
-        if (res.accion === 'santuario') mode = 'santuario';
+        if (res.accion === 'santuario') { mode = 'santuario'; santIdx = 0; }
         if (res.accion === 'run') newRun();
         if (res.accion === 'batalla') {
           let enc = res.encuentro ?? 'vigilia';
@@ -3882,7 +3886,7 @@ function santuarioCardRect(i) {
   return { x: VW / 2 - (cw * 2 + 18) + col * (cw + 12), y: 96 + row * (chh + 12), w: cw, h: chh };
 }
 function santuarioDescendRect() {
-  return { x: VW / 2 - 90, y: VH - 54, w: 180, h: 32 };
+  return { x: VW / 2 - 100, y: VH - 64, w: 200, h: 44 };
 }
 function screenTap() {
   // Tap táctil (coords de canvas) o clic de ratón (mousePos es mundo → a pantalla)
@@ -3894,39 +3898,34 @@ function screenTap() {
   }
   return null;
 }
+function activarNodoSantuario(n) {
+  const coste = DataDB.balance.arbol[n.id] ?? 999;
+  if (GameState.tiene(n.id)) {
+    if (n.id === 'cuarto_de_la_penumbra') {
+      GameState.cuerdaTensa = !GameState.cuerdaTensa; SaveManager.save();
+      AudioManager.sfx(GameState.cuerdaTensa ? 'door_seal' : 'door_open');
+    } else AudioManager.sfx('no_sp');
+  } else if (GameState.memoria >= coste) {
+    GameState.memoria -= coste; GameState.desbloqueos.push(n.id);
+    if (n.id === 'cuarto_de_la_penumbra') GameState.cuerdaTensa = true;
+    SaveManager.save(); AudioManager.sfx('equip');
+    FX.burst(VW / 2 + cam.x, (VH / 2) / KY + cam.y, { n: 20, color: '#ffd54f', speed: 120, life: 0.6, size: 2, glow: true });
+  } else AudioManager.sfx('no_sp');
+}
 function updateSantuario() {
-  const nodos = DataDB.santuario.nodos;
+  const nodos = DataDB.santuario.nodos, n = nodos.length; // índice n = botón Descender
+  santIdx = UIK.moverGrid(Input, Math.min(santIdx, n), 4, n + 1); // rejilla 4-col + Descender
+  if (UIK.cancelo(Input) || Input.justPressed('pause')) { mode = 'pueblo'; return; }
   const tap = screenTap();
   const inRect = (t, r) => t && t.x > r.x && t.x < r.x + r.w && t.y > r.y && t.y < r.y + r.h;
   const keys = ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6', 'Digit7', 'Digit8'];
-  for (let i = 0; i < nodos.length; i++) {
-    if (Input.justCode(keys[i]) || inRect(tap, santuarioCardRect(i))) {
-      const n = nodos[i];
-      const coste = DataDB.balance.arbol[n.id] ?? 999;
-      if (GameState.tiene(n.id)) {
-        if (n.id === 'cuarto_de_la_penumbra') {
-          GameState.cuerdaTensa = !GameState.cuerdaTensa;
-          SaveManager.save();
-          AudioManager.sfx(GameState.cuerdaTensa ? 'door_seal' : 'door_open');
-        } else AudioManager.sfx('no_sp');
-      } else if (GameState.memoria >= coste) {
-        GameState.memoria -= coste;
-        GameState.desbloqueos.push(n.id);
-        if (n.id === 'cuarto_de_la_penumbra') GameState.cuerdaTensa = true;
-        SaveManager.save();
-        AudioManager.sfx('equip');
-        FX.burst(VW / 2 + cam.x, (VH / 2) / KY + cam.y, { n: 20, color: '#ffd54f', speed: 120, life: 0.6, size: 2, glow: true });
-      } else {
-        AudioManager.sfx('no_sp');
-      }
-      return;
-    }
-  }
-  if (Input.justPressed('restart') || Input.justCode('Enter') || inRect(tap, santuarioDescendRect())) {
-    newRun();
-    return;
-  }
-  if (Input.justPressed('pause') || Input.justCode('Space')) { mode = 'pueblo'; }
+  let act = -1;
+  for (let i = 0; i < n; i++) { if (Input.justCode(keys[i])) act = i; if (UIK.hit(santuarioCardRect(i), tap)) { santIdx = i; act = i; } }
+  if (UIK.hit(santuarioDescendRect(), tap)) { santIdx = n; act = n; }
+  if (Input.justPressed('restart')) act = n;               // R = descender directo
+  if (act < 0 && UIK.confirmo(Input)) act = santIdx;        // A del mando / Enter sobre el foco
+  if (act === n) { newRun(); return; }
+  if (act >= 0) activarNodoSantuario(nodos[act]);
 }
 function drawSantuario(t) {
   ctx.fillStyle = 'rgba(8,5,16,0.92)';
@@ -3947,8 +3946,8 @@ function drawSantuario(t) {
   ctx.fillText('Santuario del Péndulo', VW / 2, 40);
   font(10); ctx.fillStyle = '#b09be0';
   ctx.fillText('◆ Memoria: ' + GameState.memoria, VW / 2, 62);
-  font(8); ctx.fillStyle = '#6c6193';
-  ctx.fillText(PORTRAIT ? 'Toca un recuerdo para grabarlo' : 'Pulsa 1-8 o haz clic para grabar un recuerdo', VW / 2, 78);
+  font(9); ctx.fillStyle = '#6c6193';
+  ctx.fillText('Graba recuerdos con Memoria · toca / 1-8 / mando', VW / 2, 78);
 
   const nodos = DataDB.santuario.nodos;
   const TIPO_COL = { poder: '#e05a4f', variedad: '#7ec98f', comodidad: '#7f96d8', reto: '#b678e8' };
@@ -3957,23 +3956,23 @@ function drawSantuario(t) {
     const owned = GameState.tiene(n.id);
     const coste = DataDB.balance.arbol[n.id] ?? 0;
     const afford = GameState.memoria >= coste;
-    ctx.fillStyle = owned ? '#241f3d' : '#1d1930';
+    const foc = i === santIdx;
+    ctx.fillStyle = foc ? '#2b2547' : owned ? '#241f3d' : '#1d1930';
     ctx.fillRect(r.x, r.y, r.w, r.h);
-    ctx.strokeStyle = owned ? '#ffd54f' : afford ? TIPO_COL[n.tipo] ?? '#4c4070' : '#37335c';
-    ctx.lineWidth = owned ? 2 : 1.5;
+    ctx.strokeStyle = foc ? '#ffffff' : owned ? '#ffd54f' : afford ? TIPO_COL[n.tipo] ?? '#4c4070' : '#37335c';
+    ctx.lineWidth = foc ? 3 : owned ? 2 : 1.5;
     ctx.strokeRect(r.x + 1, r.y + 1, r.w - 2, r.h - 2);
+    if (foc) { ctx.save(); ctx.setLineDash([5, 5]); ctx.lineWidth = 2; ctx.strokeStyle = `rgba(255,247,180,${0.5 + 0.4 * Math.sin(t * 8)})`; ctx.strokeRect(r.x - 3, r.y - 3, r.w + 6, r.h + 6); ctx.restore(); }
     ctx.textAlign = 'center';
-    font(8);
     ctx.fillStyle = owned ? '#ffd54f' : afford ? '#e9e2f5' : '#55496e';
+    fitFont(n.nombre, r.w - 10, [9, 8, 7]); // encoge el nombre para que quepa en la carta
     ctx.fillText(n.nombre, r.x + r.w / 2, r.y + 18);
-    font(7);
+    font(8);
     ctx.fillStyle = owned ? '#9c8fc0' : afford ? '#9c8fc0' : '#453a5e';
-    // desc en 2 líneas
-    const words = n.desc.split(' ');
-    let l1 = '', l2 = '';
-    for (const w of words) { if ((l1 + w).length < 24 && !l2) l1 += w + ' '; else l2 += w + ' '; }
-    ctx.fillText(l1.trim(), r.x + r.w / 2, r.y + 36);
-    if (l2) ctx.fillText(l2.trim(), r.x + r.w / 2, r.y + 50);
+    // desc en 2 líneas (ajuste por medida real con la fuente ya subida)
+    const dl = wrapText(n.desc, r.w - 12, 2);
+    ctx.fillText(dl[0] ?? '', r.x + r.w / 2, r.y + 36);
+    if (dl[1]) ctx.fillText(dl[1], r.x + r.w / 2, r.y + 50);
     font(8);
     if (owned) {
       if (n.id === 'cuarto_de_la_penumbra') {
@@ -3990,19 +3989,10 @@ function drawSantuario(t) {
   });
 
   const dr = santuarioDescendRect();
-  const pulse = 1 + Math.sin(t * 3) * 0.03;
-  ctx.save();
-  ctx.translate(dr.x + dr.w / 2, dr.y + dr.h / 2);
-  ctx.scale(pulse, pulse);
-  ctx.fillStyle = '#2a2140';
-  ctx.fillRect(-dr.w / 2, -dr.h / 2, dr.w, dr.h);
-  ctx.strokeStyle = '#ffd54f'; ctx.lineWidth = 2;
-  ctx.strokeRect(-dr.w / 2 + 1, -dr.h / 2 + 1, dr.w - 2, dr.h - 2);
-  font(11); ctx.fillStyle = '#ffd54f'; ctx.textAlign = 'center';
-  ctx.fillText('DESCENDER', 0, 6);
-  ctx.restore();
-  font(8); ctx.fillStyle = '#6c6193';
-  ctx.fillText('R / Enter / toca · Esc: volver al pueblo', VW / 2, dr.y + dr.h + 14);
+  const focD = santIdx === nodos.length;
+  UIK.boton(ctx, font, { ...dr, label: 'DESCENDER', sub: 'a la Torre', tono: 'primary', foco: focD, t });
+  ctx.textAlign = 'center';
+  UIK.glyphBar(ctx, font, Input, [{ k: 'nav', txt: 'mover' }, { k: 'confirm', txt: 'grabar / descender' }, { k: 'cancel', txt: 'pueblo' }], VW, VH);
 }
 
 // Opciones del menú de pausa (botones grandes navegables por toque/mando/teclado).
@@ -4042,10 +4032,12 @@ function drawOverlay(t = 0) {
     pendingUpgrades.forEach((u, i) => {
       const rc = upgradeCardRect(i);
       const x = rc.x, y = rc.y, cw = rc.w, chh = rc.h;
-      ctx.fillStyle = '#1d1930';
+      const foc = i === upgradeIdx;
+      ctx.fillStyle = foc ? '#241f3d' : '#1d1930';
       ctx.fillRect(x, y, cw, chh);
-      ctx.strokeStyle = '#4c4070'; ctx.lineWidth = 2;
+      ctx.strokeStyle = foc ? '#ffd54f' : '#4c4070'; ctx.lineWidth = foc ? 3 : 2;
       ctx.strokeRect(x + 1, y + 1, cw - 2, chh - 2);
+      if (foc) { ctx.save(); ctx.setLineDash([5, 5]); ctx.lineWidth = 2; ctx.strokeStyle = `rgba(255,247,180,${0.5 + 0.4 * Math.sin(t * 8)})`; ctx.strokeRect(x - 3, y - 3, cw + 6, chh + 6); ctx.restore(); }
       font(11); ctx.fillStyle = '#ffd54f';
       ctx.fillText(String(i + 1), x + cw / 2, y + 24);
       // Título: el mayor tamaño que quepa en la tarjeta (antes "Lágrimas afiladas"
@@ -4058,6 +4050,8 @@ function drawOverlay(t = 0) {
       let ly = y + (PORTRAIT ? 74 : 74);
       for (const ln of lines) { ctx.fillText(ln, x + cw / 2, ly); ly += 11; }
     });
+    UIK.glyphBar(ctx, font, Input, [{ k: 'nav', txt: 'elegir' }, { k: 'confirm', txt: 'tomar' }], VW, VH);
+    ctx.textAlign = 'center';
     return;
   }
   if (mode === 'paused') {
