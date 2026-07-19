@@ -5,7 +5,7 @@ Claude Code: trabaja las fases EN ORDEN salvo indicación de Daniel. No avances 
 Auditoría por 9 analistas comparando Mistveil con el género (Hades, Dead Cells, Isaac, Gungeon, Crypt of the NecroDancer, Hi-Fi Rush, Metal: Hellsinger, Vampire Survivors, Slay the Spire, roguelites móviles). **Informe completo en [`docs/auditoria_2026-07.md`](docs/auditoria_2026-07.md).** Notas de madurez: combate 8/10 · identidad rítmica cumplida 4/10 · build/endgame 4/10 · narrativa 3/10 · producto móvil 5/10 · UX/opciones 3/10. Hilo transversal: *casi toda carencia es UI/contenido/reglas sobre motor ya construido.* Estas fases **reordenan por impacto**; se cruzan con las R-tareas de abajo (no se borra nada).
 
 ### Fase A — Cerrar la promesa de RITMO (lo que más diferencia) · EN CURSO
-- [ ] A1 Reloj de beat global en `AudioManager` (reusar la lógica del Metrónomo) con BPM por pista; anclar `ring_contract_ms` y las ventanas de Cadencia a subdivisiones del beat (carencia #1, crítica).
+- [x] A1 Reloj de beat global en `AudioManager` (`beatClock()`) con BPM por pista medido offline (`data/musica.json`); latido visual del HUD (marco SP + pip del compás) y halo del anillo de Cadencia al pulso; tic-tac ambiental callado bajo pista real. **Pendiente por diseño** (riesgo sobre el feel testeado): anclar `ring_contract_ms`/ventanas de Cadencia a subdivisiones del beat (A4 ambicioso, a validar con Daniel jugando).
 - [ ] A2 SFX de golpe **en escala** que ascienden con `hitIndex` (arpegio que culmina en el finisher) + variación de tono ±semitonos en tear/hit (anti-ametralladora) (carencia #8, bajo).
 - [ ] A3 **Juice del disparo**: micro-hit-stop 2-3 frames + chispazo en el impacto teñido por elemento; escalar hit-stop con good/kill (hoy solo en perfect) (carencia #8, bajo).
 - [ ] A4 Latido visual tenue del HUD/engranajes al pulso para "coger el ritmo" antes de atacar (ancla móvil).
@@ -14,7 +14,7 @@ Auditoría por 9 analistas comparando Mistveil con el género (Hades, Dead Cells
 **Criterio A:** golpear a compás con la música se nota (audio + recompensa); el disparo impacta; el HUD late.
 
 ### Fase B — Plataforma móvil comercializable (retención y justicia) · prerrequisito de lanzar
-- [ ] B1 **Serializar `RunState`** (piso/oro/SP/items/compás/posición; la semilla regenera geometría) → guardar y reanudar a mitad (carencia #2, crítica).
+- [x] B1 **Serializar `RunState`** (piso/oro/SP/items/compás/posición + hp/maxHp + estado de salas; la semilla regenera la topología) → `SaveManager.saveRun/loadRun`, autosave en puntos seguros, botón REANUDAR en el título. Guardar y reanudar a mitad, probado recarga→reanudar.
 - [ ] B2 **Pantalla de Opciones + Pausa completa** como contenedor: sliders de volumen música/SFX, esquema de control, y "Modo Metrónomo Suave" reusando `window_scale`/`ventanaMult` (carencia #3, crítica).
 - [ ] B3 **Calibración de latencia** (offset en opciones que desplaza la ventana; reusar la Cámara del Metrónomo como UI) (carencia #4, crítica).
 - [ ] B4 Export/import de guardado por código copiar/pegar contra el desalojo ITP de iOS (carencia #9, bajo; enlaza R5.3).
