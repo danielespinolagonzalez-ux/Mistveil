@@ -559,22 +559,26 @@
     {
       "id": "suelo_archivo",
       "tipo": "textura",
-      "sujeto": "noble ink-stained wooden floorboards, thin puddles of indigo ink, loose stuck pages"
+      "sujeto": "noble ink-stained wooden floorboards, thin puddles of indigo ink, loose stuck pages",
+      "estado": "hecho"
     },
     {
       "id": "muro_archivo",
       "tipo": "textura",
-      "sujeto": "built-in oak shelving with books dripping ink, horizontal band seen front-on"
+      "sujeto": "built-in oak shelving with books dripping ink, horizontal band seen front-on",
+      "estado": "hecho"
     },
     {
       "id": "suelo_invertida",
       "tipo": "textura",
-      "sujeto": "copper and twilight-enamel tiles with reliefs of melted clock faces"
+      "sujeto": "copper and twilight-enamel tiles with reliefs of melted clock faces",
+      "estado": "hecho"
     },
     {
       "id": "muro_invertida",
       "tipo": "textura",
-      "sujeto": "exposed mechanism wall: copper and lavender gears set in stone, horizontal band seen front-on"
+      "sujeto": "exposed mechanism wall: copper and lavender gears set in stone, horizontal band seen front-on",
+      "estado": "hecho"
     },
     {
       "id": "hoja_iconos_reliquias",
@@ -690,6 +694,18 @@
       "sujeto": "wide painted JRPG town-square backdrop, three-quarter top-down: a cobblestone plaza at perpetual dusk surrounded along the top and sides by crooked timber-and-brass clockmaker houses with warm lit windows and hanging lanterns; a market stall with striped awning at the LEFT; an elegant lamppost terrace upper-middle; a small workshop corner at the RIGHT; the CENTER of the plaza open and empty; NO people, NO animals, no text. 2:1 aspect",
       "estado": "hecho",
       "formato": "jpeg"
+    },
+    {
+      "id": "suelo_truenos",
+      "tipo": "textura",
+      "sujeto": "dark violet flagstones veined with crackling violet energy and thin brass conduits, storm-charged",
+      "estado": "hecho"
+    },
+    {
+      "id": "muro_truenos",
+      "tipo": "textura",
+      "sujeto": "wall of bronze organ pipes and small bells over dark violet stone, horizontal band seen front-on",
+      "estado": "hecho"
     }
   ]
 }

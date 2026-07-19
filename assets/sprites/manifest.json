@@ -257,5 +257,41 @@
   "w": 48,
   "h": 54,
   "face": "left"
+ },
+ "muro_archivo": {
+  "w": 256,
+  "h": 256,
+  "tipo": "textura",
+  "ext": "png"
+ },
+ "muro_invertida": {
+  "w": 256,
+  "h": 256,
+  "tipo": "textura",
+  "ext": "png"
+ },
+ "muro_truenos": {
+  "w": 256,
+  "h": 256,
+  "tipo": "textura",
+  "ext": "png"
+ },
+ "suelo_archivo": {
+  "w": 256,
+  "h": 256,
+  "tipo": "textura",
+  "ext": "png"
+ },
+ "suelo_invertida": {
+  "w": 256,
+  "h": 256,
+  "tipo": "textura",
+  "ext": "png"
+ },
+ "suelo_truenos": {
+  "w": 256,
+  "h": 256,
+  "tipo": "textura",
+  "ext": "png"
  }
 }
