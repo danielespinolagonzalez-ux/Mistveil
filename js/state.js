@@ -13,6 +13,7 @@ export const GameState = {
   sellosObtenidos: [],          // sellos elementales conseguidos (botín de jefes / Forja del Santuario)
   selloEquipado: null,          // sello elemental activo (persiste entre runs)
   selloRango: {},               // C5: { id_sello: rango } — el rango escala el rasgo/finisher (sube con Memoria)
+  bestiario: [],                // E4: ids de enemigos derrotados (para el códice/bestiario)
   flags: {},                    // narrativa/pueblo (hermanos_memoria, ate_idx...)
   stats: { runs: 0, muertes: 0, victorias: 0 },
   opciones: { escala_ventanas: 1.0, vol_musica: 1.0, vol_sfx: 1.0, esquema_control: 'raton', latencia_ms: 0 },
@@ -60,7 +61,7 @@ export const SaveManager = {
         ligaRango: GameState.ligaRango ?? 0,
         esfera: GameState.esfera, usoHechizos: GameState.usoHechizos, usoCompases: GameState.usoCompases,
         sellosObtenidos: GameState.sellosObtenidos, selloEquipado: GameState.selloEquipado,
-        selloRango: GameState.selloRango
+        selloRango: GameState.selloRango, bestiario: GameState.bestiario
       }));
     } catch (e) { console.warn('SaveManager: no se pudo guardar', e); }
   },
@@ -86,6 +87,7 @@ export const SaveManager = {
       GameState.sellosObtenidos = d.sellosObtenidos ?? [];
       GameState.selloEquipado = d.selloEquipado ?? null;
       GameState.selloRango = (d.selloRango && typeof d.selloRango === 'object') ? d.selloRango : {}; // C5 (campo aditivo tolerante)
+      GameState.bestiario = Array.isArray(d.bestiario) ? d.bestiario : []; // E4 (campo aditivo tolerante)
       Object.assign(GameState.stats, d.stats ?? {});
       Object.assign(GameState.opciones, d.opciones ?? {});
       return true;

@@ -44,8 +44,8 @@ Auditoría por 9 analistas comparando Mistveil con el género (Hades, Dead Cells
 ### Fase E — Alma: narrativa, códice y dirección visual (cruza R3.4/R4.0)
 - [ ] E1 Extraer `js/escenas.js` (escena pintada) ANTES de escribir (= R4.0) y mover el guion de `pueblo.js` a `textos_es.json` (saldar la deuda de la regla 5).
 - [ ] E2 Escribir el arco del "alma prestada" repartido en los 3 biomas + intro de encuadre y victoria REAL (= R3.4) que pague el misterio (carencia #12).
-- [ ] E3 2 líneas por jefe (intro + derrota) y flavor-lore a enemigos/items; caracterizar rivales del Redoble (carencia #12, alto retorno por poco texto).
-- [ ] E4 **Códice/bestiario** diegético en la pestaña CRÓNICA existente + tooltips/hold-press para items y siglas del HUD (carencia #14).
+- [~] E3 2 líneas por jefe (intro + derrota) y flavor-lore a enemigos/items; caracterizar rivales del Redoble (carencia #12, alto retorno por poco texto). **Hecho**: intro+derrota+lore por jefe (`jefes.json`) con flash al aparecer/caer (paga el misterio del "alma prestada"). Pendiente: rivales del Redoble + lore a items.
+- [x] E4 **Códice/bestiario** diegético en la pestaña CRÓNICA existente + tooltips/hold-press para items y siglas del HUD (carencia #14). **Bestiario** en una nueva pestaña **CÓDICE** del menú (Tab): lista de las 23 criaturas; las derrotadas muestran ficha (sprite pintado + familia + vida + lore), las no vistas quedan como "???". Se llena jugando (`GameState.bestiario` persistido). Pendiente: tooltips/hold-press de items y siglas del HUD.
 - [ ] E5 Post-proceso barato en canvas (bloom en perfect/Ignición, viñeta con tinte por bioma) + toggle de screenshake/flash y `prefers-reduced-motion`; diferenciar el anillo de contraataque por forma/glifo, no solo color (carencia #15).
 - [ ] E6 Dailies locales (semilla derivada de la fecha + puntuación) e itch.io con divulgación de IA (cruza R5.5).
 

@@ -1093,6 +1093,8 @@ const TAG_COLORS = {
 };
 EventBus.on('enemy_died', (e) => {
   if (world.player) world.player.addGroove(DataDB.balance.groove?.por_kill ?? 0); // racha (G7c)
+  // E4: registra al enemigo en el bestiario la primera vez que se derrota
+  if (e.id && !(GameState.bestiario ??= []).includes(e.id)) { GameState.bestiario.push(e.id); SaveManager.save(); }
   const pal = PALETTES[e.id] ?? ['#9E9E9E', '#666', '#fff'];
   FX.burst(e.x, e.y, { n: 16, color: pal[0], speed: 130, life: 0.6, size: 3, gravity: 180 });
   FX.burst(e.x, e.y, { n: 8, color: pal[2], speed: 70, life: 0.4, size: 2, glow: true });
@@ -1111,6 +1113,8 @@ EventBus.on('enemy_died', (e) => {
     if (Math.random() * 100 < (E.recompensa_corazon_pct ?? 24)) spawnPickup('heart', e.x, e.y);
     flash('¡Élite abatido!', '+' + (E.recompensa_oro ?? 6) + ' oro · el alma se enciende');
   }
+  // E3: el jefe de raid pronuncia su línea de derrota al caer (paga el misterio)
+  if (e.def.jefe && e.def.derrota) { flash((e.def.nombre ?? 'El jefe') + ' cae', e.def.derrota); FX.addShake(3.5); }
   // Los caídos dejan mecha: el Cerero Errante puede reavivarlos
   if (!e.def.jefe) world.corpses.push({ id: e.id, x: e.x, y: e.y, hp: e.def.hp, t: 11 });
   // Núcleos que se DIVIDEN: al morir sueltan crías (gestión de multitud)
@@ -1870,7 +1874,10 @@ function update(dt) {
     // Director de mecánicas del jefe de raid: nace con él, muere con él
     const jefe = alive.find(e => e.def?.comportamiento === 'jefe_ancla');
     if (jefe) {
-      if (!world.bossDir || world.bossDir.boss !== jefe) world.bossDir = crearDirectorJefe(jefe, jefe.room ?? floorMap.current);
+      if (!world.bossDir || world.bossDir.boss !== jefe) {
+        world.bossDir = crearDirectorJefe(jefe, jefe.room ?? floorMap.current);
+        if (jefe.def.intro) flash(jefe.def.nombre ?? 'Jefe', jefe.def.intro); // E3: línea de entrada del jefe
+      }
       world.bossDir?.update(dtMundo, p);
     } else world.bossDir = null;
   }

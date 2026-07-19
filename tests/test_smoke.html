@@ -548,6 +548,19 @@ assert('esfera: bonos agregados sin error', typeof esferaBonos().window === 'num
 GameState.esfera.length = 0; GameState.esfera.push(...esferaPrev);
 GameState.engranajes = engrPrev;
 
+// Fase E — E3 (líneas de narrativa por jefe) + E4 (bestiario/códice)
+assert('E3: cada jefe de raid tiene intro/derrota/lore',
+  ['pendulos', 'archivo', 'invertida', 'truenos'].every(b => { const j = DataDB.jefes.jefes[b]; return j && j.intro && j.derrota && j.lore; }));
+(() => {
+  const prev = [...(GameState.bestiario ?? [])];
+  GameState.bestiario = ['cera_andante'];
+  SaveManager.save();
+  GameState.bestiario = [];
+  SaveManager.load();
+  assert('E4: el bestiario se persiste (guardar/cargar)', GameState.bestiario.includes('cera_andante'));
+  GameState.bestiario = prev; SaveManager.save();
+})();
+
 // R1 — Reliquias completas: los 6 efectos antes "pendientes" ya se interpretan
 const p3 = new Player(100, 100);
 applyItem(DataDB.item('tinta_viva'), p3);

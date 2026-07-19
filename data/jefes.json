@@ -4,78 +4,353 @@
     "pendulos": {
       "base": "campanero",
       "nombre": "El Gran Campanero",
-      "hp": 130, "r": 20, "velocidad": 40,
-      "sello": "sello_ascuas", "elemento": "trueno",
+      "hp": 130,
+      "r": 20,
+      "velocidad": 40,
+      "sello": "sello_ascuas",
+      "elemento": "trueno",
       "respiro_s": 1.6,
       "fases": [
-        { "hp": 1.0, "cadencia_s": 2.7, "mecanicas": ["anillo_campana", "cuna_doble", "campanadas"] },
-        { "hp": 0.5, "cadencia_s": 2.1, "mecanicas": ["campanadas", "barrido_manecilla", "lluvia_de_cera", "tanda_velones"] }
-      ]
+        {
+          "hp": 1.0,
+          "cadencia_s": 2.7,
+          "mecanicas": [
+            "anillo_campana",
+            "cuna_doble",
+            "campanadas"
+          ]
+        },
+        {
+          "hp": 0.5,
+          "cadencia_s": 2.1,
+          "mecanicas": [
+            "campanadas",
+            "barrido_manecilla",
+            "lluvia_de_cera",
+            "tanda_velones"
+          ]
+        }
+      ],
+      "intro": "El bronce recuerda cada hora que no sonó. Deja que te marque la última, autómata.",
+      "derrota": "El badajo calla... pero el eco de tu compás seguirá tañendo sin mí.",
+      "lore": "El Gran Campanero tocó a duelo por cada alma que subió la Torre. Ninguna volvió a bajar."
     },
     "archivo": {
       "base": "polilla_del_polvo",
       "nombre": "La Archivera Anegada",
-      "hp": 155, "r": 18, "velocidad": 46,
-      "sello": "sello_marea", "elemento": "oscuridad",
+      "hp": 155,
+      "r": 18,
+      "velocidad": 46,
+      "sello": "sello_marea",
+      "elemento": "oscuridad",
       "respiro_s": 1.7,
       "fases": [
-        { "hp": 1.0, "cadencia_s": 2.6, "mecanicas": ["columnas_de_tinta", "orbes_de_tinta", "remolino_de_tinta"] },
-        { "hp": 0.5, "cadencia_s": 2.0, "mecanicas": ["orbes_de_tinta", "marea_de_tinta", "invocar_remoras", "pagina_barrida"] }
-      ]
+        {
+          "hp": 1.0,
+          "cadencia_s": 2.6,
+          "mecanicas": [
+            "columnas_de_tinta",
+            "orbes_de_tinta",
+            "remolino_de_tinta"
+          ]
+        },
+        {
+          "hp": 0.5,
+          "cadencia_s": 2.0,
+          "mecanicas": [
+            "orbes_de_tinta",
+            "marea_de_tinta",
+            "invocar_remoras",
+            "pagina_barrida"
+          ]
+        }
+      ],
+      "intro": "Cada nombre olvidado se escribe aquí, en tinta que no seca. ¿Cuál es el tuyo, alma prestada?",
+      "derrota": "Tinta a la tinta... Que tu página tarde en anegarse, pequeño reloj.",
+      "lore": "La Archivera anota lo que el mundo elige no recordar. Su biblioteca crece con cada olvido."
     },
     "invertida": {
       "base": "tejedor_horas",
       "nombre": "El Primer Relojero",
-      "hp": 185, "r": 19, "velocidad": 40,
+      "hp": 185,
+      "r": 19,
+      "velocidad": 40,
       "elemento": "neutro",
       "respiro_s": 1.5,
       "fases": [
-        { "hp": 1.0, "cadencia_s": 2.5, "mecanicas": ["manecilla_horaria", "robo_del_tiempo", "cono_horario"] },
-        { "hp": 0.55, "cadencia_s": 1.9, "mecanicas": ["robo_del_tiempo", "doble_manecilla", "engranaje_central", "numeros_romanos"] }
-      ]
+        {
+          "hp": 1.0,
+          "cadencia_s": 2.5,
+          "mecanicas": [
+            "manecilla_horaria",
+            "robo_del_tiempo",
+            "cono_horario"
+          ]
+        },
+        {
+          "hp": 0.55,
+          "cadencia_s": 1.9,
+          "mecanicas": [
+            "robo_del_tiempo",
+            "doble_manecilla",
+            "engranaje_central",
+            "numeros_romanos"
+          ]
+        }
+      ],
+      "intro": "Yo di cuerda al primer corazón de este mundo. Puedo detener el tuyo, aunque sea prestado.",
+      "derrota": "Así que el aprendiz supera al maestro... Detén el tiempo, si te atreves a heredarlo.",
+      "lore": "El Primer Relojero construyó la Torre para medir el tiempo. Luego la Torre lo midió a él."
     },
     "truenos": {
       "base": "cuco_de_cuerda",
       "nombre": "El Gran Carillón",
-      "hp": 210, "r": 20, "velocidad": 38,
+      "hp": 210,
+      "r": 20,
+      "velocidad": 38,
       "elemento": "trueno",
       "respiro_s": 1.6,
       "fases": [
-        { "hp": 1.0, "cadencia_s": 2.6, "mecanicas": ["descarga_carillon", "rayo_encadenado", "resonancia"] },
-        { "hp": 0.5, "cadencia_s": 2.0, "mecanicas": ["rayo_encadenado", "arco_electrico", "invocar_cimbalos", "tanido"] }
-      ]
+        {
+          "hp": 1.0,
+          "cadencia_s": 2.6,
+          "mecanicas": [
+            "descarga_carillon",
+            "rayo_encadenado",
+            "resonancia"
+          ]
+        },
+        {
+          "hp": 0.5,
+          "cadencia_s": 2.0,
+          "mecanicas": [
+            "rayo_encadenado",
+            "arco_electrico",
+            "invocar_cimbalos",
+            "tanido"
+          ]
+        }
+      ],
+      "intro": "Doce campanas, doce truenos. Suenan todas a la vez cuando alguien osa subir tan alto.",
+      "derrota": "El último tañido es tuyo. Sube... el Reloj de las Almas ya no puede seguir esperando.",
+      "lore": "El Gran Carillón guarda el umbral más alto. Su tormenta anuncia a quien está por llegar a la cima."
     }
   },
   "mecanicas": {
-    "anillo_campana": { "tipo": "donut", "telegraph_s": 1.8, "r_int": 54, "r_ext": 330, "dano": 1, "color": "#ffd54f" },
-    "cuna_doble": { "tipo": "cono", "telegraph_s": 1.5, "n": 2, "sep": 1.25, "arco": 0.8, "largo": 250, "dano": 1, "color": "#e05a4f" },
-    "lluvia_de_cera": { "tipo": "circulos", "telegraph_s": 1.5, "n": 5, "r": 42, "sobre_jugador": true, "dano": 1, "color": "#e4a13a" },
-    "barrido_manecilla": { "tipo": "barrido", "telegraph_s": 1.1, "vueltas": 1.25, "vel": 1.5, "ancho": 0.15, "largo": 280, "dano": 1, "color": "#ffd54f" },
-    "foso_del_compas": { "tipo": "safe", "telegraph_s": 2.0, "r_safe": 48, "dist": 96, "dano": 2, "color": "#e05a4f" },
-    "tanda_velones": { "tipo": "adds", "quien": "velon_inestable", "n": 2 },
-
-    "columnas_de_tinta": { "tipo": "circulos", "telegraph_s": 1.5, "n": 5, "r": 44, "sobre_jugador": true, "dano": 1, "color": "#5c6bc0" },
-    "pagina_barrida": { "tipo": "linea", "telegraph_s": 1.4, "ancho": 40, "largo": 340, "dano": 1, "color": "#7986cb" },
-    "remolino_de_tinta": { "tipo": "donut", "telegraph_s": 1.8, "r_int": 52, "r_ext": 320, "dano": 1, "color": "#5c6bc0" },
-    "marea_de_tinta": { "tipo": "safe", "telegraph_s": 2.0, "r_safe": 52, "dist": 100, "dano": 2, "color": "#3949AB" },
-    "invocar_remoras": { "tipo": "adds", "quien": "remora_de_tinta", "n": 2 },
-
-    "manecilla_horaria": { "tipo": "barrido", "telegraph_s": 1.2, "vueltas": 1.0, "vel": 1.5, "ancho": 0.15, "largo": 285, "dano": 1, "color": "#c8905a" },
-    "doble_manecilla": { "tipo": "barrido", "telegraph_s": 1.0, "vueltas": 1.0, "vel": 1.9, "ancho": 0.14, "largo": 285, "dano": 1, "color": "#e05a4f" },
-    "numeros_romanos": { "tipo": "circulos", "telegraph_s": 1.5, "n": 6, "r": 40, "sobre_jugador": false, "dano": 1, "color": "#c8905a" },
-    "cono_horario": { "tipo": "cono", "telegraph_s": 1.4, "n": 2, "sep": 1.35, "arco": 0.75, "largo": 250, "dano": 1, "color": "#e05a4f" },
-    "engranaje_central": { "tipo": "donut", "telegraph_s": 1.8, "r_int": 56, "r_ext": 340, "dano": 1, "color": "#c8905a" },
-
-    "descarga_carillon": { "tipo": "circulos", "telegraph_s": 1.4, "n": 5, "r": 44, "sobre_jugador": true, "dano": 1, "color": "#AB47BC" },
-    "resonancia": { "tipo": "donut", "telegraph_s": 1.8, "r_int": 50, "r_ext": 330, "dano": 1, "color": "#b98fd0" },
-    "tanido": { "tipo": "cono", "telegraph_s": 1.4, "n": 1, "arco": 1.0, "largo": 260, "dano": 1, "color": "#AB47BC" },
-    "arco_electrico": { "tipo": "barrido", "telegraph_s": 1.1, "vueltas": 1.25, "vel": 1.6, "ancho": 0.16, "largo": 280, "dano": 1, "color": "#b98fd0" },
-    "invocar_cimbalos": { "tipo": "adds", "quien": "cimbalo", "n": 2 },
-
+    "anillo_campana": {
+      "tipo": "donut",
+      "telegraph_s": 1.8,
+      "r_int": 54,
+      "r_ext": 330,
+      "dano": 1,
+      "color": "#ffd54f"
+    },
+    "cuna_doble": {
+      "tipo": "cono",
+      "telegraph_s": 1.5,
+      "n": 2,
+      "sep": 1.25,
+      "arco": 0.8,
+      "largo": 250,
+      "dano": 1,
+      "color": "#e05a4f"
+    },
+    "lluvia_de_cera": {
+      "tipo": "circulos",
+      "telegraph_s": 1.5,
+      "n": 5,
+      "r": 42,
+      "sobre_jugador": true,
+      "dano": 1,
+      "color": "#e4a13a"
+    },
+    "barrido_manecilla": {
+      "tipo": "barrido",
+      "telegraph_s": 1.1,
+      "vueltas": 1.25,
+      "vel": 1.5,
+      "ancho": 0.15,
+      "largo": 280,
+      "dano": 1,
+      "color": "#ffd54f"
+    },
+    "foso_del_compas": {
+      "tipo": "safe",
+      "telegraph_s": 2.0,
+      "r_safe": 48,
+      "dist": 96,
+      "dano": 2,
+      "color": "#e05a4f"
+    },
+    "tanda_velones": {
+      "tipo": "adds",
+      "quien": "velon_inestable",
+      "n": 2
+    },
+    "columnas_de_tinta": {
+      "tipo": "circulos",
+      "telegraph_s": 1.5,
+      "n": 5,
+      "r": 44,
+      "sobre_jugador": true,
+      "dano": 1,
+      "color": "#5c6bc0"
+    },
+    "pagina_barrida": {
+      "tipo": "linea",
+      "telegraph_s": 1.4,
+      "ancho": 40,
+      "largo": 340,
+      "dano": 1,
+      "color": "#7986cb"
+    },
+    "remolino_de_tinta": {
+      "tipo": "donut",
+      "telegraph_s": 1.8,
+      "r_int": 52,
+      "r_ext": 320,
+      "dano": 1,
+      "color": "#5c6bc0"
+    },
+    "marea_de_tinta": {
+      "tipo": "safe",
+      "telegraph_s": 2.0,
+      "r_safe": 52,
+      "dist": 100,
+      "dano": 2,
+      "color": "#3949AB"
+    },
+    "invocar_remoras": {
+      "tipo": "adds",
+      "quien": "remora_de_tinta",
+      "n": 2
+    },
+    "manecilla_horaria": {
+      "tipo": "barrido",
+      "telegraph_s": 1.2,
+      "vueltas": 1.0,
+      "vel": 1.5,
+      "ancho": 0.15,
+      "largo": 285,
+      "dano": 1,
+      "color": "#c8905a"
+    },
+    "doble_manecilla": {
+      "tipo": "barrido",
+      "telegraph_s": 1.0,
+      "vueltas": 1.0,
+      "vel": 1.9,
+      "ancho": 0.14,
+      "largo": 285,
+      "dano": 1,
+      "color": "#e05a4f"
+    },
+    "numeros_romanos": {
+      "tipo": "circulos",
+      "telegraph_s": 1.5,
+      "n": 6,
+      "r": 40,
+      "sobre_jugador": false,
+      "dano": 1,
+      "color": "#c8905a"
+    },
+    "cono_horario": {
+      "tipo": "cono",
+      "telegraph_s": 1.4,
+      "n": 2,
+      "sep": 1.35,
+      "arco": 0.75,
+      "largo": 250,
+      "dano": 1,
+      "color": "#e05a4f"
+    },
+    "engranaje_central": {
+      "tipo": "donut",
+      "telegraph_s": 1.8,
+      "r_int": 56,
+      "r_ext": 340,
+      "dano": 1,
+      "color": "#c8905a"
+    },
+    "descarga_carillon": {
+      "tipo": "circulos",
+      "telegraph_s": 1.4,
+      "n": 5,
+      "r": 44,
+      "sobre_jugador": true,
+      "dano": 1,
+      "color": "#AB47BC"
+    },
+    "resonancia": {
+      "tipo": "donut",
+      "telegraph_s": 1.8,
+      "r_int": 50,
+      "r_ext": 330,
+      "dano": 1,
+      "color": "#b98fd0"
+    },
+    "tanido": {
+      "tipo": "cono",
+      "telegraph_s": 1.4,
+      "n": 1,
+      "arco": 1.0,
+      "largo": 260,
+      "dano": 1,
+      "color": "#AB47BC"
+    },
+    "arco_electrico": {
+      "tipo": "barrido",
+      "telegraph_s": 1.1,
+      "vueltas": 1.25,
+      "vel": 1.6,
+      "ancho": 0.16,
+      "largo": 280,
+      "dano": 1,
+      "color": "#b98fd0"
+    },
+    "invocar_cimbalos": {
+      "tipo": "adds",
+      "quien": "cimbalo",
+      "n": 2
+    },
     "_firmas": "Una mecánica ÚNICA por jefe (ningún otro la usa) para que se sientan distintos:",
-    "campanadas": { "tipo": "ondas", "telegraph_s": 1.2, "n": 3, "gap_s": 0.55, "r_max": 300, "vel": 320, "ancho": 26, "dano": 1, "color": "#ffd54f" },
-    "orbes_de_tinta": { "tipo": "proyectiles", "telegraph_s": 1.3, "n": 7, "spread": 2.0, "largo": 320, "vel": 150, "dano": 1, "color": "#5c6bc0" },
-    "robo_del_tiempo": { "tipo": "roba", "telegraph_s": 1.8, "r": 46, "dur_s": 6, "dano": 0, "color": "#c8905a" },
-    "rayo_encadenado": { "tipo": "cadena", "telegraph_s": 1.4, "n": 4, "seg": 100, "ancho": 22, "dano": 1, "color": "#b98fd0" }
+    "campanadas": {
+      "tipo": "ondas",
+      "telegraph_s": 1.2,
+      "n": 3,
+      "gap_s": 0.55,
+      "r_max": 300,
+      "vel": 320,
+      "ancho": 26,
+      "dano": 1,
+      "color": "#ffd54f"
+    },
+    "orbes_de_tinta": {
+      "tipo": "proyectiles",
+      "telegraph_s": 1.3,
+      "n": 7,
+      "spread": 2.0,
+      "largo": 320,
+      "vel": 150,
+      "dano": 1,
+      "color": "#5c6bc0"
+    },
+    "robo_del_tiempo": {
+      "tipo": "roba",
+      "telegraph_s": 1.8,
+      "r": 46,
+      "dur_s": 6,
+      "dano": 0,
+      "color": "#c8905a"
+    },
+    "rayo_encadenado": {
+      "tipo": "cadena",
+      "telegraph_s": 1.4,
+      "n": 4,
+      "seg": 100,
+      "ancho": 22,
+      "dano": 1,
+      "color": "#b98fd0"
+    }
   }
 }

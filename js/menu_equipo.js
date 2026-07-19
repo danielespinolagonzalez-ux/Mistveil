@@ -7,15 +7,18 @@ import { nodosEsfera, nodoEsfera, aristasEsfera, vecinosEsfera, nodoActivado, no
 import { nivelHechizo } from './spells.js';
 import { compasNivel, ventanaMult } from './cadencia.js';
 import { desbloqueado, nivelDe } from './progresion.js';
+import { Sprites } from './sprites.js';
 
 const CAT_COLOR = { ofensa: '#e0556b', ritmo: '#7ee8e0', alma: '#b678e8', vida: '#7ec96b', fortuna: '#ffd54f', sello: '#c9a24a', inicio: '#e9e2f5', mutador: '#ff7b9c' };
-const TABS = ['EQUIPO', 'ESFERA DEL RELOJ', 'CRÓNICA'];
+const TABS = ['EQUIPO', 'ESFERA', 'CRÓNICA', 'CÓDICE'];
+const NTABS = TABS.length;
 
 export class MenuEquipo {
   constructor(VW, VH, font, ctx) {
     this.VW = VW; this.VH = VH; this.font = font; this.g = ctx;
     this.tab = 0; this.t = 0;
     this.col = 0; this.idx = [0, 0, 0];
+    this.codiceIdx = 0; // E4: fila seleccionada del bestiario
     this.cursor = 'eje';
     this.msg = null; this.msgT = 0;
   }
@@ -34,21 +37,23 @@ export class MenuEquipo {
     if (Input.justCode('Digit1')) { this.tab = 0; beep(); }
     if (Input.justCode('Digit2')) { this.tab = 1; beep(); }
     if (Input.justCode('Digit3')) { this.tab = 2; beep(); }
-    if (Input.justCode('KeyE')) { this.tab = (this.tab + 1) % 3; beep(); }
-    if (Input.justCode('KeyQ')) { this.tab = (this.tab + 2) % 3; beep(); }
+    if (Input.justCode('Digit4')) { this.tab = 3; beep(); }
+    if (Input.justCode('KeyE') || Input.justPressed('ui_tab_next')) { this.tab = (this.tab + 1) % NTABS; beep(); }
+    if (Input.justCode('KeyQ') || Input.justPressed('ui_tab_prev')) { this.tab = (this.tab + NTABS - 1) % NTABS; beep(); }
     // En táctil el confirm por 'melee' (TouchA, tap seco a la dcha) se desactiva:
     // confirmar es SIEMPRE re-tap sobre lo ya seleccionado (evita activaciones fantasma).
     let confirm = Input.justCode('Enter') || (!this.touch && Input.justPressed('melee'));
     const tap = Input.consumeTap ? Input.consumeTap() : null;
     if (tap) {
       if (tap.x > this.VW - 78 && tap.y > this.VH - 30) { AudioManager.beep(320, 0.05, 'square', 0.04); return 'cerrar'; } // ✕ CERRAR
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < NTABS; i++) {
         const r = this._tabRect(i);
         if (tap.x > r.x && tap.x < r.x + r.w && tap.y > r.y - 4 && tap.y < r.y + r.h + 6) { this.tab = i; beep(); return null; }
       }
     }
     if (this.tab === 0) this._updateEquipo(Input, confirm, tap, beep);
     else if (this.tab === 1) this._updateEsfera(Input, confirm, tap, beep);
+    else if (this.tab === 3) this._updateCodice(Input, confirm, tap, beep);
     return null;
   }
 
@@ -148,7 +153,7 @@ export class MenuEquipo {
     }
     return null;
   }
-  _tabRect(i) { const w = (this.VW - 32) / 3; return { x: 16 + i * w, y: 28, w, h: 22 }; }
+  _tabRect(i) { const w = (this.VW - 32) / NTABS; return { x: 16 + i * w, y: 28, w, h: 22 }; }
 
   _gear(g, x, y, r, col) {
     g.save(); g.translate(x, y); g.fillStyle = col;
@@ -203,7 +208,7 @@ export class MenuEquipo {
     g.fillStyle = '#2a2340'; g.fillRect(barL, 24, VW - 16 - barL, 3);
     g.fillStyle = '#7a5fd0'; g.fillRect(barL, 24, (VW - 16 - barL) * Math.min(1, GameState.xp / need), 3);
     // pestañas
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < NTABS; i++) {
       const r = this._tabRect(i);
       const sel = i === this.tab;
       g.fillStyle = sel ? 'rgba(90,79,160,0.35)' : 'rgba(30,24,55,0.6)';
@@ -215,12 +220,14 @@ export class MenuEquipo {
     }
     if (this.tab === 0) this._drawEquipo(g, t);
     else if (this.tab === 1) this._drawEsfera(g, t);
-    else this._drawCronica(g, t);
+    else if (this.tab === 2) this._drawCronica(g, t);
+    else this._drawCodice(g, t);
     this.font(7); g.textAlign = 'center'; g.fillStyle = '#6c6193';
     g.fillText(this.touch
-      ? (this.tab === 1 ? 'Toca un nodo · toca otra vez para activar' : this.tab === 0 ? 'Toca para elegir · toca otra vez para equipar' : 'Toca las pestañas para cambiar')
+      ? (this.tab === 1 ? 'Toca un nodo · toca otra vez para activar' : this.tab === 0 ? 'Toca para elegir · toca otra vez para equipar' : this.tab === 3 ? 'Toca una criatura · toca las pestañas para cambiar' : 'Toca las pestañas para cambiar')
       : (this.tab === 1 ? 'Flechas mover · Enter activar · Q/E pestaña · Tab cerrar'
       : this.tab === 0 ? 'Flechas navegar · Enter equipar · Q/E pestaña · Tab cerrar'
+      : this.tab === 3 ? 'Flechas navegar el bestiario · Q/E pestaña · Tab cerrar'
       : 'Q/E pestaña · Tab cerrar'), VW / 2, VH - 14);
     if (this.touch) {
       g.textAlign = 'right'; this.font(9);
@@ -463,6 +470,71 @@ export class MenuEquipo {
       this.font(7); g.fillStyle = '#8d82ad';
       g.fillText('Bajas ' + fs.kills + ' · Perfectos ' + fs.perfects + ' · Paradas ' + fs.parries, x2 + 6, ry); ry += 10;
       g.fillText('Corazones perdidos ' + fs.corazones + ' · Cámaras ' + fs.salas, x2 + 6, ry);
+    }
+  }
+
+  // E4: BESTIARIO / CÓDICE — lista de criaturas; las derrotadas muestran su ficha (lore),
+  // las no vistas quedan como "???". Diegético: se llena jugando (GameState.bestiario).
+  _codiceGeo() {
+    const VW = this.VW, VH = this.VH, y0 = 54, hh = VH - 54 - 30;
+    const wL = Math.round((VW - 38) * 0.42), x2 = 16 + wL + 6, wR = VW - 16 - x2;
+    const ens = DataDB.enemigos?.enemigos ?? [];
+    const listY0 = y0 + 30, rowH = Math.max(8, Math.min(12, (hh - 34) / Math.max(1, ens.length)));
+    return { y0, hh, wL, x2, wR, ens, listY0, rowH };
+  }
+  _updateCodice(Input, confirm, tap, beep) {
+    const geo = this._codiceGeo(), n = geo.ens.length;
+    if (!n) return;
+    if (Input.justPressed('move_up')) { this.codiceIdx = (this.codiceIdx + n - 1) % n; beep(); }
+    if (Input.justPressed('move_down')) { this.codiceIdx = (this.codiceIdx + 1) % n; beep(); }
+    this.codiceIdx = Math.min(this.codiceIdx, n - 1);
+    if (tap && tap.x < 16 + geo.wL) {
+      for (let i = 0; i < n; i++) {
+        const ky = geo.listY0 + i * geo.rowH;
+        if (tap.y > ky - geo.rowH && tap.y < ky + 2) { this.codiceIdx = i; beep(); break; }
+      }
+    }
+  }
+  _wrap(g, text, maxW) {
+    const words = String(text).split(' '), lines = []; let cur = '';
+    for (const w of words) {
+      const tryL = cur ? cur + ' ' + w : w;
+      if (g.measureText(tryL).width > maxW && cur) { lines.push(cur); cur = w; } else cur = tryL;
+    }
+    if (cur) lines.push(cur);
+    return lines;
+  }
+  _drawCodice(g, t) {
+    const geo = this._codiceGeo(), { y0, hh, wL, x2, wR, ens, listY0, rowH } = geo;
+    const know = id => (GameState.bestiario ?? []).includes(id);
+    const nKnown = ens.filter(e => know(e.id)).length;
+    this._panel(g, 16, y0, wL, hh, 'BESTIARIO  ' + nKnown + '/' + ens.length);
+    ens.forEach((e, i) => {
+      const sel = i === this.codiceIdx, ky = listY0 + i * rowH;
+      if (sel) { g.fillStyle = 'rgba(90,79,160,0.4)'; g.fillRect(18, ky - rowH + 2, wL - 8, rowH); }
+      this.font(7); g.textAlign = 'left';
+      if (know(e.id)) { g.fillStyle = sel ? '#ffd54f' : '#e9e2f5'; g.fillText(this._clip(e.nombre ?? e.id, wL - 18), 22, ky); }
+      else { g.fillStyle = sel ? '#8d82ad' : '#55496e'; g.fillText('· · ·', 22, ky); }
+    });
+    // Ficha (detalle) a la derecha
+    this._panel(g, x2, y0, wR, hh, 'FICHA');
+    const e = ens[this.codiceIdx];
+    if (!e) return;
+    const cx = x2 + wR / 2;
+    if (know(e.id)) {
+      const key = 'enemigo_' + e.id, spr = Sprites.get?.(key);
+      if (spr) { const dh = 50, inf = Sprites.info(key), dw = Math.round(inf.w * dh / inf.h); g.drawImage(spr, Math.round(cx - dw / 2), y0 + 26, dw, dh); }
+      else { g.fillStyle = '#3a3350'; g.beginPath(); g.arc(cx, y0 + 50, 15, 0, 7); g.fill(); }
+      this.font(10); g.textAlign = 'center'; g.fillStyle = '#ffd54f'; g.fillText(this._clip(e.nombre ?? e.id, wR - 16), cx, y0 + 92);
+      this.font(7); g.fillStyle = '#8d82ad'; g.fillText('Familia: ' + (e.familia ?? '—') + '  ·  Vida ' + (e.hp ?? '?'), cx, y0 + 106);
+      this.font(8); g.textAlign = 'left'; g.fillStyle = '#c9bfe0';
+      const lines = this._wrap(g, e.desc ?? 'Sin descripción.', wR - 22);
+      lines.slice(0, 7).forEach((ln, i) => g.fillText(ln, x2 + 11, y0 + 128 + i * 12));
+    } else {
+      this.font(22); g.textAlign = 'center'; g.fillStyle = '#3a3350'; g.fillText('?', cx, y0 + 66);
+      this.font(8); g.fillStyle = '#8d82ad'; g.fillText('Sin descubrir', cx, y0 + 98);
+      this.font(7); g.fillStyle = '#55496e'; g.fillText('Derrota a esta criatura', cx, y0 + 116);
+      g.fillText('para desvelar su ficha.', cx, y0 + 126);
     }
   }
 }
