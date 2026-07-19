@@ -39,6 +39,34 @@
       "desc": "Paga con tu propia cuerda vital: un corazón por oro y espíritu.",
       "coste": { "corazon": 1 },
       "efectos": [{ "tipo": "oro", "valor": 28 }, { "tipo": "sp", "valor": 24 }]
+    },
+    {
+      "id": "ruleta_del_reloj",
+      "nombre": "La Ruleta del Reloj",
+      "glifo": "✧", "color": "#ffd54f",
+      "desc": "Giras la manecilla y dejas que el azar decida.",
+      "azar": [
+        { "peso": 38, "tipo": "oro", "valor": 30, "txt": "La suerte sonríe: +30 de oro" },
+        { "peso": 30, "tipo": "sp", "valor": 45, "txt": "Chispa de alma: +espíritu" },
+        { "peso": 20, "tipo": "emboscada", "valor": 3, "txt": "La manecilla marca la hora... de una emboscada" },
+        { "peso": 12, "tipo": "dar_item", "pool": "tesoro", "txt": "¡Premio mayor! Una reliquia" }
+      ]
+    },
+    {
+      "id": "forja_del_gremio",
+      "nombre": "La Forja del Gremio",
+      "glifo": "⊙", "color": "#ff9d5c",
+      "desc": "El Gremio forja una reliquia de calidad... si pagas su precio.",
+      "coste": { "oro": 22 },
+      "efectos": [{ "tipo": "dar_item", "pool": "jefe" }]
+    },
+    {
+      "id": "pozo_de_los_deseos",
+      "nombre": "El Pozo de los Deseos",
+      "glifo": "◇", "color": "#7ee8e0",
+      "desc": "Arroja un corazón al pozo y pide un deseo.",
+      "coste": { "corazon": 1 },
+      "efectos": [{ "tipo": "dar_item", "pool": "tesoro" }, { "tipo": "oro", "valor": 10 }]
     }
   ]
 }

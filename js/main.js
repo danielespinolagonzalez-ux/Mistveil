@@ -3392,8 +3392,26 @@ function drawEnemy(e, t) {
       break;
     }
     default: {
-      ctx.fillStyle = flash ? white : e.elementColor;
-      ctx.beginPath(); ctx.arc(0, 0, e.r, 0, 7); ctx.fill();
+      // Cuerpo genérico por FAMILIA para enemigos nuevos SIN sprite pintado: cada familia
+      // tiene silueta y color propios (cera cálida y blanda / latón dorado angular / polvo
+      // frío y difuso) → un enemigo nuevo se lee como criatura, no como bolita.
+      const fam = e.def.familia, wob = Math.sin(t * 5 + e.x) * 1.2;
+      if (fam === 'laton') {
+        ctx.fillStyle = flash ? white : '#c7a24a';
+        ctx.beginPath(); ctx.moveTo(0, -e.r); ctx.lineTo(e.r, 0); ctx.lineTo(0, e.r); ctx.lineTo(-e.r, 0); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = flash ? white : '#ffe9a8'; ctx.beginPath(); ctx.arc(-1, -1, e.r * 0.3, 0, 7); ctx.fill();
+        ctx.fillStyle = '#2a2340'; ctx.fillRect(-3, -1, 1.6, 2); ctx.fillRect(2, -1, 1.6, 2);
+      } else if (fam === 'polvo') {
+        const g = ctx.createRadialGradient(0, 0, 1, 0, 0, e.r + 3);
+        g.addColorStop(0, flash ? white : '#9a8fc0'); g.addColorStop(1, 'rgba(154,143,192,0.05)');
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, wob * 0.3, e.r + 2, 0, 7); ctx.fill();
+        ctx.fillStyle = flash ? white : '#d9d0f0'; ctx.fillRect(-2.5, -1 + wob * 0.3, 1.6, 1.6); ctx.fillRect(1, -1 + wob * 0.3, 1.6, 1.6);
+      } else { // cera (o sin familia): gota/blob cálido con ojitos
+        ctx.fillStyle = flash ? white : '#c2a56a';
+        ctx.beginPath(); ctx.ellipse(0, 2, e.r * 0.92, e.r + wob * 0.3, 0, 0, 7); ctx.fill();
+        ctx.fillStyle = flash ? white : '#efe0b8'; ctx.beginPath(); ctx.ellipse(-1, -1, e.r * 0.35, e.r * 0.42, 0, 0, 7); ctx.fill();
+        ctx.fillStyle = '#3a3226'; ctx.fillRect(-3, -1, 1.6, 2); ctx.fillRect(2, -1, 1.6, 2);
+      }
     }
   }
   ctx.restore();

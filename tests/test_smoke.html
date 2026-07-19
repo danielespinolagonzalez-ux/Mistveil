@@ -179,6 +179,23 @@ assert('toda reliquia tiene icono_forma (silueta propia)', DataDB.items.items.ev
   assert('drawItemIcon pinta todas las formas (y una desconocida) sin romper', ok);
 })();
 
+// Ampliación de ENEMIGOS y EVENTOS
+assert('roster de enemigos ampliado (≥23)', DataDB.enemigos.enemigos.length >= 23);
+assert('eventos ampliados (≥7)', DataDB.eventos.eventos.length >= 7);
+(() => {
+  const nuevos = ['cascabel_laton', 'esquirla_de_polvo', 'sebo_hirviente', 'centinela_de_polvo'];
+  const comps = new Set(['blink', 'charger', 'chase', 'chase_explode', 'chase_heavy', 'cuckoo', 'flee_aura', 'healer', 'orbit_shoot', 'reviver', 'shielder', 'spiral_shooter', 'turret', 'wander_bounce']);
+  let ok = true, enPool = true;
+  for (const id of nuevos) {
+    const def = DataDB.enemigo(id);
+    if (!def || !comps.has(def.comportamiento) || !def.familia) ok = false;
+    if (!Object.values(DataDB.enemigos.pools_spawn).some(pl => pl.includes(id))) enPool = false;
+    try { new Enemy(id, 0, 0); } catch { ok = false; }
+  }
+  assert('los 4 enemigos nuevos: comportamiento válido, familia, e instancian', ok);
+  assert('los 4 enemigos nuevos están en algún pool de bioma', enPool);
+})();
+
 // Player existe y responde a la física
 const room = { x: 0, y: 0, w: 416, h: 224 };
 const roomCtx = {
