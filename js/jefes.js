@@ -42,7 +42,7 @@ export function crearDirectorJefe(boss, room) {
   function lanzar(nombre, player) {
     const m = MEC[nombre]; if (!m) return;
     const cx = boss.x, cy = boss.y;
-    const b = { tipo: m.tipo, t: m.telegraph_s ?? 1.4, fase: 'aviso', dano: m.dano ?? 1, color: m.color ?? '#e05a4f' };
+    const b = { tipo: m.tipo, t: m.telegraph_s ?? 1.4, telegraph_s: m.telegraph_s ?? 1.4, fase: 'aviso', dano: m.dano ?? 1, color: m.color ?? '#e05a4f' };
     if (m.tipo === 'circulos') {
       const n = m.n ?? 4;
       for (let i = 0; i < n; i++) {

@@ -89,6 +89,15 @@ assert('Enemy toma hp del JSON', e.health.hp === DataDB.enemigo('cera_andante').
 const dmg = e.takeDamage(3.5, 290, 100);
 assert('Daño redondeado (3.5 → 4)', dmg === 4);
 
+// Telegrafía universal: los enemigos a distancia AVISAN antes de disparar y
+// bloquean el apuntado (para poder esquivar moviéndose).
+const tur = new Enemy('tejedor_horas', 100, 100);
+assert('Enemy nace sin aviso de disparo (cast = 0)', tur.cast === 0);
+tur.fireCd = 0.2;
+tur._avisoDisparo(1 / 60, 50, 0);
+assert('Aviso de disparo se activa al acercarse el fuego (cast > 0)', tur.cast > 0);
+assert('El apuntado se bloquea al avisar (castAim vector)', Array.isArray(tur.castAim) && tur.castAim.length === 2);
+
 // Cadencia: ventanas de timing (función pura)
 assert('Cadencia: pulsar en el alineamiento = perfecta', computeQuality(700, 700, 120, 230, 40) === 'perfect');
 assert('Cadencia: -80ms = buena', computeQuality(620, 700, 120, 230, 40) === 'good');

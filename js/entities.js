@@ -410,6 +410,10 @@ export class Enemy {
     this.priming = 0;          // velon_inestable: cuenta atrás de explosión
     this.burn = null;          // DoT de fuego {t, tick}
     this.atk = { state: 'idle', t: 0, dir: [1, 0] }; // ataque telegrafiado (melee)
+    this.cast = 0;             // aviso previo de disparo a distancia (cuenta atrás)
+    this.castMax = 0;          // duración del aviso (para normalizar el render)
+    this.castAim = null;       // apuntado BLOQUEADO al empezar el aviso (esquivable)
+    this.muzzle = 0;           // fogonazo breve al soltar el disparo
     this.channel = 0;          // cerero_errante: canalización de reavivado
     this.twin = null;          // minutero_gemelo: vínculo
     this.enraged = false;
@@ -430,6 +434,24 @@ export class Enemy {
     this.vx = this.vy = 0;
   }
 
+  // Aviso previo al disparo de un enemigo a DISTANCIA. Debe llamarse justo tras
+  // `fireCd -= dt`. Al entrar en la ventana de telegrafía fija el apuntado (por eso
+  // esquivas moviéndote) y emite `enemy_cast`. La ventana se acota a ≤70% del
+  // enfriamiento para que siempre haya un respiro. En el disparo, poner cast=0.
+  _avisoDisparo(dt, dx, dy) {
+    const cad = this.def.proyectil?.cadencia_s ?? this.def.cura?.cadencia_s ?? 1.2;
+    let tele = this.def.telegraph_s ?? (DataDB.balance.enemigo_rango?.telegraph_s ?? 0.5);
+    tele = Math.min(tele, cad * 0.7);
+    if (tele <= 0) return;
+    if (this.cast <= 0 && this.fireCd <= tele && this.fireCd > 0) {
+      this.castMax = tele; this.cast = this.fireCd;
+      const l = Math.hypot(dx, dy) || 1; this.castAim = [dx / l, dy / l];
+      EventBus.emit('enemy_cast', this);
+      AudioManager.beep(430, 0.05, 'triangle', 0.03, 120);
+    }
+    if (this.cast > 0) this.cast = Math.max(0, this.cast - dt);
+  }
+
   _enrage() {
     this.enraged = true;
     this.def = { ...this.def, velocidad: this.def.velocidad * 1.55 };
@@ -448,6 +470,7 @@ export class Enemy {
   update(dt, player, roomCtx, world) {
     this.health.update(dt);
     if (this.flash > 0) this.flash -= dt;
+    if (this.muzzle > 0) this.muzzle -= dt;
     // Quemadura (DoT de fuego)
     if (this.burn) {
       this.burn.t -= dt;
@@ -540,11 +563,13 @@ export class Enemy {
         // Reloj de pared con patas: canta y dispara en abanico cada compás EXACTO
         this.vx = this.vy = 0;
         this.fireCd -= dt;
+        this._avisoDisparo(dt, dx, dy);
         if (this.fireCd < 0.55 && !this._ticked) { this._ticked = true; AudioManager.beep(1320, 0.06, 'square', 0.045); }
         if (this.fireCd <= 0 && def.proyectil) {
           this.fireCd = def.proyectil.cadencia_s; this._ticked = false;
           AudioManager.beep(880, 0.09, 'square', 0.05, -220);
-          const base = Math.atan2(dy, dx);
+          const [ax, ay] = this.castAim ?? [dx / dist, dy / dist];
+          const base = Math.atan2(ay, ax);
           for (const off of [-0.34, 0, 0.34]) {
             world.bullets.spawn({
               x: this.x, y: this.y,
@@ -553,6 +578,7 @@ export class Enemy {
               damage: def.proyectil.dano, color: '#ffd54f'
             });
           }
+          this.cast = 0; this.muzzle = 0.1;
         }
         break;
       }
@@ -600,14 +626,16 @@ export class Enemy {
       case 'turret': {
         this.vx = this.vy = 0;
         this.fireCd -= dt;
+        this._avisoDisparo(dt, dx, dy);
         if (this.fireCd <= 0 && def.proyectil) {
           this.fireCd = def.proyectil.cadencia_s;
+          const [ax, ay] = this.castAim ?? [dx / dist, dy / dist]; // dispara al apuntado del aviso
           world.bullets.spawn({
             x: this.x, y: this.y,
-            vx: dx / dist * def.proyectil.velocidad,
-            vy: dy / dist * def.proyectil.velocidad,
+            vx: ax * def.proyectil.velocidad, vy: ay * def.proyectil.velocidad,
             damage: def.proyectil.dano, color: this.elementColor
           });
+          this.cast = 0; this.muzzle = 0.1;
           AudioManager.beep(980, 0.05, 'square', 0.03);
         }
         break;
@@ -625,14 +653,16 @@ export class Enemy {
         this.vx = mx / ml * def.velocidad;
         this.vy = my / ml * def.velocidad;
         this.fireCd -= dt;
+        this._avisoDisparo(dt, dx, dy);
         if (this.fireCd <= 0 && def.proyectil) {
           this.fireCd = def.proyectil.cadencia_s;
+          const [ax, ay] = this.castAim ?? [dx / dist, dy / dist];
           world.bullets.spawn({
             x: this.x, y: this.y,
-            vx: dx / dist * def.proyectil.velocidad,
-            vy: dy / dist * def.proyectil.velocidad,
+            vx: ax * def.proyectil.velocidad, vy: ay * def.proyectil.velocidad,
             damage: def.proyectil.dano, color: this.elementColor
           });
+          this.cast = 0; this.muzzle = 0.1;
           AudioManager.beep(700, 0.06, 'sine', 0.035, -120);
         }
         break;
@@ -698,8 +728,9 @@ export class Enemy {
         this.vx = dx / dist * def.velocidad * 0.4;
         this.vy = dy / dist * def.velocidad * 0.4;
         this.fireCd -= dt;
+        this._avisoDisparo(dt, dx, dy);
         if (this.fireCd <= 0 && def.proyectil) {
-          this.fireCd = def.proyectil.cadencia_s;
+          this.fireCd = def.proyectil.cadencia_s; this.cast = 0; this.muzzle = 0.1;
           this._spiralA = (this._spiralA ?? 0) + (def.espiral?.giro ?? 0.6);
           const n = def.espiral?.balas ?? 3;
           for (let k = 0; k < n; k++) {
@@ -756,8 +787,9 @@ export class Enemy {
         this.vx = -dx / dist * def.velocidad * 0.55;
         this.vy = -dy / dist * def.velocidad * 0.55;
         this.fireCd -= dt;
+        this._avisoDisparo(dt, dx, dy); // avisa antes de curar → ventana para interrumpirlo
         if (this.fireCd <= 0) {
-          this.fireCd = def.cura?.cadencia_s ?? 1.6;
+          this.fireCd = def.cura?.cadencia_s ?? 1.6; this.cast = 0; this.muzzle = 0.1;
           let curado = false;
           for (const o of (world.enemies ?? [])) {
             if (o === this || o.health.dead) continue;

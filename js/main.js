@@ -419,17 +419,21 @@ function drawMetronomo() {
 
 // Telegrafías del jefe de raid (js/jefes.js): se dibujan crecientes en el suelo
 // para que las esquives con tiempo (círculo, donut "acércate", cono, barrido, safe).
-function drawBossZonas(dir) {
+function drawBossZonas(dir, t = 0) {
   if (!dir?.zonas?.length) return;
   const KY = VIS.KY;
   for (const z of dir.zonas) {
     const sx = SX(z.x), sy = SY(z.y);
     const aviso = z.fase === 'aviso';
     const k = aviso ? 1 - Math.max(0, z.t) / Math.max(0.001, z.telegraph_s ?? 1) : 1;
-    const fillA = aviso ? 0.10 + 0.24 * k : 0.45;
-    const lineA = aviso ? 0.45 + 0.45 * k : 0.95;
+    const inminente = aviso && k > 0.78;                      // últimos ~20%: el golpe es YA
+    const blink = inminente && Math.floor(t * 18) % 2 === 0;  // parpadeo blanco pre-impacto
+    const fillA = aviso ? 0.10 + 0.30 * k : 0.5;
+    const lineA = aviso ? 0.45 + 0.5 * k : 0.95;
+    const col = z.color ?? '#e05a4f';
+    const lineCol = blink ? '#ffffff' : col;
     ctx.save();
-    ctx.fillStyle = z.color ?? '#e05a4f'; ctx.strokeStyle = z.color ?? '#e05a4f'; ctx.lineWidth = 2;
+    ctx.fillStyle = col; ctx.strokeStyle = lineCol; ctx.lineWidth = inminente ? 3 : 2;
     if (z.tipo === 'circulos') {
       ctx.globalAlpha = fillA; ctx.beginPath(); ctx.ellipse(sx, sy, z.r, z.r * KY, 0, 0, 7); ctx.fill();
       ctx.globalAlpha = lineA; ctx.beginPath(); ctx.ellipse(sx, sy, z.r, z.r * KY, 0, 0, 7); ctx.stroke();
@@ -457,12 +461,18 @@ function drawBossZonas(dir) {
     } else if (z.tipo === 'linea') {
       ctx.translate(sx, sy); ctx.rotate(z.ang); ctx.scale(1, KY);
       ctx.globalAlpha = fillA; ctx.fillRect(0, -z.ancho / 2, z.largo, z.ancho);
+      ctx.globalAlpha = lineA; ctx.strokeStyle = lineCol; ctx.lineWidth = inminente ? 2.5 : 1.5; ctx.strokeRect(0, -z.ancho / 2, z.largo, z.ancho);
     } else if (z.tipo === 'barrido') {
       const activa = z.fase === 'activa';
-      const ex = sx + Math.cos(z.ang) * z.largo, ey = sy + Math.sin(z.ang) * z.largo * KY;
-      ctx.globalAlpha = activa ? 0.95 : lineA; ctx.lineWidth = activa ? 6 : 3;
+      // Cuña del ancho REAL de colisión (±z.ancho): el peligro se VE, no es una raya fina
+      ctx.globalAlpha = activa ? 0.32 : fillA * 0.9; ctx.beginPath(); ctx.moveTo(sx, sy);
+      const a0 = z.ang - z.ancho, a1 = z.ang + z.ancho;
+      for (let i = 0; i <= 8; i++) { const a = a0 + (a1 - a0) * i / 8; ctx.lineTo(sx + Math.cos(a) * z.largo, sy + Math.sin(a) * z.largo * KY); }
+      ctx.closePath(); ctx.fill();
+      const ex = sx + Math.cos(z.ang) * z.largo, ey = sy + Math.sin(z.ang) * z.largo * KY; // manecilla central
+      ctx.globalAlpha = activa ? 0.95 : lineA; ctx.lineWidth = activa ? 5 : 3;
+      ctx.strokeStyle = (activa && Math.floor(t * 18) % 2 === 0) ? '#fff' : col;
       ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.stroke();
-      if (activa) { ctx.globalAlpha = 0.6; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.stroke(); }
     }
     ctx.restore();
   }
@@ -905,6 +915,17 @@ EventBus.on('room_cleared', (room) => {
 EventBus.on('enemy_windup', (e) => {
   pushPopup(e.x, e.y - e.r - 10, '!', '#ff6b5e', 12);
   AudioManager.noise(0.16, 700, 0.032, 350);
+});
+// Aviso de disparo a distancia: rombo tenue del color de la familia sobre la cabeza
+EventBus.on('enemy_cast', (e) => {
+  const c = { cera: '#ff9d5c', laton: '#ffd54f', polvo: '#b98fd0' }[e.def.familia] ?? '#ff9d5c';
+  pushPopup(e.x, e.y - e.r - 9, '◆', c, 9);
+});
+// Impacto del golpe de melé (antes SIN feedback): fogonazo de partículas + micro-shake
+EventBus.on('enemy_strike', (e) => {
+  const c = { cera: '#ff9d5c', laton: '#ffd54f', polvo: '#b98fd0' }[e.def.familia] ?? '#ff6b5e';
+  FX.burst(e.x, e.y, { n: 6, color: c, speed: 130, life: 0.22, size: 2, glow: true });
+  FX.addShake(1);
 });
 EventBus.on('enemy_spawned', (x, y) => {
   FX.burst(x, y, { n: 10, color: '#8f86ad', speed: 60, life: 0.5, size: 2, glow: true });
@@ -2657,6 +2678,12 @@ function drawPlayer(p, t) {
   }
 }
 
+// Color del AVISO de ataque por familia de material (unifica el lenguaje visual:
+// cera cálida, latón dorado, polvo violeta). Distinto del halo estático de familia.
+const TELE_FAM = { cera: '255,157,92', laton: '255,213,79', polvo: '185,143,208' };
+// Comportamientos cuyo disparo APUNTA (dibujan línea de trayectoria en el aviso).
+const CAST_AIM = new Set(['turret', 'orbit_shoot', 'cuckoo', 'blink']);
+
 function drawEnemy(e, t) {
   if (e.health.dead) return;
   const scale = e.r / 10;
@@ -2689,13 +2716,41 @@ function drawEnemy(e, t) {
     ctx.fillStyle = hg;
     ctx.beginPath(); ctx.arc(x, y, e.r * 2.1, 0, 7); ctx.fill();
   }
-  // Telegrafía de zarpazo: anillo rojizo creciendo a los pies durante el windup
+  const telc = TELE_FAM[e.def.familia] ?? '255,107,94'; // color de aviso por familia
+  // Telegrafía de zarpazo: anillo creciendo a los pies durante el windup (melé)
   if (e.melees && atk.state === 'windup') {
     const wdur = DataDB.balance.enemigo_melee.windup_s * (e.def.windup_mult ?? 1);
     const k = 1 - atk.t / wdur;
-    ctx.strokeStyle = `rgba(255,107,94,${0.25 + k * 0.45})`;
+    ctx.strokeStyle = `rgba(${telc},${0.25 + k * 0.45})`;
     ctx.lineWidth = 1.5 + k;
     ctx.beginPath(); ctx.ellipse(SX(e.x), SY(e.y) + 4, e.r * (0.9 + k * 0.5), (e.r * (0.9 + k * 0.5)) * 0.4, 0, 0, 7); ctx.stroke();
+  }
+  // Telegrafía GENÉRICA de disparo a distancia (turret/orbit/spiral/cuco/sanador):
+  // un anillo que se CIERRA hacia el enemigo (0→1) + pulso interior en el último
+  // tramo; si el ataque apunta, línea de trayectoria. Da ventana para esquivar.
+  if (e.cast > 0 && e.castMax > 0) {
+    const k = 1 - e.cast / e.castMax;
+    const rr = e.r * (3 - 2 * k); // se cierra de 3r a r
+    ctx.strokeStyle = `rgba(${telc},${0.3 + k * 0.5})`;
+    ctx.lineWidth = 1.5 + k * 1.5;
+    ctx.beginPath(); ctx.ellipse(SX(e.x), SY(e.y), rr, rr * KY, 0, 0, 7); ctx.stroke();
+    if (k > 0.72 && Math.floor(t * 20) % 2 === 0) { // destello inminente
+      ctx.fillStyle = `rgba(${telc},0.5)`;
+      ctx.beginPath(); ctx.ellipse(SX(e.x), SY(e.y), e.r * 0.9, e.r * 0.9 * KY, 0, 0, 7); ctx.fill();
+    }
+    if (e.castAim && CAST_AIM.has(e.def.comportamiento)) { // trayectoria del disparo apuntado
+      const ex = SX(e.x), ey = SY(e.y), len = 40 + k * 44;
+      ctx.strokeStyle = `rgba(${telc},${0.22 + k * 0.5})`;
+      ctx.lineWidth = 1 + k; ctx.setLineDash([5, 5]);
+      ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(ex + e.castAim[0] * len, ey + e.castAim[1] * KY * len); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+  // Fogonazo blanco breve al soltar el disparo (el "AHORA")
+  if (e.muzzle > 0) {
+    const mk = Math.max(0, e.muzzle / 0.1), rr = e.r * (1.1 + (1 - mk) * 1.1);
+    ctx.fillStyle = `rgba(255,255,255,${0.5 * mk})`;
+    ctx.beginPath(); ctx.ellipse(SX(e.x), SY(e.y), rr, rr * KY, 0, 0, 7); ctx.fill();
   }
   // Élites (gemelo enfurecido) y jefes: aura latiente que impone
   if (e.enraged || e.def.jefe) {
@@ -2989,7 +3044,7 @@ function drawEnemy(e, t) {
     const k = 1 - atk.t / A.windup_s;
     const inWindow = atk.t <= DataDB.balance.parry.window_s;
     const base = Math.atan2(atk.dir[1] * KY, atk.dir[0]);
-    ctx.strokeStyle = inWindow && Math.floor(t * 14) % 2 === 0 ? '#7ee8e0' : `rgba(255,80,60,${0.35 + k * 0.55})`;
+    ctx.strokeStyle = inWindow && Math.floor(t * 14) % 2 === 0 ? '#7ee8e0' : `rgba(${telc},${0.35 + k * 0.55})`;
     ctx.lineWidth = 2 + k * 1.5;
     ctx.beginPath();
     ctx.ellipse(SX(e.x), SY(e.y), e.r + 8, (e.r + 8) * KY, 0, base - 0.5 - k * 0.4, base + 0.5 + k * 0.4);
@@ -3317,7 +3372,7 @@ function drawHUD(t) {
   ctx.translate(Math.round(shkx), Math.round(shky));
   ctx.scale(ZOOM, ZOOM);
   drawBiomaExtras(t);
-  if (world.bossDir) drawBossZonas(world.bossDir);
+  if (world.bossDir) drawBossZonas(world.bossDir, t);
   if (showDebug) drawHitboxes();
   ctx.restore();
   if (world.bossDir) drawBossHP(world.bossDir); // barra de vida grande = HUD de pantalla

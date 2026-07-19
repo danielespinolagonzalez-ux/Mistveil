@@ -33,6 +33,9 @@
     "strike_speed_mult": 3.4,
     "recover_s": 0.5
   },
+  "enemigo_rango": {
+    "telegraph_s": 0.5
+  },
   "cadencia": {
     "combo_hits_base": 3,
     "window_perfect_ms": 120,
