@@ -285,31 +285,34 @@
       "estado": "hecho"
     },
     {
-      "id": "jefe_campanero_mayor",
+      "id": "jefe_pendulos",
       "tipo": "sprite",
       "clase": "boss",
       "targetH": 96,
       "face": "left",
       "largestOnly": true,
-      "sujeto": "the Great Bellkeeper: an enormous ceremonial engraved bronze bell with mighty arms, a crown of lit candles, broken chains hanging, imposing presence"
+      "sujeto": "the Great Bellkeeper: an enormous ceremonial engraved bronze bell with mighty arms, a crown of lit candles, broken chains hanging, imposing presence",
+      "estado": "hecho"
     },
     {
-      "id": "jefe_archivera_anegada",
+      "id": "jefe_archivo",
       "tipo": "sprite",
       "clase": "boss",
       "targetH": 96,
       "face": "left",
       "largestOnly": true,
-      "sujeto": "the Drowned Archivist: a great moth-librarian soaked in indigo ink, wings like dissolving wet pages, tiny spectacles, loose pages and ink drops floating around her"
+      "sujeto": "the Drowned Archivist: a great moth-librarian soaked in indigo ink, wings like dissolving wet pages, tiny spectacles, loose pages and ink drops floating around her",
+      "estado": "hecho"
     },
     {
-      "id": "jefe_primer_relojero",
+      "id": "jefe_invertida",
       "tipo": "sprite",
       "clase": "boss",
       "targetH": 96,
       "face": "left",
       "largestOnly": true,
-      "sujeto": "the First Clockmaker: a venerable broken automaton, majestic and sorrowful, open chest revealing golden gears still turning, beard of copper shavings, clock-hand staff, romanticist tragedy aura"
+      "sujeto": "the First Clockmaker: a venerable broken automaton, majestic and sorrowful, open chest revealing golden gears still turning, beard of copper shavings, clock-hand staff, romanticist tragedy aura",
+      "estado": "hecho"
     },
     {
       "id": "npc_ferran",
@@ -705,6 +708,16 @@
       "id": "muro_truenos",
       "tipo": "textura",
       "sujeto": "wall of bronze organ pipes and small bells over dark violet stone, horizontal band seen front-on",
+      "estado": "hecho"
+    },
+    {
+      "id": "jefe_truenos",
+      "tipo": "sprite",
+      "clase": "boss",
+      "targetH": 100,
+      "face": "left",
+      "largestOnly": true,
+      "sujeto": "the Great Carillon: a colossal cathedral bell-tower automaton, wrought-iron frame hung with many tarnished bronze bells, cuckoo-clock doors ajar, forked arcs of blue-white lightning crackling between the bells, one menacing glass eye aglow, thunderous and imposing, storm charge in the air",
       "estado": "hecho"
     }
   ]

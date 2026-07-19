@@ -293,5 +293,25 @@
   "h": 256,
   "tipo": "textura",
   "ext": "png"
+ },
+ "jefe_archivo": {
+  "w": 96,
+  "h": 96,
+  "face": "left"
+ },
+ "jefe_invertida": {
+  "w": 84,
+  "h": 96,
+  "face": "left"
+ },
+ "jefe_pendulos": {
+  "w": 88,
+  "h": 96,
+  "face": "left"
+ },
+ "jefe_truenos": {
+  "w": 99,
+  "h": 100,
+  "face": "left"
  }
 }

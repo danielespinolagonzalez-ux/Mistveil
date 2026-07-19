@@ -2594,10 +2594,15 @@ function drawEnemy(e, t) {
 
   // Sprite pintado si existe para este enemigo (hereda escala por radio y los
   // desplazamientos de windup/golpe); si no, el cuerpo vectorial del switch.
-  const eSpr = Sprites.get('enemigo_' + e.id);
+  // Jefe de raid con sprite propio (def.sprite = 'jefe_<bioma>'); si no, el del enemigo base.
+  const sprId = (e.def.sprite && Sprites.get(e.def.sprite)) ? e.def.sprite : 'enemigo_' + e.id;
+  const eSpr = Sprites.get(sprId);
   if (eSpr) {
-    const inf = Sprites.info('enemigo_' + e.id);
-    const dh = 32, dw = Math.round(inf.w * dh / inf.h);
+    const inf = Sprites.info(sprId);
+    // Los jefes de raid se dibujan más grandes (proporcional a su radio); el
+    // resto conserva la altura tuneada de 32 px.
+    const dh = e.def.jefe ? Math.round((e.r ?? 18) * 3.4) : 32;
+    const dw = Math.round(inf.w * dh / inf.h);
     const wob = Math.sin(t * 5 + e.x) * 0.03; // respiración sutil
     const faceRight = world.player ? world.player.x >= e.x : true;
     const flip = (inf.face === 'right') !== faceRight;
@@ -4020,7 +4025,7 @@ function paintFatal(err) {
       const bid = bioma ?? rm?.bioma?.id ?? 'pendulos';
       const raid = DataDB.jefes?.jefes?.[bid]; if (!raid) return 'sin jefe raid para ' + bid;
       const c = { x: rm.bounds.x + rm.bounds.w / 2, y: rm.bounds.y + rm.bounds.h * 0.4 };
-      const e = new Enemy(raid.base ?? 'campanero', c.x, c.y, { nombre: raid.nombre, hp: raid.hp, r: raid.r ?? 18, velocidad: raid.velocidad ?? 40, comportamiento: 'jefe_ancla', jefe: true, sello: raid.sello, elemento: raid.elemento, ancla: c });
+      const e = new Enemy(raid.base ?? 'campanero', c.x, c.y, { nombre: raid.nombre, hp: raid.hp, r: raid.r ?? 18, velocidad: raid.velocidad ?? 40, comportamiento: 'jefe_ancla', jefe: true, sello: raid.sello, elemento: raid.elemento, sprite: 'jefe_' + bid, ancla: c });
       e.room = rm; world.enemies.push(e);
       return raid.nombre + ' invocado';
     },

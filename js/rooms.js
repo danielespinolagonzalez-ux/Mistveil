@@ -323,7 +323,7 @@ export class Room {
             nombre: raid.nombre, hp: Math.round(raid.hp * hpMult), r: raid.r ?? 18,
             velocidad: raid.velocidad ?? 40, comportamiento: 'jefe_ancla', jefe: true,
             sello: raid.sello, elemento: raid.elemento, familia: raid.familia,
-            coste_dificultad: 0, danoMult, ancla: { x: c.x, y: c.y }
+            sprite: 'jefe_' + this.bioma.id, coste_dificultad: 0, danoMult, ancla: { x: c.x, y: c.y }
           }
         }];
       } else {
