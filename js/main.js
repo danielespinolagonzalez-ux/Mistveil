@@ -1436,6 +1436,20 @@ function update(dt) {
     if (RunState.sp >= DataDB.balance.ignicion.sp_max) p.startIgnicion();
     else { AudioManager.sfx('no_sp'); pushPopup(p.x, p.y - 20, 'Espíritu insuficiente', '#e07a7a', 9); }
   }
+  // Decay del Espíritu (anti-banking): fuera de combate el SP se enfría, para que
+  // la Ignición no se acumule pasivamente entre salas. Todo tunable en balance.ignicion.
+  {
+    const ig = DataDB.balance.ignicion;
+    const dps = ig?.sp_decay_por_s ?? 0;
+    if (dps > 0 && p.ignicionT <= 0 && RunState.sp > 0) {
+      const fueraCombate = !world.enemies.some(e => !e.health.dead);
+      if (!(ig.sp_decay_solo_fuera_combate ?? true) || fueraCombate) {
+        const antes = RunState.sp;
+        RunState.sp = Math.max(0, RunState.sp - dps * dt);
+        if (Math.floor(antes) !== Math.floor(RunState.sp)) EventBus.emit('sp_changed', RunState.sp);
+      }
+    }
+  }
   // Acto 2 — arder: chispas tangenciales orbitando + engranajes dorados que suben
   if (p.ignicionT > 0 && Math.random() < dt * 9) {
     const a = Math.random() * Math.PI * 2;

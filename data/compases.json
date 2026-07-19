@@ -13,11 +13,11 @@
     {
       "id": "allegro",
       "nombre": "Compás Febril",
-      "desc": "4 golpes veloces: +50% Espíritu, -35% daño.",
+      "desc": "4 golpes veloces: +25% Espíritu, -35% daño.",
       "golpes": 4,
       "ritmo_mult": 0.62,
       "dano_mult": 0.65,
-      "sp_mult": 1.5,
+      "sp_mult": 1.25,
       "color": "#7ee8e0"
     },
     {
