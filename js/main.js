@@ -18,7 +18,7 @@ import { applyItem, rollItem } from './items.js';
 import { aplicarEvento } from './eventos.js';
 import { cast, elementMult } from './spells.js';
 import { FX } from './fx.js';
-import { PLAZA, NPCS, visita, resetVisita, drawNPC, drawCoro, drawPuebloBackdrop, drawPlazaGround } from './pueblo.js';
+import { plaza, distritos, visita, resetVisita, drawDistrito, drawCoro, drawPuebloBackdrop, drawPlazaGround, barrioVivo } from './ciudad.js';
 import { syncFamiliares, updateFamiliares, drawFamiliar } from './familiares.js';
 import { spawnArt, updateArt, drawArt, romano } from './artes_fx.js';
 import { selloDef, selloEquipado, obtenerSello, rasgoCuraPorSp, rasgoDashBurn, finisherElemental, selloSpPorPerfecto, selloRango } from './sellos.js';
@@ -1131,6 +1131,14 @@ EventBus.on('enemy_died', (e) => {
 });
 EventBus.on('gemelo_enfurecido', () => flash('¡El gemelo superviviente enloquece!'));
 EventBus.on('enemigo_reavivado', (rev) => flash('El Cerero reaviva a ' + rev.def.nombre, 'Mátalo primero...'));
+// F1 — Cuerdaqueda: un distrito se ENCIENDE (rescate en la Torre o hito cumplido). Fanfarria
+// de encendido: flash + resplandor de su color de acento en su calle (se ve al entrar al hub).
+EventBus.on('barrio_iluminado', (id) => {
+  const d = distritos().find(x => x.id === id);
+  flash('Cuerdaqueda recuerda a ' + (d?.vecino ?? 'alguien'), 'Su calle vuelve a encenderse');
+  AudioManager.sfx('door_open');
+  if (d) { FX.addShake(2); FX.burst(d.x, d.y - 24, { n: 22, color: d.acento ?? '#ffce6a', speed: 90, life: 0.9, size: 2.4, glow: true, gravity: -30 }); }
+});
 // Firmas de las mecánicas nuevas
 EventBus.on('enemy_blink', (x, y) => FX.burst(x, y, { n: 10, color: '#b98fd0', speed: 90, life: 0.3, size: 2, glow: true }));
 EventBus.on('escudo_bloqueo', (x, y) => { FX.burst(x, y, { n: 5, color: '#e8e2c8', speed: 70, life: 0.2, size: 1.5, spread: 1.2 }); AudioManager.beep(300, 0.05, 'square', 0.025); });
@@ -4102,22 +4110,34 @@ function drawTouchUI(t) {
 }
 
 // ---------- Pueblo (hub entre runs) ----------
+// F1: al entrar en Cuerdaqueda, detecta distritos que se han ENCENDIDO desde la última
+// visita (rescate en la Torre / hito cumplido) y dispara su secuencia de encendido.
+let _barriosVistos = null;
+function ciudadDetectarNuevos() {
+  const vivos = distritos().filter(d => d.vivo).map(d => d.id);
+  if (_barriosVistos === null) { _barriosVistos = new Set(vivos); return; } // primer arranque: sin fanfarria
+  for (const id of vivos) {
+    if (!_barriosVistos.has(id)) { _barriosVistos.add(id); EventBus.emit('barrio_iluminado', id); }
+  }
+}
 function enterPueblo() {
   resetVisita();
   dlg = null; puebloAviso = null;
+  ciudadDetectarNuevos(); // F1: enciende distritos recién rescatados (barrio_iluminado + flash)
   if (!world.player) world.player = new Player(0, 0);
   const p = world.player;
-  p.x = PLAZA.x + 40; p.y = PLAZA.y + PLAZA.h * 0.62;
+  const P = plaza();
+  p.x = P.x + 40; p.y = P.y + P.h * 0.62;
   p.vx = p.vy = 0;
   p.health.hp = Math.max(p.health.hp, 2); // Pip se reenciende
-  // -80 (antes +30): baja a Pip y los NPCs sobre el adoquinado del fondo pintado
-  cam.x = puebloCamX(); cam.y = PLAZA.y + PLAZA.h / 2 - 80 - (VHz / 2) / KY;
+  // Encuadra las 3 terrazas: el centro vertical de la plaza al centro de pantalla.
+  cam.x = puebloCamX(); cam.y = P.y + P.h / 2 - (VHz / 2) / KY;
   mode = 'pueblo';
 }
 function puebloCamX() {
-  const p = world.player;
+  const p = world.player; const P = plaza();
   let tx = p.x - VWz / 2;
-  return Math.min(Math.max(tx, PLAZA.x - 30), Math.max(PLAZA.x - 30, PLAZA.x + PLAZA.w + 30 - VWz));
+  return Math.min(Math.max(tx, P.x - 30), Math.max(P.x - 30, P.x + P.w + 30 - VWz));
 }
 const puebloStubWorld = { tears: { spawn() {} }, bullets: { spawn() {} } };
 let dlgCd = 0; // anti-reapertura: al cerrar una charla, medio segundo de gracia
@@ -4158,58 +4178,55 @@ function updatePueblo(dt) {
     return;
   }
 
+  const P = plaza();
   const roomCtx = {
-    bounds: PLAZA,
+    bounds: P,
     playerSolids: () => [],
     clampPlayer: (pl) => {
-      pl.x = Math.min(Math.max(pl.x, PLAZA.x + pl.r), PLAZA.x + PLAZA.w - pl.r);
-      pl.y = Math.min(Math.max(pl.y, PLAZA.y + 30), PLAZA.y + PLAZA.h - pl.r);
+      pl.x = Math.min(Math.max(pl.x, P.x + pl.r), P.x + P.w - pl.r);
+      pl.y = Math.min(Math.max(pl.y, P.y + 30), P.y + P.h - pl.r);
     }
   };
   p.update(dt, Input, roomCtx, puebloStubWorld);
   cam.x += (puebloCamX() - cam.x) * Math.min(1, dt * 7);
 
-  // Interacción con el NPC más cercano
-  const near = nearestNPC();
+  // Interacción con el distrito VIVO más cercano
+  const near = nearestNPC(distritos());
   if (near && dlgCd <= 0 && interactPressed(true)) {
     dlg = { npc: near, lines: near.lines(), i: 0 };
     AudioManager.beep(660, 0.05, 'triangle', 0.03);
   }
 }
-function nearestNPC() {
+// Distrito interactuable más cercano: solo los VIVOS responden (los en ruina son decorado).
+function nearestNPC(ds) {
   const p = world.player;
   let best = null, bd = 1e9;
-  for (const n of NPCS) {
+  for (const n of ds) {
+    if (!n.vivo) continue;
     const d = Math.hypot(p.x - n.x, p.y - n.y);
     if (d < n.r + 18 && d < bd) { bd = d; best = n; }
   }
   return best;
 }
 function renderPueblo(t) {
-  const fondoP = Sprites.get('fondo_pueblo');
-  // Base: cielo del atardecer (se ve en los bordes que la lámina no cubra).
+  // Base: cielo del atardecer (se ve en los bordes que el decorado no cubra).
   const sky = ctx.createLinearGradient(0, 0, 0, VH);
   sky.addColorStop(0, '#241c3e'); sky.addColorStop(0.6, '#3a2c50'); sky.addColorStop(1, '#4a3a5c');
   ctx.fillStyle = sky; ctx.fillRect(0, 0, VW, VH);
 
   ctx.save();
   ctx.scale(ZOOM, ZOOM);
-  // Lámina pintada ANCLADA AL MUNDO (dentro del scale(ZOOM), vía SX/SY): se desplaza con la
-  // cámara EXACTAMENTE igual que las estaciones → en móvil (que hace scroll) todo queda
-  // pegado a su sitio del cuadro, no como antes (lámina fija + muñecos deslizándose).
-  if (fondoP) {
-    const bgX0 = PLAZA.x - 100, bgW = PLAZA.w + 200;           // el cuadro cubre la plaza + margen
-    const bgH = Math.round(bgW * fondoP.height / fondoP.width); // aspecto respetado (sin distorsión)
-    const dx = SX(bgX0);                                       // ANCLADO EN X al mundo → scroll pegado a las estaciones
-    const dyBottom = VH / ZOOM + 2;                            // borde inferior de pantalla (cámara-y fija en el pueblo)
-    ctx.drawImage(fondoP, dx, dyBottom - bgH, bgW, bgH);
-  } else {
-    drawPuebloBackdrop(ctx, SX, SY, t, VW, VH);
-    drawPlazaGround(ctx, SX, SY, KY);
-  }
-  // NPCs + Pip con y-sorting. La estación del NPC más cercano se aviva (near).
-  const near = dlg ? null : nearestNPC();
-  const sortables = NPCS.map(n => ({ y: n.y, draw: () => drawNPC(ctx, n, SX, SY, t, n === near) }));
+  // Cuerdaqueda (F0): decorado por CÓDIGO, anclado al mundo (SX/SY dentro del scale(ZOOM)),
+  // coherente con la villa modular en terrazas. La lámina pintada 'fondo_pueblo' era una
+  // plaza plana de otra escala → se retira hasta el LOTE CIUDAD de Recraft (F4), que la
+  // regenera como capas de parallax que casan con las terrazas (ver docs/ciudad.md §10).
+  const P = plaza();
+  drawPuebloBackdrop(ctx, SX, SY, t, VW, VH);
+  drawPlazaGround(ctx, SX, SY, KY);
+  // Distritos (ruina + vivos) + Pip con y-sorting. El distrito VIVO más cercano se aviva.
+  const ds = distritos();
+  const near = dlg ? null : nearestNPC(ds);
+  const sortables = ds.map(n => ({ y: n.y, draw: () => drawDistrito(ctx, n, SX, SY, t, n === near) }));
   sortables.push({ y: world.player.y + 10, draw: () => drawPlayer(world.player, t) });
   sortables.sort((a, b) => a.y - b.y);
   for (const s of sortables) s.draw();
@@ -4234,7 +4251,7 @@ function renderPueblo(t) {
     const line = dlg.lines[Math.min(dlg.i, dlg.lines.length - 1)];
     const bh = 78, by = VH - bh - 12; // 3 líneas: el retrato roba ancho al texto
     // El retrato es del que HABLA: las líneas de Pip muestran a Pip, no al NPC
-    const habla = (line.who ?? '').toLowerCase() === 'pip' ? 'pip' : dlg.npc.id;
+    const habla = (line.who ?? '').toLowerCase() === 'pip' ? 'pip' : dlg.npc.retrato;
     const ret = Sprites.get('retrato_' + habla);
     ctx.fillStyle = 'rgba(13,10,26,0.92)';
     ctx.fillRect(20, by, VW - 40, bh);
@@ -4242,7 +4259,7 @@ function renderPueblo(t) {
     ctx.strokeRect(21, by + 1, VW - 42, bh - 2);
     let tx = 34;
     if (ret) {
-      const inf = Sprites.info('retrato_' + dlg.npc.id);
+      const inf = Sprites.info('retrato_' + dlg.npc.retrato);
       const rh = 74, rw = Math.round(inf.w * rh / inf.h);
       ctx.drawImage(ret, 28, by + bh - rh - 4, rw, rh);
       tx = 28 + rw + 10;
@@ -4291,7 +4308,7 @@ function renderPueblo(t) {
     ctx.fillText('pan', 27, 32);
   }
   font(9); ctx.textAlign = 'right'; ctx.fillStyle = '#b3a6d6';
-  ctx.fillText('EL PUEBLO · la puerta del Reloj espera al este', VW - 10, 16);
+  ctx.fillText('CUERDAQUEDA · la Puerta del Reloj espera al este', VW - 10, 16);
 }
 
 // ---------- Santuario del Péndulo (meta-progresión entre runs) ----------
@@ -5041,6 +5058,8 @@ function paintFatal(err) {
   // Hook de depuración: entrar directo al Reloj de Batalla (también accesible por El Redoble en el pueblo)
   window.__mistveil = {
     batalla: (enc) => { batalla.start(enc || 'vigilia'); mode = 'batalla'; },
+    // Entra directo a Cuerdaqueda (pruebas del hub: distritos, ruina/viva, encendido)
+    pueblo: () => { enterPueblo(); return distritos().map(d => d.id + (d.vivo ? ':viva' : ':ruina')); },
     // Equipa una reliquia por id (pruebas de items/familiares/activos)
     item: (id) => { const it = DataDB.item(id); if (it && world.player) applyItem(it, world.player); return it?.nombre ?? 'id desconocido'; },
     // Obtiene y equipa un sello elemental (pruebas R2)
@@ -5055,16 +5074,18 @@ function paintFatal(err) {
     pos: () => {
       const p = world.player;
       const r = { pip: p ? [Math.round(SX(p.x)), Math.round(SY(p.y))] : null, vw: VW, vh: VH };
-      if (mode === 'pueblo') r.npcs = NPCS.map(n => [n.id, Math.round(SX(n.x)), Math.round(SY(n.y))]);
+      if (mode === 'pueblo') r.npcs = distritos().map(n => [n.id, Math.round(SX(n.x)), Math.round(SY(n.y)), n.vivo ? 'viva' : 'ruina']);
       return r;
     },
-    // Abre el diálogo de un NPC del pueblo por id (pruebas de retratos/diálogos)
+    // Abre el diálogo de un distrito por id (pruebas de retratos/diálogos)
     hablar: (id = 'margo') => {
-      const npc = NPCS.find(n => n.id === id);
+      const npc = distritos().find(n => n.id === id);
       if (!npc || mode !== 'pueblo') return 'requiere modo pueblo y un id válido';
       dlg = { npc, lines: npc.lines(), i: 0 };
-      return npc.nombre;
+      return npc.nombre + (npc.vivo ? '' : ' (en ruina)');
     },
+    // F: fuerza un rescate (pruebas de encendido de distrito)
+    rescatar: (id = 'hermanos') => { if (!GameState.rescatados.includes(id)) GameState.rescatados.push(id); SaveManager.save(); return GameState.rescatados.slice(); },
     // Brota n enemigos por id junto al jugador (pruebas de sprites/IA)
     spawn: (id = 'cera_andante', n = 1) => {
       const p = world.player; if (!p) return 'sin jugador';

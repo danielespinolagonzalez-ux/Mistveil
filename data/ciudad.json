@@ -1,0 +1,73 @@
+{
+  "_nota": "Cuerdaqueda — distritos del hub (ver docs/ciudad.md). Data-driven: js/ciudad.js lee esto y coloca los distritos en 3 terrazas. Estado ruina/viva DERIVADO de unlock (no se guarda). unlock.tipo: inicio | rescate | nivel(ref=n) | flag(ref) | muerte | rescatados_min(ref=n). dx/dy = offset desde el origen de la plaza; terraza baja=llegada(frente), alta=mirador(fondo). acento tiñe emblema y resplandor. emblema = forma que dibuja drawEmblema. servicio = clave del diálogo/acción en ciudad.js. Añadir un distrito = 1 entrada aquí + su servicio.",
+  "plaza": { "x": 0, "y": -600, "w": 980, "h": 232 },
+  "terrazas": { "baja": 196, "media": 132, "alta": 74 },
+  "distritos": [
+    {
+      "id": "margo", "nombre": "La Hornacina", "vecino": "Margo",
+      "dx": 96, "dy": 196, "r": 14, "terraza": "baja",
+      "acento": "#ffb15a", "emblema": "pan", "servicio": "margo",
+      "unlock": { "tipo": "inicio" }
+    },
+    {
+      "id": "tablon", "nombre": "El Tablón", "vecino": "Tablón",
+      "dx": 236, "dy": 202, "r": 12, "terraza": "baja",
+      "acento": "#e8c98a", "emblema": "tablon", "servicio": "tablon",
+      "unlock": { "tipo": "inicio" }
+    },
+    {
+      "id": "gremio", "nombre": "El Gremio", "vecino": "Tablón del Gremio",
+      "dx": 340, "dy": 208, "r": 14, "terraza": "baja",
+      "acento": "#e0b24a", "emblema": "gremio", "servicio": "gremio",
+      "unlock": { "tipo": "inicio" }
+    },
+    {
+      "id": "puerta", "nombre": "La Puerta del Reloj", "vecino": "Puerta del Reloj",
+      "dx": 928, "dy": 188, "r": 20, "terraza": "baja",
+      "acento": "#a892f0", "emblema": "puerta", "servicio": "puerta",
+      "unlock": { "tipo": "inicio" }
+    },
+    {
+      "id": "mirador", "nombre": "El Mirador del Péndulo", "vecino": "Lady Vesper",
+      "dx": 208, "dy": 80, "r": 14, "terraza": "alta",
+      "acento": "#b98ff0", "emblema": "vesper", "servicio": "mirador", "retrato": "vesper",
+      "unlock": { "tipo": "inicio" }
+    },
+    {
+      "id": "hermanos", "nombre": "La Contaduría", "vecino": "Hermanos Nº7 y Nº12",
+      "dx": 452, "dy": 138, "r": 16, "terraza": "media",
+      "acento": "#f0d67a", "emblema": "hermanos", "servicio": "hermanos",
+      "unlock": { "tipo": "rescate" }
+    },
+    {
+      "id": "fragua", "nombre": "La Fragua de Cuerda", "vecino": "Yelmo",
+      "dx": 588, "dy": 142, "r": 15, "terraza": "media",
+      "acento": "#e0873a", "emblema": "fragua", "servicio": "fragua",
+      "unlock": { "tipo": "rescate" }
+    },
+    {
+      "id": "botica", "nombre": "La Botica de Cera", "vecino": "Nébula",
+      "dx": 712, "dy": 130, "r": 14, "terraza": "media",
+      "acento": "#7ee8e0", "emblema": "botica", "servicio": "botica",
+      "unlock": { "tipo": "rescate" }
+    },
+    {
+      "id": "redoble", "nombre": "El Redoble", "vecino": "El Redoble",
+      "dx": 828, "dy": 148, "r": 16, "terraza": "media",
+      "acento": "#f0c24a", "emblema": "redoble", "servicio": "redoble",
+      "unlock": { "tipo": "rescatados_min", "ref": 1 }
+    },
+    {
+      "id": "conservatorio", "nombre": "El Conservatorio", "vecino": "Sostenido",
+      "dx": 452, "dy": 70, "r": 15, "terraza": "alta",
+      "acento": "#f0a0c8", "emblema": "conservatorio", "servicio": "conservatorio",
+      "unlock": { "tipo": "rescate" }
+    },
+    {
+      "id": "atalaya", "nombre": "La Atalaya", "vecino": "Alondra",
+      "dx": 676, "dy": 84, "r": 15, "terraza": "alta",
+      "acento": "#8fb0f0", "emblema": "atalaya", "servicio": "atalaya",
+      "unlock": { "tipo": "rescate" }
+    }
+  ]
+}

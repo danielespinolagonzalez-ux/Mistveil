@@ -29,6 +29,7 @@ import { pickAzar, aplicarEvento } from '../js/eventos.js';
 import { drawItemIcon } from '../js/item_icons.js';
 import { Pactos, calcHeat, calcMemoriaMult, calcEfecto, nivelClamp } from '../js/pactos.js';
 import { FX } from '../js/fx.js';
+import { barrioVivo, distritos as ciudadDistritos } from '../js/ciudad.js';
 
 const out = document.getElementById('out');
 let failed = 0;
@@ -571,6 +572,38 @@ assert('E5: opciones incluye toggles de screenshake y flash',
   FX.shakeMult = 1; FX.addShake(3);
   assert('E5: shakeMult=1 permite las sacudidas', FX.shake > 0);
   FX.shakeMult = pm; FX.shake = ps;
+})();
+// F0 — Cuerdaqueda: distritos data-driven + estado ruina/viva derivado + persistencia rescatados
+assert('F0: ciudad.json define ≥11 distritos con id/unlock/servicio',
+  (DataDB.ciudad?.distritos?.length ?? 0) >= 11 &&
+  DataDB.ciudad.distritos.every(d => d.id && d.unlock?.tipo && d.servicio));
+(() => {
+  const prevR = GameState.rescatados.slice();
+  GameState.rescatados = [];
+  assert('F0: barrioVivo — un distrito de inicio está siempre vivo',
+    barrioVivo({ id: 'margo', unlock: { tipo: 'inicio' } }) === true);
+  assert('F0: barrioVivo — un distrito de rescate empieza en ruina',
+    barrioVivo({ id: 'fragua', unlock: { tipo: 'rescate' } }) === false);
+  GameState.rescatados = ['fragua'];
+  assert('F0: barrioVivo — rescatar enciende el distrito',
+    barrioVivo({ id: 'fragua', unlock: { tipo: 'rescate' } }) === true);
+  assert('F0: barrioVivo — rescatados_min cuenta el total de rescates',
+    barrioVivo({ id: 'redoble', unlock: { tipo: 'rescatados_min', ref: 1 } }) === true);
+  // distritos() enlaza servicio (lines/onDone) y marca vivo
+  const ds = ciudadDistritos();
+  const margo = ds.find(d => d.id === 'margo');
+  assert('F0: distritos() enlaza el servicio (lines es función) y marca vivo',
+    margo && typeof margo.lines === 'function' && margo.vivo === true);
+  GameState.rescatados = prevR;
+})();
+(() => {
+  const prev = GameState.rescatados.slice();
+  GameState.rescatados = ['hermanos'];
+  SaveManager.save();
+  GameState.rescatados = [];
+  SaveManager.load();
+  assert('F0: rescatados se persiste (schema 4, guardar/cargar)', GameState.rescatados.includes('hermanos'));
+  GameState.rescatados = prev; SaveManager.save();
 })();
 
 // R1 — Reliquias completas: los 6 efectos antes "pendientes" ya se interpretan

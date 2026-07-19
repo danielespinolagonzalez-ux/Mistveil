@@ -1,0 +1,40 @@
+{
+  "_nota": "Vecinos cautivos en la Torre (ver docs/ciudad.md §7). Una sala tipo 'rescate' (rooms.js) siembra al cautivo + guardias; al liberarlo → EventBus 'npc_rescatado' → GameState.rescatados += id y su distrito de Cuerdaqueda pasa a 'viva'. 'barrio' = id del distrito en ciudad.json. 'pisos' = rango [min,max] de aparición. 'cerrojo': cadencia (QTE de contraataque) | toque. 'recompensa' la interpreta eventos.js (memoria/oro/item). Añadir un rescate = 1 entrada aquí.",
+  "rescates": [
+    {
+      "id": "hermanos", "barrio": "hermanos",
+      "pisos": [1, 3], "guardias": { "n": 2, "elite": false }, "cerrojo": "cadencia",
+      "intro": "Dos siluetas de latón, apagadas tras una reja de engranajes. Una talla muescas en el aire que ya no cuenta nada.",
+      "liberado": "—¡La cuenta! ¡Volvió la cuenta, hermano! Nos has... nos has destrabado. Volvemos a la Contaduría.",
+      "recompensa": { "memoria": 8 }
+    },
+    {
+      "id": "botica", "barrio": "botica",
+      "pisos": [2, 5], "guardias": { "n": 2, "elite": false }, "cerrojo": "cadencia",
+      "intro": "Una figura encapuchada, hundida en cera fría hasta el pecho. Entre sus manos, una vela apagada que aún huele a mirra.",
+      "liberado": "—Creí que me apagaría aquí abajo... Gracias, autómata. Encenderé nueva la Botica de Cera.",
+      "recompensa": { "memoria": 9 }
+    },
+    {
+      "id": "fragua", "barrio": "fragua",
+      "pisos": [3, 6], "guardias": { "n": 3, "elite": false }, "cerrojo": "cadencia",
+      "intro": "Brazos de latón encadenados a un yunque frío. La herrera golpea el hierro con la mirada, porque las manos no le responden.",
+      "liberado": "—Un sello frío no es más que una piedra con nostalgia. Sácame de aquí y volveré a encender la Fragua.",
+      "recompensa": { "memoria": 11 }
+    },
+    {
+      "id": "conservatorio", "barrio": "conservatorio",
+      "pisos": [4, 6], "guardias": { "n": 3, "elite": true }, "cerrojo": "cadencia",
+      "intro": "Un lutier delgado, atrapado en una jaula que zumba desafinada. Le falta un dedo y aun así intenta marcar el compás.",
+      "liberado": "—...tres, y cuatro. ¡Sí! Rompiste el cerrojo EN el tiempo. Ven al Conservatorio: te afinaré.",
+      "recompensa": { "memoria": 13 }
+    },
+    {
+      "id": "atalaya", "barrio": "atalaya",
+      "pisos": [6, 9], "guardias": { "n": 3, "elite": true }, "cerrojo": "cadencia",
+      "intro": "Una vigía de ojos afilados, presa tras un cristal empañado. Señala hacia arriba, hacia pisos que nadie ha vuelto a ver.",
+      "liberado": "—Veo en la niebla, autómata. Devuélveme a la Atalaya y te prestaré mis ojos antes de cada descenso.",
+      "recompensa": { "memoria": 15 }
+    }
+  ]
+}

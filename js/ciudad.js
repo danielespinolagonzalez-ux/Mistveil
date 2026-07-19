@@ -1,28 +1,47 @@
-// Pueblo — hub entre runs. Spec: docs/sistemas/metaprogresion.md + narrativa/historia_personajes.md
-// Aquí viven los NPCs (sprites, diálogos, beneficios). main.js mueve a Pip y pinta el diálogo.
+// CUERDAQUEDA — el hub (ver docs/ciudad.md). Reemplaza a pueblo.js: la villa es ahora
+// data-driven (data/ciudad.json), en 3 terrazas, y MODULAR — cada distrito está "vivo"
+// o en "ruina" según a quién hayas rescatado en la Torre. main.js mueve a Pip y pinta el
+// diálogo; aquí viven los distritos (posición, desbloqueo, diálogos, dibujo ruina/viva).
 import { DataDB } from './data_db.js';
 import { GameState, RunState, SaveManager, AudioManager } from './state.js';
 
-export const PLAZA = { x: 0, y: -600, w: 560, h: 190 }; // lejos de la Torre (coords propias)
-const P = PLAZA;
 const t9 = k => DataDB.texto(k);
 
-// Estado de visita (se resetea al volver de cada run)
+// La plaza (rect del mundo). Se lee de ciudad.json con fallback, para F5 en caliente.
+export function plaza() {
+  return DataDB.ciudad?.plaza ?? { x: 0, y: -600, w: 980, h: 232 };
+}
+
+// Estado de visita (se resetea al volver de cada run) — controla regalos de una sola vez.
 export const visita = { margo: false, tablon: false, hermanos: false };
 export function resetVisita() { visita.margo = visita.tablon = visita.hermanos = false; }
 
-// Contratos del Gremio: retos de una run, pagados en engranajes y Memoria
+// Contratos del Gremio: retos de una run, pagados en engranajes y Memoria.
 export const CONTRATOS = [
   { id: 'templanza', nombre: 'Templanza', desc: 'Baja del piso 1 perdiendo 2 corazones como mucho.' },
   { id: 'virtuoso', nombre: 'Virtuosismo', desc: 'Clava 6 golpes PERFECTOS de Cadencia en el piso 1.' },
   { id: 'intocable', nombre: 'Eco de bronce', desc: 'Logra 2 paradas (parry) en el piso 1.' }
 ];
 
-// ---------- Diálogos y efectos ----------
-// Cada NPC: lines() → array de {who, text}; onDone() → {accion?} y aplica beneficios.
-export const NPCS = [
-  {
-    id: 'margo', nombre: 'Margo', x: P.x + 68, y: P.y + 150, r: 14,
+// ---------- Desbloqueo: ¿está VIVO este distrito? (derivado, nunca guardado) ----------
+export function barrioVivo(d) {
+  const u = d.unlock ?? { tipo: 'inicio' };
+  switch (u.tipo) {
+    case 'inicio': return true;
+    case 'rescate': return GameState.rescatados.includes(d.id);
+    case 'nivel': return GameState.nivel >= (u.ref ?? 1);
+    case 'flag': return !!GameState.flags?.[u.ref];
+    case 'muerte': return (GameState.stats?.muertes ?? 0) > 0;
+    case 'rescatados_min': return GameState.rescatados.length >= (u.ref ?? 1);
+    default: return false;
+  }
+}
+
+// ---------- Diálogos y efectos por servicio (migrados del viejo pueblo.js) ----------
+// Cada servicio: lines() → array de {who, text}; onDone() → {accion?, aviso?} y aplica
+// beneficios. Los distritos aún sin servicio real (F3) muestran un placeholder al vivir.
+const SERVICIOS = {
+  margo: {
     lines() {
       const l = [
         { who: 'MARGO', text: t9('dlg.margo.intro.1') },
@@ -42,8 +61,7 @@ export const NPCS = [
       return {};
     }
   },
-  {
-    id: 'vesper', nombre: 'Lady Vesper', x: P.x + 158, y: P.y + 180, r: 14,
+  mirador: {
     lines() {
       const primera = GameState.stats.muertes === 0;
       return primera ? [
@@ -58,8 +76,7 @@ export const NPCS = [
     },
     onDone() { return { accion: 'santuario' }; }
   },
-  {
-    id: 'hermanos', nombre: 'Hermanos Nº7 y Nº12', x: P.x + 318, y: P.y + 182, r: 16,
+  hermanos: {
     lines() {
       const m = GameState.stats.muertes;
       const l = [
@@ -81,8 +98,7 @@ export const NPCS = [
       return {};
     }
   },
-  {
-    id: 'tablon', nombre: 'Tablón', x: P.x + 238, y: P.y + 156, r: 12,
+  tablon: {
     lines() {
       GameState.flags = GameState.flags ?? {};
       const idx = (GameState.flags.ate_idx ?? 0) % 3;
@@ -107,8 +123,7 @@ export const NPCS = [
       return { aviso: ['◆ +' + DataDB.balance.meta.memoria_por_descubrimiento + ' Memoria', 'Mirar también es vivir'] };
     }
   },
-  {
-    id: 'redoble', nombre: 'El Redoble', x: P.x + 448, y: P.y + 150, r: 16,
+  redoble: {
     lines() {
       const r = GameState.ligaRango ?? 0;
       const rivales = ['"La Mecha"', '"Doce Agujas"', '"El Coro de Sebo"', '"Polvo y Péndulo"', '"Las Gemelas"'];
@@ -122,8 +137,7 @@ export const NPCS = [
     },
     onDone() { return { accion: 'batalla', encuentro: 'liga' }; }
   },
-  {
-    id: 'gremio', nombre: 'Tablón del Gremio', x: P.x + 388, y: P.y + 172, r: 14,
+  gremio: {
     lines() {
       if (RunState.contrato) {
         return [
@@ -146,8 +160,7 @@ export const NPCS = [
       return {};
     }
   },
-  {
-    id: 'puerta', nombre: 'Puerta del Reloj', x: P.x + P.w - 26, y: P.y + 140, r: 20,
+  puerta: {
     lines() {
       return [
         { who: 'PIP', text: 'Si voy a d-detenerme... quiero detenerme habiendo servido de algo.' },
@@ -155,29 +168,61 @@ export const NPCS = [
       ];
     },
     onDone() { return { accion: 'run' }; }
+  },
+  // --- Distritos rescatables sin servicio real todavía (se cablean en F3). Al vivir,
+  //     agradecen el rescate y adelantan su oficio futuro. ---
+  fragua: {
+    lines() { return [
+      { who: 'YELMO', text: 'La fragua aún se caldea. El fuelle recuerda cómo respirar.' },
+      { who: 'YELMO', text: 'Pronto reavivaré aquí tus sellos, autómata. Un sello frío no es más que una piedra con nostalgia.' }
+    ]; },
+    onDone() { return {}; }
+  },
+  botica: {
+    lines() { return [
+      { who: 'NÉBULA', text: 'Huele a mirra y a cera nueva. Ya casi soy yo otra vez.' },
+      { who: 'NÉBULA', text: 'Cuando encienda del todo la Botica, te fundiré velas que son medio hechizo para el descenso.' }
+    ]; },
+    onDone() { return {}; }
+  },
+  conservatorio: {
+    lines() { return [
+      { who: 'SOSTENIDO', text: 'Un dedo de menos y aun así marco mejor el compás que nadie. Ja.' },
+      { who: 'SOSTENIDO', text: 'Vuelve cuando el Conservatorio esté afinado: te enseñaré a subir tus compases.' }
+    ]; },
+    onDone() { return {}; }
+  },
+  atalaya: {
+    lines() { return [
+      { who: 'ALONDRA', text: 'Desde aquí veo la niebla moverse. Casi entiendo lo que oculta.' },
+      { who: 'ALONDRA', text: 'Cuando la Atalaya alumbre, te prestaré mis ojos: sabrás qué te espera antes de bajar.' }
+    ]; },
+    onDone() { return {}; }
   }
-];
-
-// ---------- Estaciones del pueblo (100% código, estilo coherente) ----------
-// Antes se pegaban sprites pintados sueltos encima de la lámina (otro estilo/escala/luz,
-// y la Puerta traía un recuadro sin recortar → cantaba). Ahora cada NPC es una ESTACIÓN
-// dibujada por código con un lenguaje único: farol de hierro cálido colgando un emblema
-// propio, sombra de contacto y resplandor del atardecer. Pip es el único personaje que
-// pasea; al hablar sale el retrato pintado. Así el pueblo va todo a una con el fondo.
-function px2(g, x, y, w, h, c) { g.fillStyle = c; g.fillRect(x, y, w, h); }
-
-// Color de acento por estación (tinta el emblema y el resplandor).
-const ESTACION = {
-  margo: { col: '#ffb15a', nombre: 'Horno' },
-  vesper: { col: '#b98ff0', nombre: 'Péndulo' },
-  hermanos: { col: '#f0d67a', nombre: 'La cuenta' },
-  tablon: { col: '#e8c98a', nombre: 'Avisos' },
-  gremio: { col: '#e0b24a', nombre: 'Gremio' },
-  redoble: { col: '#f0c24a', nombre: 'El Redoble' },
-  puerta: { col: '#a892f0', nombre: 'La Puerta' }
 };
+
+// ---------- Distritos (defs de ciudad.json + posición mundo + servicio enlazado) ----------
+// Se recomputa por si se recarga ciudad.json con F5. Cada distrito lleva x/y del mundo,
+// su servicio (lines/onDone) y si está vivo AHORA.
+export function distritos() {
+  const P = plaza();
+  const defs = DataDB.ciudad?.distritos ?? [];
+  return defs.map(def => {
+    const s = SERVICIOS[def.servicio] ?? { lines: () => [{ who: def.vecino, text: '...' }], onDone: () => ({}) };
+    return {
+      ...def,
+      x: P.x + def.dx, y: P.y + def.dy,
+      nombre: def.nombre, vecino: def.vecino,
+      retrato: def.retrato ?? def.servicio, // clave del retrato pintado (fallback: sin busto)
+      lines: s.lines.bind(s), onDone: s.onDone.bind(s),
+      vivo: barrioVivo(def)
+    };
+  });
+}
+
+// ---------- Dibujo (100% código, estilo coherente con el resto de la villa) ----------
 function _rgba(hex, a) {
-  const n = parseInt(hex.slice(1), 16);
+  const n = parseInt((hex || '#ffce6a').slice(1), 16);
   return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
 }
 function _glow(g, x, y, r, hex, a) {
@@ -186,49 +231,79 @@ function _glow(g, x, y, r, hex, a) {
   g.fillStyle = gl; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill();
 }
 
-// Emblema propio de cada estación, centrado en (cx,cy). Dibujo simple y cálido.
-function drawEmblema(g, id, cx, cy, col) {
+// Emblema propio de cada distrito, centrado en (cx,cy). `apagado` lo pinta en silueta fría.
+function drawEmblema(g, forma, cx, cy, col, apagado = false) {
   g.save(); g.translate(cx, cy);
-  switch (id) {
-    case 'margo': // pan dorado con cortes
-      g.fillStyle = '#e2a35a'; g.beginPath(); g.ellipse(0, 1, 7, 4.5, 0, 0, 7); g.fill();
-      g.fillStyle = '#c98a44'; g.beginPath(); g.ellipse(0, 2.5, 7, 2, 0, 0, 7); g.fill();
-      g.strokeStyle = '#7a5028'; g.lineWidth = 0.8;
+  if (apagado) col = '#5a5470';
+  switch (forma) {
+    case 'pan':
+      g.fillStyle = apagado ? '#4a4260' : '#e2a35a'; g.beginPath(); g.ellipse(0, 1, 7, 4.5, 0, 0, 7); g.fill();
+      g.fillStyle = apagado ? '#3a3350' : '#c98a44'; g.beginPath(); g.ellipse(0, 2.5, 7, 2, 0, 0, 7); g.fill();
+      g.strokeStyle = apagado ? '#2b2540' : '#7a5028'; g.lineWidth = 0.8;
       for (const dx of [-3, 0, 3]) { g.beginPath(); g.moveTo(dx - 1.5, -1.5); g.lineTo(dx + 1.5, 2); g.stroke(); }
       break;
-    case 'vesper': { // péndulo con cristal
+    case 'vesper': {
       g.strokeStyle = '#8d82ad'; g.lineWidth = 1; g.beginPath(); g.moveTo(0, -7); g.lineTo(0, 3); g.stroke();
       g.fillStyle = col; g.beginPath(); g.moveTo(0, 1); g.lineTo(3.5, 5); g.lineTo(0, 9); g.lineTo(-3.5, 5); g.closePath(); g.fill();
-      g.fillStyle = '#efe6ff'; g.beginPath(); g.moveTo(0, 2.5); g.lineTo(1.5, 5); g.lineTo(0, 7.5); g.closePath(); g.fill();
+      g.fillStyle = apagado ? '#6a6288' : '#efe6ff'; g.beginPath(); g.moveTo(0, 2.5); g.lineTo(1.5, 5); g.lineTo(0, 7.5); g.closePath(); g.fill();
       break;
     }
-    case 'hermanos': // ábaco/cuenta
+    case 'hermanos':
       g.strokeStyle = '#8a7248'; g.lineWidth = 1.2; g.strokeRect(-6, -5, 12, 11);
       g.strokeStyle = '#5d4a33'; g.lineWidth = 0.7;
       for (const yy of [-1.5, 2]) { g.beginPath(); g.moveTo(-6, yy); g.lineTo(6, yy); g.stroke(); }
       g.fillStyle = col; for (const [bx, by] of [[-3, -1.5], [1, -1.5], [3, -1.5], [-2, 2], [2, 2]]) { g.beginPath(); g.arc(bx, by, 1.2, 0, 7); g.fill(); }
       break;
-    case 'tablon': // hoja de avisos con renglones
-      g.fillStyle = '#efe6cf'; g.fillRect(-5, -6, 10, 13);
+    case 'tablon':
+      g.fillStyle = apagado ? '#4a4460' : '#efe6cf'; g.fillRect(-5, -6, 10, 13);
       g.strokeStyle = '#8d82ad'; g.lineWidth = 0.7;
       for (const yy of [-3, -1, 1, 3]) { g.beginPath(); g.moveTo(-3.5, yy); g.lineTo(3.5, yy); g.stroke(); }
-      g.fillStyle = _rgba(col, 0.9); g.beginPath(); g.arc(3, -5, 1.4, 0, 7); g.fill(); // chincheta
+      g.fillStyle = _rgba(col, 0.9); g.beginPath(); g.arc(3, -5, 1.4, 0, 7); g.fill();
       break;
-    case 'gremio': // pergamino con sello de cera
-      g.fillStyle = '#e6d3a6'; g.fillRect(-5, -6, 10, 13);
+    case 'gremio':
+      g.fillStyle = apagado ? '#4a4460' : '#e6d3a6'; g.fillRect(-5, -6, 10, 13);
       g.strokeStyle = '#9a7a44'; g.lineWidth = 0.7; g.strokeRect(-5, -6, 10, 13);
-      g.fillStyle = '#b0402f'; g.beginPath(); g.arc(0, 3.5, 2.6, 0, 7); g.fill();
-      g.fillStyle = '#d85a45'; g.beginPath(); g.arc(-0.6, 2.8, 1, 0, 7); g.fill();
+      g.fillStyle = apagado ? '#5a3a40' : '#b0402f'; g.beginPath(); g.arc(0, 3.5, 2.6, 0, 7); g.fill();
+      g.fillStyle = apagado ? '#6a4a50' : '#d85a45'; g.beginPath(); g.arc(-0.6, 2.8, 1, 0, 7); g.fill();
       break;
-    case 'redoble': { // campana de bronce
+    case 'redoble': {
       g.fillStyle = col; g.beginPath(); g.moveTo(-6, 5); g.quadraticCurveTo(-5, -6, 0, -7); g.quadraticCurveTo(5, -6, 6, 5); g.closePath(); g.fill();
-      g.fillStyle = '#8a6a24'; g.beginPath(); g.ellipse(0, 5, 6, 1.6, 0, 0, 7); g.fill();
+      g.fillStyle = apagado ? '#3a3450' : '#8a6a24'; g.beginPath(); g.ellipse(0, 5, 6, 1.6, 0, 0, 7); g.fill();
       g.fillStyle = '#3a2e12'; g.beginPath(); g.arc(0, 6, 1.2, 0, 7); g.fill();
-      g.fillStyle = _rgba('#fff2c0', 0.5); g.beginPath(); g.ellipse(-2, -1, 1.3, 3, -0.3, 0, 7); g.fill();
+      if (!apagado) { g.fillStyle = _rgba('#fff2c0', 0.5); g.beginPath(); g.ellipse(-2, -1, 1.3, 3, -0.3, 0, 7); g.fill(); }
       break;
     }
-    case 'puerta': { // esfera de reloj (marca del descenso)
-      g.fillStyle = '#efe6cf'; g.beginPath(); g.arc(0, 0, 7, 0, 7); g.fill();
+    case 'fragua': { // yunque con chispa
+      g.fillStyle = col; g.beginPath();
+      g.moveTo(-6, 2); g.lineTo(6, 2); g.lineTo(6, 4); g.lineTo(2, 4); g.lineTo(2, 7); g.lineTo(-2, 7); g.lineTo(-2, 4); g.lineTo(-6, 4); g.closePath(); g.fill();
+      g.fillStyle = apagado ? '#3a3450' : '#3a2e12'; g.fillRect(-3, 7, 6, 2);
+      if (!apagado) { g.fillStyle = '#fff2c0'; g.beginPath(); g.arc(4, 0, 1, 0, 7); g.fill(); g.beginPath(); g.arc(2, -2, 0.7, 0, 7); g.fill(); }
+      break;
+    }
+    case 'botica': { // vela con llama
+      g.fillStyle = apagado ? '#4a4460' : '#efe6cf'; g.fillRect(-2, -2, 4, 10);
+      g.strokeStyle = '#8a7248'; g.lineWidth = 0.6; g.strokeRect(-2, -2, 4, 10);
+      if (!apagado) { g.fillStyle = col; g.beginPath(); g.moveTo(0, -8); g.quadraticCurveTo(2.4, -4.5, 0, -2.5); g.quadraticCurveTo(-2.4, -4.5, 0, -8); g.closePath(); g.fill();
+        g.fillStyle = '#fff2c0'; g.beginPath(); g.ellipse(0, -4, 0.9, 1.8, 0, 0, 7); g.fill(); }
+      break;
+    }
+    case 'conservatorio': { // lira/campana con nota
+      g.strokeStyle = col; g.lineWidth = 1.3; g.beginPath(); g.arc(0, 1, 5, Math.PI * 0.15, Math.PI * 0.85, false); g.stroke();
+      g.beginPath(); g.moveTo(-4.4, 3); g.lineTo(-4.4, -4); g.stroke(); g.beginPath(); g.moveTo(4.4, 3); g.lineTo(4.4, -4); g.stroke();
+      g.fillStyle = apagado ? '#5a5470' : '#f0d67a'; g.beginPath(); g.arc(1.5, 4.5, 1.5, 0, 7); g.fill();
+      g.strokeStyle = apagado ? '#5a5470' : '#f0d67a'; g.lineWidth = 0.9; g.beginPath(); g.moveTo(3, 4.5); g.lineTo(3, -1); g.stroke();
+      break;
+    }
+    case 'atalaya': { // catalejo
+      g.save(); g.rotate(-0.5);
+      g.fillStyle = col; g.fillRect(-6, -2, 9, 4);
+      g.fillStyle = apagado ? '#3a3450' : '#3a2e18'; g.fillRect(3, -2.6, 3, 5.2);
+      if (!apagado) { g.fillStyle = '#cfe0ff'; g.fillRect(4, -1.6, 1.4, 3.2); }
+      g.restore();
+      break;
+    }
+    case 'puerta': {
+      g.fillStyle = apagado ? '#4a4460' : '#efe6cf'; g.beginPath(); g.arc(0, 0, 7, 0, 7); g.fill();
       g.strokeStyle = '#5a4a2a'; g.lineWidth = 1; g.beginPath(); g.arc(0, 0, 7, 0, 7); g.stroke();
       g.strokeStyle = '#3a2e18'; g.lineWidth = 1.2;
       g.beginPath(); g.moveTo(0, 0); g.lineTo(0, -4); g.stroke();
@@ -239,37 +314,35 @@ function drawEmblema(g, id, cx, cy, col) {
   g.restore();
 }
 
-// Dibuja la estación de un NPC. `near` = Pip está al lado (se aviva).
-export function drawNPC(g, npc, SX, SY, t, near = false) {
-  const x = SX(npc.x), y = SY(npc.y);
-  const est = ESTACION[npc.id] ?? { col: '#ffce6a' };
+// Dibuja un distrito. Si `vivo`, la estación encendida (farol + emblema con resplandor);
+// si no, la RUINA: poste apagado con tablas cruzadas y el emblema en silueta fría.
+export function drawDistrito(g, d, SX, SY, t, near = false) {
+  const x = SX(d.x), y = SY(d.y);
+  const col = d.acento ?? '#ffce6a';
+  const vivo = d.vivo;
   const foco = near ? 1 : 0;
-  const pulso = 0.5 + Math.sin(t * 2.4 + npc.x * 0.1) * 0.5;
+  const pulso = 0.5 + Math.sin(t * 2.4 + d.x * 0.1) * 0.5;
 
   // Sombra de contacto sobre el adoquín
   g.fillStyle = 'rgba(0,0,0,0.30)';
   g.beginPath(); g.ellipse(x, y + 3, 13, 4, 0, 0, 7); g.fill();
 
-  // La Puerta del Reloj: umbral monumental del descenso (arco de piedra + luz).
-  if (npc.id === 'puerta') {
-    _glow(g, x, y - 30, 46 + foco * 12, est.col, 0.12 + foco * 0.14 + pulso * 0.03);
-    // Arco de piedra
+  // La Puerta del Reloj: umbral monumental del descenso (siempre viva).
+  if (d.emblema === 'puerta') {
+    _glow(g, x, y - 30, 46 + foco * 12, col, 0.12 + foco * 0.14 + pulso * 0.03);
     g.fillStyle = '#2a2440';
     g.beginPath();
     g.moveTo(x - 26, y); g.lineTo(x - 26, y - 44);
     g.quadraticCurveTo(x, y - 74, x + 26, y - 44); g.lineTo(x + 26, y);
     g.lineTo(x + 18, y); g.lineTo(x + 18, y - 42);
     g.quadraticCurveTo(x, y - 62, x - 18, y - 42); g.lineTo(x - 18, y); g.closePath(); g.fill();
-    // Umbral iluminado (portal)
     const pg = g.createLinearGradient(x, y, x, y - 58);
-    pg.addColorStop(0, _rgba(est.col, 0.05)); pg.addColorStop(1, _rgba(est.col, 0.28 + foco * 0.18));
+    pg.addColorStop(0, _rgba(col, 0.05)); pg.addColorStop(1, _rgba(col, 0.28 + foco * 0.18));
     g.fillStyle = pg;
     g.beginPath();
     g.moveTo(x - 18, y); g.lineTo(x - 18, y - 42);
     g.quadraticCurveTo(x, y - 62, x + 18, y - 42); g.lineTo(x + 18, y); g.closePath(); g.fill();
-    // Clave del arco con esfera de reloj
-    g.save(); g.translate(x, y - 50); g.scale(1.5, 1.5); drawEmblema(g, 'puerta', 0, 0, est.col); g.restore();
-    // Motas ascendentes
+    g.save(); g.translate(x, y - 50); g.scale(1.5, 1.5); drawEmblema(g, 'puerta', 0, 0, col); g.restore();
     for (let i = 0; i < 4; i++) {
       const st = (t * 0.4 + i * 0.25) % 1;
       g.fillStyle = _rgba('#efe6ff', (1 - st) * (0.3 + foco * 0.3));
@@ -278,34 +351,53 @@ export function drawNPC(g, npc, SX, SY, t, near = false) {
     return;
   }
 
-  // Estaciones normales: farol de hierro colgando un emblema (mismo lenguaje para todas).
-  const sway = Math.sin(t * 1.5 + npc.x * 0.13) * 0.9;
-  _glow(g, x + 6, y - 24, 26 + foco * 8, est.col, 0.10 + foco * 0.16 + pulso * 0.03);
-  // Poste de hierro + brazo
+  if (!vivo) {
+    // RUINA: poste frío con tablas cruzadas; el emblema apenas se intuye.
+    g.strokeStyle = '#241f30'; g.lineWidth = 2.4;
+    g.beginPath(); g.moveTo(x - 9, y + 1); g.lineTo(x - 9, y - 34); g.lineTo(x + 3, y - 34); g.stroke();
+    // panel entablado
+    const px = x + 3, py = y - 30;
+    g.fillStyle = '#191527';
+    g.beginPath(); g.roundRect ? g.roundRect(px - 12, py - 8, 24, 24, 4) : g.rect(px - 12, py - 8, 24, 24); g.fill();
+    g.strokeStyle = '#332c44'; g.lineWidth = 1;
+    g.beginPath(); g.roundRect ? g.roundRect(px - 12, py - 8, 24, 24, 4) : g.rect(px - 12, py - 8, 24, 24); g.stroke();
+    // tablas cruzadas
+    g.strokeStyle = '#4a3f5e'; g.lineWidth = 2.2;
+    g.beginPath(); g.moveTo(px - 12, py - 6); g.lineTo(px + 12, py + 14); g.stroke();
+    g.beginPath(); g.moveTo(px + 12, py - 6); g.lineTo(px - 12, py + 14); g.stroke();
+    drawEmblema(g, d.emblema, px, py + 4, col, true);
+    // farol frío
+    g.fillStyle = 'rgba(90,84,112,0.5)';
+    g.beginPath(); g.arc(x + 3, y - 34, 2, 0, 7); g.fill();
+    return;
+  }
+
+  // VIVO: farol de hierro colgando un emblema (mismo lenguaje para todos).
+  const sway = Math.sin(t * 1.5 + d.x * 0.13) * 0.9;
+  _glow(g, x + 6, y - 24, 26 + foco * 8, col, 0.10 + foco * 0.16 + pulso * 0.03);
   g.strokeStyle = '#2b2536'; g.lineWidth = 2.4;
   g.beginPath(); g.moveTo(x - 9, y + 1); g.lineTo(x - 9, y - 34); g.lineTo(x + 3, y - 34); g.stroke();
-  g.lineWidth = 1.2; g.beginPath(); g.moveTo(x - 12, y + 1); g.lineTo(x - 6, y + 1); g.stroke(); // base
-  // Cadena + panel colgante que se mece
+  g.lineWidth = 1.2; g.beginPath(); g.moveTo(x - 12, y + 1); g.lineTo(x - 6, y + 1); g.stroke();
   const px = x + 3 + sway, py = y - 30;
   g.strokeStyle = '#3a3350'; g.lineWidth = 1; g.beginPath(); g.moveTo(x + 3, y - 34); g.lineTo(px, py - 8); g.stroke();
-  // Marco del panel (hierro) + fondo cálido
   g.fillStyle = '#241f36';
   g.beginPath(); g.roundRect ? g.roundRect(px - 12, py - 8, 24, 24, 4) : g.rect(px - 12, py - 8, 24, 24); g.fill();
-  g.strokeStyle = _rgba(est.col, 0.8); g.lineWidth = 1.4;
+  g.strokeStyle = _rgba(col, 0.8); g.lineWidth = 1.4;
   g.beginPath(); g.roundRect ? g.roundRect(px - 12, py - 8, 24, 24, 4) : g.rect(px - 12, py - 8, 24, 24); g.stroke();
   const pg = g.createRadialGradient(px, py + 4, 1, px, py + 4, 16);
-  pg.addColorStop(0, _rgba(est.col, 0.30 + foco * 0.2)); pg.addColorStop(1, _rgba(est.col, 0));
+  pg.addColorStop(0, _rgba(col, 0.30 + foco * 0.2)); pg.addColorStop(1, _rgba(col, 0));
   g.fillStyle = pg; g.fillRect(px - 12, py - 8, 24, 24);
-  // Emblema dentro del panel
-  drawEmblema(g, npc.id, px, py + 4, est.col);
-  // Farolillo cálido en el remate del brazo
+  drawEmblema(g, d.emblema, px, py + 4, col);
   g.fillStyle = _rgba('#ffce7a', 0.9 * (0.7 + pulso * 0.3));
   g.beginPath(); g.arc(x + 3, y - 34, 2.2, 0, 7); g.fill();
 }
 
-// CORO, el ave de fuego: revolotea cerca de Margo (ambiental)
+function px2(g, x, y, w, h, c) { g.fillStyle = c; g.fillRect(x, y, w, h); }
+
+// CORO, el ave de fuego: revolotea sobre la villa (ambiental)
 export function drawCoro(g, SX, SY, t) {
-  const bx = P.x + 130 + Math.sin(t * 0.7) * 26;
+  const P = plaza();
+  const bx = P.x + 150 + Math.sin(t * 0.7) * 40;
   const by = P.y + 60 + Math.sin(t * 1.3) * 8;
   const x = SX(bx), y = SY(by, 26 + Math.sin(t * 5) * 3);
   const flap = Math.sin(t * 12) * 3;
@@ -317,13 +409,14 @@ export function drawCoro(g, SX, SY, t) {
   px2(g, x - 1, y - 2, 1.5, 1.5, '#3a3226');
 }
 
-// ---------- Backdrop del pueblo ----------
+// ---------- Backdrop de la villa (fallback por código; el arte pintado va encima si existe) ----------
 export function drawPuebloBackdrop(g, SX, SY, t, VW, VH) {
-  // Casas al fondo (siluetas con ventanas cálidas)
+  const P = plaza();
   const houses = [
-    { x: P.x - 10, w: 90, h: 74 }, { x: P.x + 95, w: 70, h: 58 },
-    { x: P.x + 180, w: 84, h: 80 }, { x: P.x + 280, w: 66, h: 62 },
-    { x: P.x + 360, w: 88, h: 70 }
+    { x: P.x - 10, w: 90, h: 74 }, { x: P.x + 120, w: 70, h: 58 },
+    { x: P.x + 240, w: 84, h: 80 }, { x: P.x + 380, w: 66, h: 62 },
+    { x: P.x + 500, w: 88, h: 70 }, { x: P.x + 640, w: 74, h: 64 },
+    { x: P.x + 760, w: 82, h: 72 }
   ];
   const horizon = SY(P.y) - 6;
   for (const h of houses) {
@@ -336,7 +429,6 @@ export function drawPuebloBackdrop(g, SX, SY, t, VW, VH) {
     g.lineTo(hx + h.w / 2, horizon - h.h - 22);
     g.lineTo(hx + h.w + 4, horizon - h.h);
     g.closePath(); g.fill();
-    // ventanas cálidas parpadeantes
     for (let i = 0; i < Math.floor(h.w / 26); i++) {
       const wx = hx + 10 + i * 26, wy = horizon - h.h + 14 + (i % 2) * 20;
       const on = Math.sin(t * 0.4 + h.x + i * 7) > -0.6;
@@ -359,7 +451,6 @@ export function drawPuebloBackdrop(g, SX, SY, t, VW, VH) {
   g.beginPath();
   g.moveTo(gx - 46, horizon - 130); g.lineTo(gx, horizon - 168); g.lineTo(gx + 46, horizon - 130);
   g.closePath(); g.fill();
-  // esfera de reloj
   g.fillStyle = '#e8dfc8';
   g.beginPath(); g.arc(gx, horizon - 108, 17, 0, 7); g.fill();
   g.strokeStyle = '#3a3226'; g.lineWidth = 2;
@@ -368,23 +459,13 @@ export function drawPuebloBackdrop(g, SX, SY, t, VW, VH) {
   g.beginPath(); g.moveTo(gx, horizon - 108); g.lineTo(gx + Math.cos(ha) * 8, horizon - 108 + Math.sin(ha) * 8); g.stroke();
   g.lineWidth = 1.5;
   g.beginPath(); g.moveTo(gx, horizon - 108); g.lineTo(gx + Math.cos(ma) * 12, horizon - 108 + Math.sin(ma) * 12); g.stroke();
-  // arco de la puerta
   g.fillStyle = '#0e0b1c';
   g.beginPath();
-  g.moveTo(gx - 20, horizon);
-  g.lineTo(gx - 20, horizon - 44);
-  g.quadraticCurveTo(gx, horizon - 62, gx + 20, horizon - 44);
-  g.lineTo(gx + 20, horizon);
+  g.moveTo(gx - 20, horizon); g.lineTo(gx - 20, horizon - 44);
+  g.quadraticCurveTo(gx, horizon - 62, gx + 20, horizon - 44); g.lineTo(gx + 20, horizon);
   g.closePath(); g.fill();
-  g.strokeStyle = '#6b5a36'; g.lineWidth = 2;
-  g.beginPath();
-  g.moveTo(gx - 21, horizon);
-  g.lineTo(gx - 21, horizon - 45);
-  g.quadraticCurveTo(gx, horizon - 64, gx + 21, horizon - 45);
-  g.lineTo(gx + 21, horizon);
-  g.stroke();
   // horno de Margo (izquierda)
-  const mx = SX(P.x + 60);
+  const mx = SX(P.x + 66);
   g.fillStyle = '#3a3040';
   g.fillRect(mx - 14, horizon - 34, 28, 34);
   g.fillStyle = '#241f30';
@@ -399,7 +480,6 @@ export function drawPuebloBackdrop(g, SX, SY, t, VW, VH) {
   gl.addColorStop(1, 'rgba(255,150,60,0)');
   g.fillStyle = gl;
   g.beginPath(); g.arc(mx, horizon - 8, 46, 0, 7); g.fill();
-  // chimenea con humo
   g.fillStyle = '#3a3040'; g.fillRect(mx + 6, horizon - 48, 7, 16);
   for (let i = 0; i < 3; i++) {
     const st = (t * 0.5 + i * 0.33) % 1;
@@ -410,13 +490,13 @@ export function drawPuebloBackdrop(g, SX, SY, t, VW, VH) {
 
 // Suelo adoquinado de la plaza
 export function drawPlazaGround(g, SX, SY, KY) {
+  const P = plaza();
   const x0 = SX(P.x - 20), x1 = SX(P.x + P.w + 20);
   const y0 = SY(P.y), y1 = SY(P.y + P.h) + 14;
   g.fillStyle = '#332c4a';
   g.fillRect(x0, y0, x1 - x0, y1 - y0);
-  // adoquines
-  for (let r = 0; r < 9; r++) {
-    for (let c = 0; c < 22; c++) {
+  for (let r = 0; r < 10; r++) {
+    for (let c = 0; c < 38; c++) {
       const ax = x0 + c * 28 + (r % 2) * 14, ay = y0 + r * (24 * KY);
       const v = ((r * 13 + c * 7) % 8);
       g.fillStyle = `rgb(${56 + v},${50 + v},${82 + v})`;

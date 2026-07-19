@@ -20,6 +20,7 @@ export const GameState = {
   selloEquipado: null,          // sello elemental activo (persiste entre runs)
   selloRango: {},               // C5: { id_sello: rango } — el rango escala el rasgo/finisher (sube con Memoria)
   bestiario: [],                // E4: ids de enemigos derrotados (para el códice/bestiario)
+  rescatados: [],               // F0/F1: ids de vecinos liberados en la Torre → encienden su distrito en Cuerdaqueda
   flags: {},                    // narrativa/pueblo (hermanos_memoria, ate_idx...)
   stats: { runs: 0, muertes: 0, victorias: 0 },
   // E5 accesibilidad: sacudidas y destellos ON por defecto, salvo que el sistema pida
@@ -62,14 +63,15 @@ export const SaveManager = {
   save() {
     try {
       localStorage.setItem(this.KEY, JSON.stringify({
-        schema: 3, memoria: GameState.memoria,
+        schema: 4, memoria: GameState.memoria,
         desbloqueos: GameState.desbloqueos, opciones: GameState.opciones,
         pactos: GameState.pactos, stats: GameState.stats, flags: GameState.flags,
         xp: GameState.xp, nivel: GameState.nivel, engranajes: GameState.engranajes,
         ligaRango: GameState.ligaRango ?? 0,
         esfera: GameState.esfera, usoHechizos: GameState.usoHechizos, usoCompases: GameState.usoCompases,
         sellosObtenidos: GameState.sellosObtenidos, selloEquipado: GameState.selloEquipado,
-        selloRango: GameState.selloRango, bestiario: GameState.bestiario
+        selloRango: GameState.selloRango, bestiario: GameState.bestiario,
+        rescatados: GameState.rescatados
       }));
     } catch (e) { console.warn('SaveManager: no se pudo guardar', e); }
   },
@@ -78,7 +80,7 @@ export const SaveManager = {
       const raw = localStorage.getItem(this.KEY);
       if (!raw) return false;
       const d = JSON.parse(raw);
-      if (![1, 2, 3].includes(d.schema)) return false;
+      if (![1, 2, 3, 4].includes(d.schema)) return false;
       GameState.memoria = d.memoria ?? 0;
       GameState.desbloqueos = d.desbloqueos ?? [];
       // Migración C4 (schema 2→3): el booleano cuerdaTensa se generaliza al mapa de pactos.
@@ -96,6 +98,7 @@ export const SaveManager = {
       GameState.selloEquipado = d.selloEquipado ?? null;
       GameState.selloRango = (d.selloRango && typeof d.selloRango === 'object') ? d.selloRango : {}; // C5 (campo aditivo tolerante)
       GameState.bestiario = Array.isArray(d.bestiario) ? d.bestiario : []; // E4 (campo aditivo tolerante)
+      GameState.rescatados = Array.isArray(d.rescatados) ? d.rescatados : []; // F0/F1 (schema 4; aditivo tolerante)
       Object.assign(GameState.stats, d.stats ?? {});
       Object.assign(GameState.opciones, d.opciones ?? {});
       return true;

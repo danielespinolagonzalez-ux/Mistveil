@@ -19,7 +19,9 @@ const FILES = {
   jefes: 'data/jefes.json',
   musica: 'data/musica.json',
   eventos: 'data/eventos.json',
-  pactos: 'data/pactos.json'
+  pactos: 'data/pactos.json',
+  ciudad: 'data/ciudad.json',
+  rescates: 'data/rescates.json'
 };
 
 // Claves mínimas requeridas por archivo (validación con errores claros)
