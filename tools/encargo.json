@@ -195,6 +195,46 @@
       "estado": "hecho"
     },
     {
+      "id": "enemigo_saltahoras",
+      "tipo": "sprite",
+      "clase": "enemy",
+      "targetH": 54,
+      "face": "left",
+      "largestOnly": true,
+      "sujeto": "a small spectral clockwork wraith of pale translucent quartz and smoke, a floating hourglass for a body with a single glowing amber eye, wisps of drifting time-dust, ghostly and eerie",
+      "estado": "hecho"
+    },
+    {
+      "id": "enemigo_broquel",
+      "tipo": "sprite",
+      "clase": "enemy",
+      "targetH": 60,
+      "face": "left",
+      "largestOnly": true,
+      "sujeto": "a squat stocky bronze automaton guardian holding a large round bronze buckler shield with a domed central boss in front of it, heavy and stoic, two small glowing eyes peering over the shield rim",
+      "estado": "hecho"
+    },
+    {
+      "id": "enemigo_cumulo_de_sebo",
+      "tipo": "sprite",
+      "clase": "enemy",
+      "targetH": 66,
+      "face": "left",
+      "largestOnly": true,
+      "sujeto": "a large quivering mound of amber tallow wax about to split in two, a big soft blob with a faint seam down the middle and two dim vacant eyes, wax droplets dripping",
+      "estado": "hecho"
+    },
+    {
+      "id": "enemigo_restaurador",
+      "tipo": "sprite",
+      "clase": "enemy",
+      "targetH": 54,
+      "face": "left",
+      "largestOnly": true,
+      "sujeto": "an ethereal healer construct: a small floating brass lantern-bellows radiating a soft green restorative glow, serene, wisps of healing vapor rising, delicate filigree",
+      "estado": "hecho"
+    },
+    {
       "id": "enemigo_campanero",
       "tipo": "sprite",
       "clase": "enemy",

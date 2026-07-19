@@ -237,5 +237,25 @@
   "w": 63,
   "h": 52,
   "face": "left"
+ },
+ "enemigo_broquel": {
+  "w": 49,
+  "h": 60,
+  "face": "left"
+ },
+ "enemigo_cumulo_de_sebo": {
+  "w": 56,
+  "h": 66,
+  "face": "left"
+ },
+ "enemigo_restaurador": {
+  "w": 70,
+  "h": 54,
+  "face": "left"
+ },
+ "enemigo_saltahoras": {
+  "w": 48,
+  "h": 54,
+  "face": "left"
  }
 }
