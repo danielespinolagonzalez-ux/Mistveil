@@ -1987,6 +1987,16 @@ function drawDoor(room, side) {
   }
 }
 
+// Dibuja un icono pintado CENTRADO en (cx, cy) a una altura dh (para HUD/iconos).
+// Devuelve false si no hay sprite → el llamante pinta su versión vectorial.
+function drawIconCentered(id, cx, cy, dh) {
+  const spr = Sprites.get(id); if (!spr) return false;
+  const inf = Sprites.info(id);
+  const dw = Math.round(inf.w * dh / inf.h);
+  ctx.drawImage(spr, Math.round(cx - dw / 2), Math.round(cy - dh / 2), dw, dh);
+  return true;
+}
+
 // Dibuja un prop pintado anclado por su BASE (cx, byY) a una altura dh.
 // Devuelve false si no hay sprite cargado → el llamante pinta su versión vectorial.
 function drawPropSprite(id, cx, byY, dh, alpha = 1) {
@@ -3041,6 +3051,9 @@ function drawHeart(x, y, fill, t) {
   ctx.save();
   ctx.translate(x + 6, y + 6);
   ctx.scale(beat, beat);
+  // Corazón de cera pintado (lleno/medio/vacío); si falta, el corazón vectorial.
+  const hid = fill === 2 ? 'hud_heart_full' : fill === 1 ? 'hud_heart_half' : 'hud_heart_empty';
+  if (drawIconCentered(hid, 0, 0, 14)) { ctx.restore(); return; }
   ctx.translate(-6, -6);
   const shape = (half) => {
     ctx.beginPath();
@@ -3102,9 +3115,11 @@ function drawHUD(t) {
   }
   // Fila del oro: oro → sello → objeto activo, en FLUJO medido (nada de x fijas:
   // con oro de 2-3 cifras las posiciones fijas de antes se pisaban entre sí).
-  ctx.fillStyle = '#8a6d2f'; ctx.beginPath(); ctx.arc(18, 31, 5, 0, 7); ctx.fill();
-  ctx.fillStyle = '#e8c565'; ctx.beginPath(); ctx.arc(17, 30, 4.5, 0, 7); ctx.fill();
-  ctx.fillStyle = '#fff2c8'; ctx.fillRect(15, 28, 2, 2);
+  if (!drawIconCentered('hud_oro', 17, 31, 13)) {
+    ctx.fillStyle = '#8a6d2f'; ctx.beginPath(); ctx.arc(18, 31, 5, 0, 7); ctx.fill();
+    ctx.fillStyle = '#e8c565'; ctx.beginPath(); ctx.arc(17, 30, 4.5, 0, 7); ctx.fill();
+    ctx.fillStyle = '#fff2c8'; ctx.fillRect(15, 28, 2, 2);
+  }
   font(10); ctx.fillStyle = '#cfc6e8'; ctx.textAlign = 'left';
   const oroTxt = '× ' + RunState.oro;
   ctx.fillText(oroTxt, 28, 35);
@@ -3189,7 +3204,9 @@ function drawHUD(t) {
     ctx.strokeRect(bx + 0.5, by + 0.5, 33, 11);
     const col = DataDB.elementos[hch.elemento]?.color ?? '#bcd0ff';
     ctx.globalAlpha = okSp ? 1 : 0.4;
-    drawSpellGlyph(hch.tipo, bx + 8, by + 6, col);
+    // Icono de Arte pintado (por hechizo); si falta, el glifo vectorial.
+    if (!drawIconCentered('arte_' + RunState.hechizo, bx + 8, by + 6, 12))
+      drawSpellGlyph(hch.tipo, bx + 8, by + 6, col);
     font(8); ctx.fillStyle = okSp ? '#cfc6e8' : '#55496e'; ctx.textAlign = 'left';
     ctx.fillText('Q' + hch.coste_sp, bx + 16, by + 10);
     ctx.globalAlpha = 1;
@@ -3197,13 +3214,22 @@ function drawHUD(t) {
 
   RunState.items.slice(0, 10).forEach((id, i) => {
     const it = DataDB.item(id);
-    const col = TAG_COLORS[it?.tags?.[0]] ?? '#e9e2f5';
     const ix = 194 + i * 13, iy = 36;
     ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(ix, iy, 11, 11);
-    ctx.fillStyle = col; ctx.fillRect(ix + 2, iy + 2, 7, 7);
-    ctx.fillStyle = '#141120';
-    font(6); ctx.textAlign = 'center';
-    ctx.fillText((it?.nombre ?? '?')[0].toUpperCase(), ix + 5.5, iy + 9);
+    // Icono de reliquia pintado, contenido dentro de la caja de 11×11.
+    const spr = Sprites.get('icono_' + id);
+    if (spr) {
+      const inf = Sprites.info('icono_' + id);
+      const s = Math.min(11 / inf.w, 11 / inf.h);
+      const dw = inf.w * s, dh = inf.h * s;
+      ctx.drawImage(spr, ix + (11 - dw) / 2, iy + (11 - dh) / 2, dw, dh);
+    } else {
+      const col = TAG_COLORS[it?.tags?.[0]] ?? '#e9e2f5';
+      ctx.fillStyle = col; ctx.fillRect(ix + 2, iy + 2, 7, 7);
+      ctx.fillStyle = '#141120';
+      font(6); ctx.textAlign = 'center';
+      ctx.fillText((it?.nombre ?? '?')[0].toUpperCase(), ix + 5.5, iy + 9);
+    }
   });
 
   // Cartela de piso ornamentada arriba a la derecha (como "Piso 1 · Entrada").
@@ -3653,7 +3679,12 @@ function renderPueblo(t) {
   ctx.fillStyle = puG; ctx.fillRect(0, 0, VW, 30);
   font(9); ctx.textAlign = 'left';
   ctx.fillStyle = '#d8cef0';
-  ctx.fillText('◆ ' + GameState.memoria, 12, 18);
+  // Gema de Memoria pintada delante del número; si falta, el glifo ◆.
+  if (drawIconCentered('hud_memoria', 16, 14, 13)) {
+    ctx.fillText('' + GameState.memoria, 24, 18);
+  } else {
+    ctx.fillText('◆ ' + GameState.memoria, 12, 18);
+  }
   if (RunState.bendiciones.length) {
     // Hogaza dibujada (🍞 salía como tofu en VT323).
     ctx.fillStyle = '#c98a3c';

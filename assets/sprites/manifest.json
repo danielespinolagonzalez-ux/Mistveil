@@ -379,5 +379,160 @@
   "w": 69,
   "h": 64,
   "face": "right"
+ },
+ "arte_estallido_de_tinta": {
+  "w": 41,
+  "h": 48,
+  "face": "right"
+ },
+ "arte_marea_de_cera": {
+  "w": 44,
+  "h": 48,
+  "face": "right"
+ },
+ "arte_ascua_hendida": {
+  "w": 50,
+  "h": 48,
+  "face": "right"
+ },
+ "icono_tinta_dividida": {
+  "w": 111,
+  "h": 48,
+  "face": "right"
+ },
+ "icono_cera_caliente": {
+  "w": 18,
+  "h": 48,
+  "face": "right"
+ },
+ "icono_lagrima_pesada": {
+  "w": 27,
+  "h": 48,
+  "face": "right"
+ },
+ "icono_segundero_suelto": {
+  "w": 39,
+  "h": 48,
+  "face": "right"
+ },
+ "icono_cuerda_extra": {
+  "w": 56,
+  "h": 48,
+  "face": "right"
+ },
+ "icono_manecilla_rota": {
+  "w": 53,
+  "h": 48,
+  "face": "right"
+ },
+ "icono_metronomo_bolsillo": {
+  "w": 21,
+  "h": 48,
+  "face": "right"
+ },
+ "icono_pendulo_quieto": {
+  "w": 20,
+  "h": 48,
+  "face": "right"
+ },
+ "icono_campana_rasgada": {
+  "w": 30,
+  "h": 48,
+  "face": "right"
+ },
+ "icono_eco_del_reloj": {
+  "w": 44,
+  "h": 48,
+  "face": "right"
+ },
+ "icono_bateria_de_almas": {
+  "w": 54,
+  "h": 48,
+  "face": "right"
+ },
+ "icono_sello_agrietado": {
+  "w": 51,
+  "h": 48,
+  "face": "right"
+ },
+ "icono_ojo_de_vidrio": {
+  "w": 65,
+  "h": 48,
+  "face": "right"
+ },
+ "icono_aceite_negro": {
+  "w": 26,
+  "h": 48,
+  "face": "right"
+ },
+ "icono_lagrimas_espejo": {
+  "w": 45,
+  "h": 48,
+  "face": "right"
+ },
+ "icono_tinta_viva": {
+  "w": 23,
+  "h": 48,
+  "face": "right"
+ },
+ "icono_polilla_lunar": {
+  "w": 108,
+  "h": 48,
+  "face": "right"
+ },
+ "icono_paginas_perdidas": {
+  "w": 62,
+  "h": 48,
+  "face": "right"
+ },
+ "icono_corazon_de_lata": {
+  "w": 60,
+  "h": 48,
+  "face": "right"
+ },
+ "icono_arena_del_tiempo": {
+  "w": 30,
+  "h": 48,
+  "face": "right"
+ },
+ "hud_heart_full": {
+  "w": 57,
+  "h": 48,
+  "face": "right"
+ },
+ "hud_heart_half": {
+  "w": 57,
+  "h": 48,
+  "face": "right"
+ },
+ "hud_heart_empty": {
+  "w": 57,
+  "h": 48,
+  "face": "right"
+ },
+ "hud_oro": {
+  "w": 50,
+  "h": 48,
+  "face": "right"
+ },
+ "hud_engranaje": {
+  "w": 49,
+  "h": 48,
+  "face": "right"
+ },
+ "hud_sp": {
+  "w": 29,
+  "h": 48,
+  "face": "right"
+ },
+ "hud_memoria": {
+  "w": 37,
+  "h": 48,
+  "face": "right"
+ },
+ "hud_reloj": {
+  "w": 29,
+  "h": 48,
+  "face": "right"
  }
 }

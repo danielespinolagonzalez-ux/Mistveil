@@ -74,9 +74,15 @@ async function main() {
       manifest[id] = { w: res.w, h: res.h, tipo: 'textura', ext };
       console.log(`✓ ${id}: textura ${ext} → ${res.w}×${res.h}`);
     } else if (cfg.tipo === 'hoja') {
-      const res = await page.evaluate(procesarHoja, { dataUrl, targetH: cfg.targetH ?? 56, nombres: cfg.nombres ?? [] });
+      // grid:true → recorte por rejilla regular (robusto a iconos multi-blob);
+      // si no, detección por componentes conexos (hojas de un blob por icono).
+      const [rows, cols] = (cfg.rejilla ?? '1x1').split('x').map(Number);
+      const res = cfg.grid
+        ? await page.evaluate(procesarRejilla, { dataUrl, rows, cols, targetH: cfg.targetH ?? 48 })
+        : await page.evaluate(procesarHoja, { dataUrl, targetH: cfg.targetH ?? 56, nombres: cfg.nombres ?? [] });
       if (res.error) { console.log(`✗ ${id}: ${res.error}`); continue; }
       res.piezas.forEach((p, i) => {
+        if (!p) { console.log(`  · ${id}: celda ${i + 1} vacía (saltada)`); return; }
         const pid = cfg.nombres?.[i] ?? `${id}_${i + 1}`;
         writeFileSync(resolve(OUT, pid + '.png'), Buffer.from(p.png.split(',')[1], 'base64'));
         manifest[pid] = { w: p.w, h: p.h, face: 'right' };
@@ -324,6 +330,37 @@ async function procesarHoja({ dataUrl, targetH, nombres }) {
     const fin = document.createElement('canvas'); fin.width = fw; fin.height = targetH;
     const fg = fin.getContext('2d'); fg.imageSmoothingQuality = 'high';
     fg.drawImage(cv, c.x0 - 2, c.y0 - 2, cw, ch, 0, 0, fw, targetH);
+    piezas.push({ png: fin.toDataURL('image/png'), w: fw, h: targetH });
+  }
+  return { piezas };
+}
+
+// Rejilla determinista para hojas de iconos con celdas regulares: recorta
+// rows×cols celdas (orden de lectura) y recorta cada una por su alfa. Robusto a
+// iconos multi-blob (frascos, gotas gemelas) que confundirían a procesarHoja.
+// La hoja debe llegar SIN fondo (tras remove_background de Recraft).
+async function procesarRejilla({ dataUrl, rows, cols, targetH }) {
+  const img = new Image();
+  await new Promise((ok, ko) => { img.onload = ok; img.onerror = () => ko(new Error('png ilegible')); img.src = dataUrl; });
+  const W = img.width, H = img.height;
+  const full = document.createElement('canvas'); full.width = W; full.height = H;
+  const fg = full.getContext('2d', { willReadFrequently: true }); fg.drawImage(img, 0, 0);
+  const cw = W / cols, chh = H / rows;
+  const piezas = [];
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+    const cx = Math.round(c * cw), cy = Math.round(r * chh);
+    const cwi = Math.round(cw), chi = Math.round(chh);
+    const dat = fg.getImageData(cx, cy, cwi, chi).data;
+    let x0 = cwi, y0 = chi, x1 = -1, y1 = -1;
+    for (let y = 0; y < chi; y++) for (let x = 0; x < cwi; x++) {
+      if (dat[(y * cwi + x) * 4 + 3] > 24) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+    }
+    if (x1 < 0) { piezas.push(null); continue; } // celda vacía
+    const bw = x1 - x0 + 1, bh = y1 - y0 + 1;
+    const fw = Math.max(1, Math.round(bw * targetH / bh));
+    const fin = document.createElement('canvas'); fin.width = fw; fin.height = targetH;
+    const g2 = fin.getContext('2d'); g2.imageSmoothingQuality = 'high';
+    g2.drawImage(full, cx + x0, cy + y0, bw, bh, 0, 0, fw, targetH);
     piezas.push({ png: fin.toDataURL('image/png'), w: fw, h: targetH });
   }
   return { piezas };

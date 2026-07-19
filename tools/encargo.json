@@ -616,25 +616,73 @@
       "id": "hoja_iconos_reliquias",
       "tipo": "hoja",
       "rejilla": "4x5",
-      "lista": "split inkwell; melted candle hugging a vial; huge crystal teardrop; loose spinning second hand; coiled clock spring; broken sharpened clock hand; pocket metronome; stilled pendulum in a glass bell; torn bell; conch shell with a clock face; battery of soul vials; cracked wax seal; glass eye; drop of black oil; twin mirrored teardrops; living ink drop with eyes; silver lunar moth; loose pages tied with string; tin heart with rivets; golden hourglass"
+      "lista": "split inkwell; melted candle hugging a vial; huge crystal teardrop; loose spinning second hand; coiled clock spring; broken sharpened clock hand; pocket metronome; stilled pendulum in a glass bell; torn bell; conch shell with a clock face; battery of soul vials; cracked wax seal; glass eye; drop of black oil; twin mirrored teardrops; living ink drop with eyes; silver lunar moth; loose pages tied with string; tin heart with rivets; golden hourglass",
+      "grid": true,
+      "targetH": 48,
+      "nombres": [
+        "icono_tinta_dividida",
+        "icono_cera_caliente",
+        "icono_lagrima_pesada",
+        "icono_segundero_suelto",
+        "icono_cuerda_extra",
+        "icono_manecilla_rota",
+        "icono_metronomo_bolsillo",
+        "icono_pendulo_quieto",
+        "icono_campana_rasgada",
+        "icono_eco_del_reloj",
+        "icono_bateria_de_almas",
+        "icono_sello_agrietado",
+        "icono_ojo_de_vidrio",
+        "icono_aceite_negro",
+        "icono_lagrimas_espejo",
+        "icono_tinta_viva",
+        "icono_polilla_lunar",
+        "icono_paginas_perdidas",
+        "icono_corazon_de_lata",
+        "icono_arena_del_tiempo"
+      ],
+      "estado": "hecho"
     },
     {
       "id": "hoja_iconos_artes",
       "tipo": "hoja",
       "rejilla": "1x3",
-      "lista": "bursting crown of indigo ink; crescent of turquoise foam; fan of burning embers"
+      "lista": "bursting crown of indigo ink; crescent of turquoise foam; fan of burning embers",
+      "grid": true,
+      "targetH": 48,
+      "nombres": [
+        "arte_estallido_de_tinta",
+        "arte_marea_de_cera",
+        "arte_ascua_hendida"
+      ],
+      "estado": "hecho"
     },
     {
       "id": "hoja_iconos_sellos",
       "tipo": "hoja",
       "rejilla": "2x4",
-      "lista": "wax seal with flame; wax seal with wave; wax seal with wind gust; wax seal with teardrop; wax seal with rising sun; wax seal with setting sun; wax seal with lightning bolt; translucent colorless wax seal"
+      "lista": "wax seal with flame; wax seal with wave; wax seal with wind gust; wax seal with teardrop; wax seal with rising sun; wax seal with setting sun; wax seal with lightning bolt; translucent colorless wax seal",
+      "estado": "diferido",
+      "nota": "sin punto de dibujo: data/sellos.json está cargado pero ningún sistema lo lee todavía (feature planificada). Generar cuando exista el UI de sellos."
     },
     {
       "id": "hoja_iconos_ui",
       "tipo": "hoja",
       "rejilla": "2x4",
-      "lista": "full wax heart; half wax heart; empty extinguished wax heart; golden gear-coin; silver gear; luminous blue-violet spirit droplet; purple streak gem rhombus; small hourglass"
+      "lista": "full wax heart; half wax heart; empty extinguished wax heart; golden gear-coin; silver gear; luminous blue-violet spirit droplet; purple streak gem rhombus; small hourglass",
+      "grid": true,
+      "targetH": 48,
+      "nombres": [
+        "hud_heart_full",
+        "hud_heart_half",
+        "hud_heart_empty",
+        "hud_oro",
+        "hud_engranaje",
+        "hud_sp",
+        "hud_memoria",
+        "hud_reloj"
+      ],
+      "estado": "hecho"
     },
     {
       "id": "hoja_botones_tactiles",
