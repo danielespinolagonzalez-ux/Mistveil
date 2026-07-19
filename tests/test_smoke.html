@@ -24,7 +24,7 @@ import { GameState, RunState, AudioManager, SaveManager } from '../js/state.js';
 import { nodoDisponible, activarNodo, esferaBonos } from '../js/esfera.js';
 import { syncFamiliares, updateFamiliares } from '../js/familiares.js';
 import { spawnArt, updateArt, romano } from '../js/artes_fx.js';
-import { selloDef, obtenerSello, rasgoCuraPorSp, finisherElemental } from '../js/sellos.js';
+import { selloDef, obtenerSello, rasgoCuraPorSp, finisherElemental, selloStatPasivo, selloSpPorPerfecto, selloArmaduraSala, selloRango } from '../js/sellos.js';
 import { pickAzar, aplicarEvento } from '../js/eventos.js';
 import { drawItemIcon } from '../js/item_icons.js';
 import { Pactos, calcHeat, calcMemoriaMult, calcEfecto, nivelClamp } from '../js/pactos.js';
@@ -529,6 +529,31 @@ rasgoCuraPorSp(12, pM);
 assert('marea: cura 1 al acumular 20 SP de perfectos', sinCura === 2 && pM.health.hp === 3);
 GameState.selloEquipado = selloPrevEq;
 GameState.sellosObtenidos.length = 0; GameState.sellosObtenidos.push(...selloPrevCol);
+
+// Fase C — C5 (los 6 sellos restantes ACTIVADOS + rango que escala rasgo/finisher)
+assert('C5: los 8 sellos están activos (rasgo_fx + finisher_fx)',
+  (DataDB.sellos ?? []).length === 8 && DataDB.sellos.every(s => s.estado === 'activo' && s.rasgo_fx && s.finisher_fx));
+(() => {
+  const pEq = GameState.selloEquipado, pR = GameState.selloRango, pObt = [...GameState.sellosObtenidos];
+  // base sin sello equipado
+  GameState.selloEquipado = null; GameState.sellosObtenidos = []; GameState.selloRango = {};
+  const pl = new Player(0, 0); const base = pl.stats.tear_damage;
+  // Ocaso (stat_pasivo tear_damage) rango 1 → sube el daño
+  GameState.sellosObtenidos = ['sello_ocaso']; GameState.selloEquipado = 'sello_ocaso'; GameState.selloRango = { sello_ocaso: 1 };
+  const sp1 = selloStatPasivo(); pl.recomputeStats(); const d1 = pl.stats.tear_damage;
+  assert('C5: el sello Ocaso equipado sube el daño de lágrima', d1 > base);
+  // rango 2 → escala más
+  GameState.selloRango = { sello_ocaso: 2 };
+  const sp2 = selloStatPasivo(); pl.recomputeStats();
+  assert('C5: el rango escala el rasgo de stat pasivo', sp2.tear_damage > sp1.tear_damage && pl.stats.tear_damage > d1);
+  // Trueno: SP por perfecto escalado por rango (3 × 2 = 6)
+  GameState.sellosObtenidos = ['sello_trueno']; GameState.selloEquipado = 'sello_trueno'; GameState.selloRango = { sello_trueno: 2 };
+  assert('C5: Trueno da SP por perfecto escalado por rango', selloSpPorPerfecto() === 6 && selloRango('sello_trueno') === 2);
+  // Peña: armadura por sala
+  GameState.sellosObtenidos = ['sello_pena']; GameState.selloEquipado = 'sello_pena'; GameState.selloRango = { sello_pena: 1 };
+  assert('C5: Peña da armadura por sala', selloArmaduraSala() >= 1);
+  GameState.selloEquipado = pEq; GameState.selloRango = pR; GameState.sellosObtenidos = pObt;
+})();
 
 // Mejora — Esquiva en Cadencia: el dash NO rompe el combo, congela el anillo
 const cadD = new Cadencia(); cadD.getSolids = () => [];

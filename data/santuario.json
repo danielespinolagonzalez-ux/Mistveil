@@ -7,6 +7,6 @@
     { "id": "llave_del_sotano", "nombre": "Llave del sótano", "desc": "Alcoba maldita en cada piso", "tipo": "variedad" },
     { "id": "bolsillo_cosido", "nombre": "Bolsillo cosido", "desc": "Empiezas cada run con 5 de oro", "tipo": "comodidad" },
     { "id": "diario_de_vesper", "nombre": "Diario de Vesper", "desc": "El minimapa revela toda la Torre", "tipo": "comodidad" },
-    { "id": "cuarto_de_la_penumbra", "nombre": "Cuarto de la penumbra", "desc": "Modo Cuerda Tensa: +25% vida enemiga, +50% Memoria", "tipo": "reto" }
+    { "id": "cuarto_de_la_penumbra", "nombre": "Cuarto de la penumbra", "desc": "Abre los Pactos: sube la dificultad por más Memoria", "tipo": "reto" }
   ]
 }

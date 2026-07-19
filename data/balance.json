@@ -115,6 +115,12 @@
     "bonus_oro": 18,
     "bonus_corazon_pct": 45
   },
+  "sellos": {
+    "compra_coste": 40,
+    "rango_coste_base": 30,
+    "rango_por_nivel": 25,
+    "rango_max": 3
+  },
   "elite": {
     "prob_base": 0.06,
     "prob_por_piso": 0.014,

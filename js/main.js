@@ -21,7 +21,7 @@ import { FX } from './fx.js';
 import { PLAZA, NPCS, visita, resetVisita, drawNPC, drawCoro, drawPuebloBackdrop, drawPlazaGround } from './pueblo.js';
 import { syncFamiliares, updateFamiliares, drawFamiliar } from './familiares.js';
 import { spawnArt, updateArt, drawArt, romano } from './artes_fx.js';
-import { selloDef, selloEquipado, obtenerSello, rasgoCuraPorSp, rasgoDashBurn, finisherElemental } from './sellos.js';
+import { selloDef, selloEquipado, obtenerSello, rasgoCuraPorSp, rasgoDashBurn, finisherElemental, selloSpPorPerfecto, selloRango } from './sellos.js';
 import { crearDirectorJefe } from './jefes.js';
 import { Sprites } from './sprites.js';
 import * as UIK from './ui_kit.js';
@@ -176,6 +176,7 @@ let pendingUpgrades = null; // 3 mejoras ofrecidas al descender
 let upgradeIdx = 0;         // foco de la carta de mejora (toque/mando/teclado)
 let santIdx = 0;           // foco del Santuario (rejilla de nodos + Descender)
 let pactoIdx = 0;          // foco del selector de PACTOS (Heat, C4)
+let selloIdx = 0;          // foco de la Forja de Sellos (C5)
 let dlg = null;             // diálogo activo del pueblo {npc, lines, i}
 let puebloAviso = null;     // {titulo, sub, t} recompensa recién ganada
 let now0 = performance.now();
@@ -1472,6 +1473,9 @@ EventBus.on('cadencia_hit', ({ quality }) => {
       AudioManager.sfx('heart');
       pushPopup(world.player.x, world.player.y - 24, '+♥', '#4FC3F7', 10);
     }
+    // Sello del Trueno (C5): cada golpe perfecto carga Espíritu extra
+    const spRayo = selloSpPorPerfecto();
+    if (spRayo) RunState.sp = Math.min(DataDB.balance.ignicion.sp_max, RunState.sp + spRayo);
   }
   const fs = RunState.floorStats; if (!fs) return;
   if (quality === 'perfect') {
@@ -1642,6 +1646,11 @@ function update(dt) {
   if (mode === 'pactos') {
     FX.update(dt);
     updatePactos();
+    return;
+  }
+  if (mode === 'sellos') {
+    FX.update(dt);
+    updateSellos();
     return;
   }
   if (mode === 'batalla') {
@@ -4268,8 +4277,11 @@ function santuarioCardRect(i) {
   const cw = 142, chh = 92, col = i % 4, row = Math.floor(i / 4);
   return { x: VW / 2 - (cw * 2 + 18) + col * (cw + 12), y: 96 + row * (chh + 12), w: cw, h: chh };
 }
+function santuarioForjaRect() {
+  return { x: VW / 2 - 206, y: VH - 64, w: 190, h: 44 };
+}
 function santuarioDescendRect() {
-  return { x: VW / 2 - 100, y: VH - 64, w: 200, h: 44 };
+  return { x: VW / 2 + 16, y: VH - 64, w: 190, h: 44 };
 }
 function screenTap() {
   // Tap táctil (coords de canvas) o clic de ratón (mousePos es mundo → a pantalla)
@@ -4295,19 +4307,20 @@ function activarNodoSantuario(n) {
   } else AudioManager.sfx('no_sp');
 }
 function updateSantuario() {
-  const nodos = DataDB.santuario.nodos, n = nodos.length; // índice n = botón Descender
-  santIdx = UIK.moverGrid(Input, Math.min(santIdx, n), 4, n + 1); // rejilla 4-col + Descender
+  const nodos = DataDB.santuario.nodos, n = nodos.length; // índice n = Forja de Sellos, n+1 = Descender
+  santIdx = UIK.moverGrid(Input, Math.min(santIdx, n + 1), 4, n + 2); // rejilla 4-col + Forja + Descender
   if (UIK.cancelo(Input) || Input.justPressed('pause')) { mode = 'pueblo'; return; }
   const tap = screenTap();
-  const inRect = (t, r) => t && t.x > r.x && t.x < r.x + r.w && t.y > r.y && t.y < r.y + r.h;
   const keys = ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6', 'Digit7', 'Digit8'];
   let act = -1;
   for (let i = 0; i < n; i++) { if (Input.justCode(keys[i])) act = i; if (UIK.hit(santuarioCardRect(i), tap)) { santIdx = i; act = i; } }
-  if (UIK.hit(santuarioDescendRect(), tap)) { santIdx = n; act = n; }
-  if (Input.justPressed('restart')) act = n;               // R = descender directo
+  if (UIK.hit(santuarioForjaRect(), tap)) { santIdx = n; act = n; }
+  if (UIK.hit(santuarioDescendRect(), tap)) { santIdx = n + 1; act = n + 1; }
+  if (Input.justPressed('restart')) act = n + 1;           // R = descender directo
   if (act < 0 && UIK.confirmo(Input)) act = santIdx;        // A del mando / Enter sobre el foco
-  if (act === n) { SaveManager.clearRun(); newRun(); return; } // descenso nuevo desde el Santuario
-  if (act >= 0) activarNodoSantuario(nodos[act]);
+  if (act === n) { selloIdx = 0; mode = 'sellos'; return; } // Forja de Sellos (C5)
+  if (act === n + 1) { SaveManager.clearRun(); newRun(); return; } // descenso nuevo desde el Santuario
+  if (act >= 0 && act < n) activarNodoSantuario(nodos[act]);
 }
 function drawSantuario(t) {
   ctx.fillStyle = 'rgba(8,5,16,0.92)';
@@ -4371,11 +4384,13 @@ function drawSantuario(t) {
     }
   });
 
+  const N = nodos.length;
+  const fr = santuarioForjaRect();
+  UIK.boton(ctx, font, { ...fr, label: 'FORJA DE SELLOS', sub: 'gasta Memoria', tono: 'ghost', foco: santIdx === N, t });
   const dr = santuarioDescendRect();
-  const focD = santIdx === nodos.length;
-  UIK.boton(ctx, font, { ...dr, label: 'DESCENDER', sub: 'a la Torre', tono: 'primary', foco: focD, t });
+  UIK.boton(ctx, font, { ...dr, label: 'DESCENDER', sub: 'a la Torre', tono: 'primary', foco: santIdx === N + 1, t });
   ctx.textAlign = 'center';
-  UIK.glyphBar(ctx, font, Input, [{ k: 'nav', txt: 'mover' }, { k: 'confirm', txt: 'grabar / descender' }, { k: 'cancel', txt: 'pueblo' }], VW, VH);
+  UIK.glyphBar(ctx, font, Input, [{ k: 'nav', txt: 'mover' }, { k: 'confirm', txt: 'grabar / forja / descender' }, { k: 'cancel', txt: 'pueblo' }], VW, VH);
 }
 
 // ---- Selector de PACTOS (Heat, C4): condiciones de dificultad OPT-IN, apilables y con
@@ -4475,6 +4490,133 @@ function drawPactos(t) {
   const rb = pactoRect(n), focB = pactoIdx === n;
   UIK.boton(ctx, font, { ...rb, label: 'VOLVER', sub: 'al Santuario', tono: 'primary', foco: focB, t });
   UIK.glyphBar(ctx, font, Input, [{ k: 'nav', txt: 'elegir' }, { k: 'confirm', txt: 'subir nivel' }, { k: 'cancel', txt: 'volver' }], VW, VH);
+}
+
+// ---- FORJA DE SELLOS (C5): comprar sellos elementales con Memoria (sumidero tardío),
+// subir su RANGO (rangos múltiples) y EQUIPAR uno (selector). Reusa el patrón de Pactos. ----
+function selloRowRect(i) {
+  const n = (DataDB.sellos?.length ?? 0) + 1; // +1 = botón Volver
+  const top = 72, bottom = VH - 26;
+  const step = Math.min(46, (bottom - top) / n);
+  const h = Math.min(40, step - 4);
+  const w = Math.min(VW - 40, 520);
+  return { x: Math.round((VW - w) / 2), y: Math.round(top + i * step), w, h };
+}
+function selloRankRect(r) { return { x: r.x + r.w - 40, y: r.y + 8, w: 30, h: r.h - 16 }; }
+function selloCosteRango(id) {
+  const c = DataDB.balance.sellos ?? {};
+  const r = selloRango(id);
+  return (c.rango_coste_base ?? 30) + (r - 1) * (c.rango_por_nivel ?? 20);
+}
+function comprarSello(id) {
+  if (GameState.sellosObtenidos.includes(id)) return;
+  const coste = DataDB.balance.sellos?.compra_coste ?? 40;
+  if (GameState.memoria < coste) { AudioManager.sfx('no_sp'); return; }
+  GameState.memoria -= coste;
+  GameState.sellosObtenidos.push(id);
+  (GameState.selloRango ??= {})[id] = 1;
+  GameState.selloEquipado = id; // recién forjado, queda equipado
+  SaveManager.save(); AudioManager.sfx('equip');
+  flash('Sello forjado: ' + (selloDef(id)?.nombre ?? ''), 'equipado');
+}
+function subirRangoSello(id) {
+  if (!GameState.sellosObtenidos.includes(id)) return;
+  const max = DataDB.balance.sellos?.rango_max ?? 3;
+  if (selloRango(id) >= max) { AudioManager.sfx('no_sp'); return; }
+  const coste = selloCosteRango(id);
+  if (GameState.memoria < coste) { AudioManager.sfx('no_sp'); return; }
+  GameState.memoria -= coste;
+  (GameState.selloRango ??= {})[id] = selloRango(id) + 1;
+  SaveManager.save(); AudioManager.sfx('equip');
+}
+function accionSello(id) {
+  if (!GameState.sellosObtenidos.includes(id)) comprarSello(id);
+  else if (GameState.selloEquipado !== id) { GameState.selloEquipado = id; SaveManager.save(); AudioManager.sfx('door_open'); }
+  else subirRangoSello(id); // ya equipado → confirmar sube el rango
+}
+function salirSellos() { SaveManager.save(); mode = 'santuario'; }
+function updateSellos() {
+  const sellos = DataDB.sellos ?? [], n = sellos.length;
+  if (UIK.cancelo(Input) || Input.justPressed('pause')) { salirSellos(); return; }
+  if (Input.justPressed('move_up')) selloIdx = (selloIdx - 1 + n + 1) % (n + 1);
+  if (Input.justPressed('move_down')) selloIdx = (selloIdx + 1) % (n + 1);
+  selloIdx = Math.min(selloIdx, n);
+  if (selloIdx < n) {
+    const id = sellos[selloIdx].id, tengo = GameState.sellosObtenidos.includes(id);
+    if (Input.justPressed('move_right') && tengo) subirRangoSello(id);
+    if (Input.justPressed('move_left') && tengo) { GameState.selloEquipado = id; SaveManager.save(); AudioManager.sfx('door_open'); }
+    if (UIK.confirmo(Input)) accionSello(id);
+  } else if (UIK.confirmo(Input)) { salirSellos(); return; }
+  const tap = Input.consumeTap();
+  if (tap) {
+    if (UIK.hit(selloRowRect(n), tap)) { salirSellos(); return; }
+    for (let i = 0; i < n; i++) {
+      const r = selloRowRect(i);
+      if (!UIK.hit(r, tap)) continue;
+      selloIdx = i; const id = sellos[i].id;
+      if (GameState.sellosObtenidos.includes(id) && UIK.hit(selloRankRect(r), tap)) subirRangoSello(id);
+      else accionSello(id);
+      break;
+    }
+  }
+}
+function drawSellos(t) {
+  const sellos = DataDB.sellos ?? [], n = sellos.length;
+  const cfgMax = DataDB.balance.sellos?.rango_max ?? 3;
+  ctx.fillStyle = 'rgba(10,7,18,0.97)'; ctx.fillRect(0, 0, VW, VH);
+  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  font(15); ctx.fillStyle = '#e9e2f5'; ctx.fillText('FORJA DE SELLOS', VW / 2, 30);
+  font(8); ctx.fillStyle = '#b09be0';
+  ctx.fillText('Gasta Memoria: forja sellos, sube su rango y equipa uno', VW / 2, 48);
+  font(10); ctx.fillStyle = '#ffd54f'; ctx.fillText('◆ Memoria: ' + GameState.memoria, VW / 2, 66);
+  for (let i = 0; i < n; i++) {
+    const s = sellos[i], r = selloRowRect(i), foco = i === selloIdx, cy = r.y + r.h / 2;
+    const tengo = GameState.sellosObtenidos.includes(s.id);
+    const equipado = GameState.selloEquipado === s.id;
+    const col = DataDB.elementos?.[s.elemento]?.color ?? '#b09be0';
+    ctx.fillStyle = foco ? '#2b2547' : equipado ? '#2a2440' : tengo ? '#211d38' : '#191527';
+    ctx.fillRect(r.x, r.y, r.w, r.h);
+    ctx.strokeStyle = foco ? '#ffffff' : equipado ? '#ffd54f' : tengo ? col : '#37335c';
+    ctx.lineWidth = foco ? 3 : equipado ? 2.5 : 1.5;
+    ctx.strokeRect(r.x + 1, r.y + 1, r.w - 2, r.h - 2);
+    if (foco) { ctx.save(); ctx.setLineDash([5, 5]); ctx.lineWidth = 2; ctx.strokeStyle = `rgba(255,247,180,${0.5 + 0.4 * Math.sin(t * 8)})`; ctx.strokeRect(r.x - 3, r.y - 3, r.w + 6, r.h + 6); ctx.restore(); }
+    // Gema elemental (silueta de sello teñida por el elemento; apagada si no se posee)
+    ctx.save(); ctx.translate(r.x + 22, cy); ctx.globalAlpha = tengo ? 1 : 0.4;
+    drawItemIcon(ctx, 'sello', col, 0, 0, Math.min(10, r.h * 0.28));
+    ctx.restore();
+    // Una sola línea (9 filas no dan para 2): nombre+rango teñido, y a continuación el rasgo en dim.
+    ctx.textAlign = 'left';
+    const rango = tengo ? '  R' + selloRango(s.id) + '/' + cfgMax : '';
+    font(9); ctx.fillStyle = tengo ? (equipado ? '#ffd54f' : '#e9e2f5') : '#8d82ad';
+    const nombreTxt = s.nombre + rango;
+    ctx.fillText(nombreTxt, r.x + 42, cy + 4);
+    const nw = ctx.measureText(nombreTxt).width;
+    font(8); ctx.fillStyle = '#8f83b3';
+    ctx.fillText(clipText('·  ' + (s.rasgo ?? ''), Math.max(20, r.w - 210 - nw)), r.x + 42 + nw + 10, cy + 4);
+    // Bloque derecho: estado/acción
+    ctx.textAlign = 'right';
+    if (!tengo) {
+      const coste = DataDB.balance.sellos?.compra_coste ?? 40, puedo = GameState.memoria >= coste;
+      font(9); ctx.fillStyle = puedo ? '#b09be0' : '#55496e';
+      ctx.fillText('forjar ◆' + coste, r.x + r.w - 12, cy + 3);
+    } else {
+      const maxed = selloRango(s.id) >= cfgMax;
+      font(8); ctx.fillStyle = equipado ? '#ffd54f' : '#7ec98f';
+      ctx.fillText(equipado ? '✓ equipado' : 'equipar', r.x + r.w - 52, cy - 4);
+      // Botón de subir rango (▲) con su coste
+      const rr = selloRankRect(r);
+      ctx.textAlign = 'center';
+      font(12); ctx.fillStyle = maxed ? '#55496e' : (GameState.memoria >= selloCosteRango(s.id) ? '#e9e2f5' : '#7a5a5a');
+      ctx.fillText('▲', rr.x + rr.w / 2, cy + 4);
+      font(7); ctx.fillStyle = maxed ? '#55496e' : '#9c8fc0';
+      ctx.textAlign = 'right';
+      ctx.fillText(maxed ? 'máx' : '◆' + selloCosteRango(s.id), r.x + r.w - 52, cy + 8);
+    }
+  }
+  ctx.textAlign = 'center';
+  const rb = selloRowRect(n), focB = selloIdx === n;
+  UIK.boton(ctx, font, { ...rb, label: 'VOLVER', sub: 'al Santuario', tono: 'primary', foco: focB, t });
+  UIK.glyphBar(ctx, font, Input, [{ k: 'nav', txt: 'elegir' }, { k: 'confirm', txt: 'forjar / equipar' }, { k: 'cancel', txt: 'volver' }], VW, VH);
 }
 
 // ---- Pantalla de OPCIONES (Fase B, carencias #3/#4): volumen, asistencia de ritmo,
@@ -4633,6 +4775,7 @@ function render() {
   if (mode === 'pueblo') { renderPueblo(t); return; }
   if (mode === 'santuario') { drawSantuario(t); return; }
   if (mode === 'pactos') { drawPactos(t); return; }
+  if (mode === 'sellos') { drawSellos(t); return; }
   if (mode === 'batalla') { batalla.draw(t); return; }
   if (mode === 'menu') { menu.draw(t); return; }
   if (mode === 'balance') { drawBalanceScreen(); return; }

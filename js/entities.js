@@ -3,6 +3,7 @@ import { DataDB } from './data_db.js';
 import { EventBus } from './event_bus.js';
 import { AudioManager, RunState } from './state.js';
 import { esferaBonos } from './esfera.js';
+import { selloStatPasivo, selloArmaduraSala, selloCuraSala } from './sellos.js';
 
 // ---------- Componentes ----------
 export class HealthComponent {
@@ -111,6 +112,9 @@ export class Player {
     const eb = esferaBonos();
     for (const k in eb.statMult) if (s[k] != null) s[k] *= eb.statMult[k];
     for (const k in eb.statAdd) if (s[k] != null) s[k] += eb.statAdd[k] * (k === 'max_hp' ? 2 : 1);
+    // Sello elemental equipado (C5): rasgo de stat pasivo (Vendaval/Ocaso/Incoloro), escalado por rango
+    const sp = selloStatPasivo();
+    if (sp) for (const k in sp) if (s[k] != null) s[k] *= sp[k];
     // Ignición: el alma de Pip arde sin cera — todo se acelera
     if (this.ignicionT > 0) {
       const I = DataDB.balance.ignicion;
@@ -136,8 +140,11 @@ export class Player {
   }
   // Al entrar en sala: recargar cargas por-sala (corazón de lata, campana rasgada)
   onRoomEntered() {
-    this.armor = this.mods.armorPerRoom;
+    this.armor = this.mods.armorPerRoom + selloArmaduraSala(); // C5: Sello de la Peña
     this.autoParryCharges = this.mods.autoParryPerRoom;
+    // C5: Sello del Alba — restaura vida al entrar en cada sala
+    const cura = selloCuraSala();
+    if (cura && this.health) this.health.hp = Math.min(this.health.max, this.health.hp + cura);
   }
 
   // Groove (G7c): sumar racha. Al cruzar el umbral se enciende el buff (recompute).

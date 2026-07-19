@@ -43,48 +43,109 @@
     "id": "sello_vendaval",
     "nombre": "Sello del Vendaval",
     "elemento": "viento",
-    "estado": "planificado",
-    "rasgo": "+25% velocidad, dash sin cooldown",
-    "d_finisher": "Tornado que agrupa enemigos"
+    "estado": "activo",
+    "rasgo": "Más velocidad y dash casi sin cooldown",
+    "d_finisher": "Ráfaga que empuja a los enemigos",
+    "rasgo_fx": {
+      "tipo": "stat_pasivo",
+      "stats": { "move_speed": 1.2, "dash_cooldown_s": 0.55 }
+    },
+    "finisher_fx": {
+      "tipo": "onda_elemental",
+      "elemento": "viento",
+      "dano_mult": 0.55,
+      "empuje": 320,
+      "radio_px": 68
+    }
   },
   {
     "id": "sello_pena",
     "nombre": "Sello de la Peña",
     "elemento": "tierra",
-    "estado": "planificado",
-    "rasgo": "Armadura 1 por sala, inmune a knockback",
-    "d_finisher": "Seismo en cruz"
+    "estado": "activo",
+    "rasgo": "Ganas 1 de armadura al entrar en cada sala",
+    "d_finisher": "Seísmo que sacude la sala",
+    "rasgo_fx": {
+      "tipo": "armadura_sala",
+      "cantidad": 1
+    },
+    "finisher_fx": {
+      "tipo": "onda_elemental",
+      "elemento": "tierra",
+      "dano_mult": 0.9,
+      "radio_px": 74
+    }
   },
   {
     "id": "sello_alba",
     "nombre": "Sello del Alba",
     "elemento": "luz",
-    "estado": "planificado",
-    "rasgo": "Revela secretos cercanos",
-    "d_finisher": "Destello que ciega"
+    "estado": "activo",
+    "rasgo": "Restauras 1 de vida al entrar en cada sala",
+    "d_finisher": "Destello que daña alrededor",
+    "rasgo_fx": {
+      "tipo": "cura_sala",
+      "cantidad": 1
+    },
+    "finisher_fx": {
+      "tipo": "onda_elemental",
+      "elemento": "luz",
+      "dano_mult": 0.7,
+      "radio_px": 66
+    }
   },
   {
     "id": "sello_ocaso",
     "nombre": "Sello del Ocaso",
     "elemento": "oscuridad",
-    "estado": "planificado",
-    "rasgo": "Los enemigos te detectan más tarde",
-    "d_finisher": "Vacío que atrae y daña"
+    "estado": "activo",
+    "rasgo": "+22% de daño de lágrima y de melé",
+    "d_finisher": "Vacío que daña alrededor",
+    "rasgo_fx": {
+      "tipo": "stat_pasivo",
+      "stats": { "tear_damage": 1.22, "melee_damage": 1.22 }
+    },
+    "finisher_fx": {
+      "tipo": "onda_elemental",
+      "elemento": "oscuridad",
+      "dano_mult": 1.0,
+      "radio_px": 60
+    }
   },
   {
     "id": "sello_trueno",
     "nombre": "Sello del Trueno",
     "elemento": "trueno",
-    "estado": "planificado",
-    "rasgo": "Golpes perfectos encadenan rayo",
-    "d_finisher": "Tormenta en la sala"
+    "estado": "activo",
+    "rasgo": "+3 de Espíritu por cada golpe perfecto",
+    "d_finisher": "Descarga que golpea alrededor",
+    "rasgo_fx": {
+      "tipo": "sp_por_perfecto",
+      "sp": 3
+    },
+    "finisher_fx": {
+      "tipo": "onda_elemental",
+      "elemento": "trueno",
+      "dano_mult": 0.8,
+      "radio_px": 68
+    }
   },
   {
     "id": "sello_incoloro",
     "nombre": "Sello Incoloro",
     "elemento": "neutro",
-    "estado": "planificado",
-    "rasgo": "+1 golpe a la D-Addition",
-    "d_finisher": "Réplica espectral del combo"
+    "estado": "activo",
+    "rasgo": "Un poco mejor en todo: cadencia, daño y velocidad",
+    "d_finisher": "Réplica espectral del golpe",
+    "rasgo_fx": {
+      "tipo": "stat_pasivo",
+      "stats": { "tear_rate_per_s": 1.12, "tear_damage": 1.08, "move_speed": 1.06 }
+    },
+    "finisher_fx": {
+      "tipo": "onda_elemental",
+      "elemento": "neutro",
+      "dano_mult": 0.7,
+      "radio_px": 60
+    }
   }
 ]

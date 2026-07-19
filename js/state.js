@@ -10,8 +10,9 @@ export const GameState = {
   esfera: ['eje'],                       // nodos activados de la Esfera del Reloj
   usoHechizos: {}, usoCompases: {},      // "todo sube de nivel": contadores de uso
   pactos: {},                   // Heat (C4): { id_pacto: nivel } — condiciones de dificultad OPT-IN apilables (requiere cuarto_de_la_penumbra); antes era el booleano cuerdaTensa
-  sellosObtenidos: [],          // sellos elementales conseguidos (botín de jefes)
+  sellosObtenidos: [],          // sellos elementales conseguidos (botín de jefes / Forja del Santuario)
   selloEquipado: null,          // sello elemental activo (persiste entre runs)
+  selloRango: {},               // C5: { id_sello: rango } — el rango escala el rasgo/finisher (sube con Memoria)
   flags: {},                    // narrativa/pueblo (hermanos_memoria, ate_idx...)
   stats: { runs: 0, muertes: 0, victorias: 0 },
   opciones: { escala_ventanas: 1.0, vol_musica: 1.0, vol_sfx: 1.0, esquema_control: 'raton', latencia_ms: 0 },
@@ -58,7 +59,8 @@ export const SaveManager = {
         xp: GameState.xp, nivel: GameState.nivel, engranajes: GameState.engranajes,
         ligaRango: GameState.ligaRango ?? 0,
         esfera: GameState.esfera, usoHechizos: GameState.usoHechizos, usoCompases: GameState.usoCompases,
-        sellosObtenidos: GameState.sellosObtenidos, selloEquipado: GameState.selloEquipado
+        sellosObtenidos: GameState.sellosObtenidos, selloEquipado: GameState.selloEquipado,
+        selloRango: GameState.selloRango
       }));
     } catch (e) { console.warn('SaveManager: no se pudo guardar', e); }
   },
@@ -83,6 +85,7 @@ export const SaveManager = {
       GameState.usoCompases = d.usoCompases ?? {};
       GameState.sellosObtenidos = d.sellosObtenidos ?? [];
       GameState.selloEquipado = d.selloEquipado ?? null;
+      GameState.selloRango = (d.selloRango && typeof d.selloRango === 'object') ? d.selloRango : {}; // C5 (campo aditivo tolerante)
       Object.assign(GameState.stats, d.stats ?? {});
       Object.assign(GameState.opciones, d.opciones ?? {});
       return true;
