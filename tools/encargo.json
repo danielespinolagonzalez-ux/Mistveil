@@ -613,6 +613,14 @@
       "estado": "hecho"
     },
     {
+      "id": "fondo_ciudad",
+      "tipo": "textura",
+      "formato": "jpeg",
+      "maxDim": 1024,
+      "sujeto": "F4/CIUDAD-1: fondo panorámico de Cuerdaqueda — ciudad-reloj en terrazas a hora dorada bajo el Reloj colosal DETENIDO, sin gente, borde inferior en sombra (2:1). Se dibuja anclado al mundo detrás de las estaciones/vecinos.",
+      "estado": "hecho"
+    },
+    {
       "id": "hoja_iconos_reliquias",
       "tipo": "hoja",
       "rejilla": "4x5",

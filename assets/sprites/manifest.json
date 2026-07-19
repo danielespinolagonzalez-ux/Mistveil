@@ -534,5 +534,11 @@
   "w": 29,
   "h": 48,
   "face": "right"
+ },
+ "fondo_ciudad": {
+  "w": 1024,
+  "h": 512,
+  "tipo": "textura",
+  "ext": "jpg"
  }
 }

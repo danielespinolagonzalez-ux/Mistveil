@@ -4366,9 +4366,19 @@ function renderPueblo(t) {
   // plaza plana de otra escala → se retira hasta el LOTE CIUDAD de Recraft (F4), que la
   // regenera como capas de parallax que casan con las terrazas (ver docs/ciudad.md §10).
   const P = plaza();
-  drawCieloLejano(ctx, cam.x, SY, t); // F2: silueta lejana del Reloj colosal (parallax)
-  drawPuebloBackdrop(ctx, SX, SY, t, VW, VH);
-  drawPlazaGround(ctx, SX, SY, KY);
+  const fondoC = Sprites.get('fondo_ciudad');
+  if (fondoC) {
+    // F4 (CIUDAD-1): lámina pintada de Cuerdaqueda anclada al MUNDO (scroll pegado a las
+    // estaciones/vecinos, como el fix de F0). El cuadro trae cielo + Reloj colosal + tejados
+    // + su propio suelo en sombra; las estaciones/vecinos/Pip se dibujan encima.
+    const bgX0 = P.x - 150, bgW = P.w + 300;
+    const bgH = Math.round(bgW * fondoC.height / fondoC.width);
+    ctx.drawImage(fondoC, SX(bgX0), (VH / ZOOM + 2) - bgH, bgW, bgH);
+  } else {
+    drawCieloLejano(ctx, cam.x, SY, t); // fallback por código (F2): silueta lejana del Reloj
+    drawPuebloBackdrop(ctx, SX, SY, t, VW, VH);
+    drawPlazaGround(ctx, SX, SY, KY);
+  }
   // Distritos (ruina + vivos) + props + vecinos + Pip con y-sorting. El distrito VIVO más
   // cercano se aviva. Todo comparte el mismo orden por Y → Pip pasa por detrás de la fuente.
   const ds = distritos();
