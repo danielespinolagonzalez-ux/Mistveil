@@ -4,7 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>MISTVEIL · móvil</title>
+<!-- PWA: instalable en el iPhone y jugable offline tras la primera carga -->
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<meta name="theme-color" content="#141120">
 <style>
   @font-face { font-family: 'Gelica'; font-style: normal; font-weight: 400;
     src: url('assets/fonts/Gelica-Regular.otf') format('opentype'); font-display: swap; }
@@ -30,5 +35,11 @@
 <div id="rotate">⟳<br>Gira el móvil<br><span style="color:#6c6193;font-size:14px">MISTVEIL se juega en horizontal</span></div>
 <script>window.MISTVEIL_MOBILE = true;</script>
 <script type="module" src="js/main.js"></script>
+<script>
+  // Registro del service worker (PWA offline en el iPhone). Guardado a http(s).
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  }
+</script>
 </body>
 </html>

@@ -19,7 +19,7 @@ Auditoría por 9 analistas comparando Mistveil con el género (Hades, Dead Cells
 - [x] B3 **Calibración de latencia** (slider ±120 ms en Opciones que desplaza la ventana en el punto de uso: `computeQuality(this.t - lat, …)`, sin tocar la función pura).
 - [ ] B4 Export/import de guardado por código copiar/pegar contra el desalojo ITP de iOS (carencia #9, bajo; enlaza R5.3).
 - [ ] B5 Acumulador de **paso fijo** para la lógica de Cadencia + timestamp de input (carencia #11).
-- [ ] B6 **PWA** (manifest + service worker de precache + icono de Pip) y fuente VT323 local; safe-area/notch en el layout de botones (carencia #16; enlaza R5.1/R5.2).
+- [x] B6 **PWA** (manifest.json + service worker cache-first + iconos de Pip 192/512/maskable/apple-touch) → instalable y jugable OFFLINE tras la primera carga (probado con red cortada). Fuente ya local (Gelica, ver R5.1). **Safe-area/notch**: los botones táctiles pegados a los bordes se apartan de la muesca y del indicador de inicio del iPhone (sonda DOM de `env(safe-area-inset-*)` → coords virtuales, descontando el letterbox); sin muesca no se mueven (regresión de escritorio verde).
 
 **Criterio B:** un desconocido termina una run a ratos en su iPhone sin perder progreso y con el ritmo justo.
 
@@ -164,7 +164,7 @@ Auditoría con capturas de TODAS las pantallas; causa raíz: `font(size)` pinta 
 
 ## Fase R5 — Lanzamiento
 - [x] R5.1 Fuente del juego servida en local: se migró a **Gelica** (`assets/fonts/Gelica-Regular.otf`, `@font-face`) — el juego NO depende de red para la fuente. (Pendiente NO técnico: verificar licencia comercial de Gelica para redistribución; ver B6.)
-- [ ] R5.2 PWA mínima: manifest + íconos + service worker de caché (jugable offline tras primera carga).
+- [x] R5.2 PWA mínima: manifest + iconos + service worker de caché (jugable offline tras primera carga) — hecho en B6, verificado con red cortada.
 - [ ] R5.3 Export/import del guardado (el localStorage se pierde al limpiar el navegador).
 - [ ] R5.4 QA móvil real: iOS Safari + Android Chrome, modo Una Mano, rendimiento (partículas/luz), háptica.
 - [ ] R5.5 Página de itch.io: subida HTML, capturas, texto, **divulgación de IA generativa** marcada.

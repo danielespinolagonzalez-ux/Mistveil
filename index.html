@@ -2,7 +2,14 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>MISTVEIL: El Reloj de las Almas</title>
+<!-- PWA: instalable y jugable offline tras la primera carga (ver sw.js/manifest.json) -->
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<meta name="theme-color" content="#141120">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <style>
   /* Tipografía del juego: Gelica (serif perfilada) — local, sin dependencia de red */
   @font-face { font-family: 'Gelica'; font-style: normal; font-weight: 400;
@@ -20,5 +27,12 @@
 <body>
 <canvas id="game" width="640" height="360"></canvas>
 <script type="module" src="js/main.js"></script>
+<script>
+  // Registro del service worker (PWA offline). Guardado: solo por http(s), nunca en
+  // file:// ni dentro del bundle single-file (donde no hay scope útil).
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  }
+</script>
 </body>
 </html>

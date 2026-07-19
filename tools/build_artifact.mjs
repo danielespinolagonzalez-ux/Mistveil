@@ -19,7 +19,10 @@ const jsDir = join(ROOT, 'js');
 const files = readdirSync(jsDir).filter(f => f.endsWith('.js'));
 const mods = new Map(); // nombre (sin .js) → { deps: [{mod, names}], code, exports }
 
-const RE_IMPORT = /^import\s*\{([^}]*)\}\s*from\s*'\.\/(\w+)\.js';?\s*$/;
+// Import con nombres: `import { A, B } from './mod.js';` (se tolera comentario al final).
+const RE_IMPORT = /^import\s*\{([^}]*)\}\s*from\s*'\.\/(\w+)\.js';?\s*(?:\/\/.*)?$/;
+// Import de espacio de nombres: `import * as X from './mod.js';` (menús usan `import * as UIK`).
+const RE_IMPORT_NS = /^import\s*\*\s*as\s+([A-Za-z_$][\w$]*)\s*from\s*'\.\/(\w+)\.js';?\s*(?:\/\/.*)?$/;
 const RE_EXPORT = /^export\s+(const|let|function|class)\s+([A-Za-z_$][\w$]*)/;
 
 for (const f of files) {
@@ -27,6 +30,8 @@ for (const f of files) {
   const deps = [], exports = [];
   const out = [];
   for (const line of readFileSync(join(jsDir, f), 'utf8').split('\n')) {
+    const ns = line.match(RE_IMPORT_NS);
+    if (ns) { deps.push({ mod: ns[2], ns: ns[1].trim() }); continue; }
     const im = line.match(RE_IMPORT);
     if (im) { deps.push({ mod: im[2], names: im[1].trim() }); continue; }
     const ex = line.match(RE_EXPORT);
@@ -53,14 +58,14 @@ let bundleJs = '';
 for (const name of order) {
   const m = mods.get(name);
   bundleJs += `\n// ═══════ js/${name}.js ═══════\n{\n`;
-  for (const d of m.deps) bundleJs += `const {${d.names}} = __m['${d.mod}'];\n`;
+  for (const d of m.deps) bundleJs += d.ns ? `const ${d.ns} = __m['${d.mod}'];\n` : `const {${d.names}} = __m['${d.mod}'];\n`;
   bundleJs += m.code;
   bundleJs += `\n__m['${name}'] = { ${m.exports.join(', ')} };\n}\n`;
 }
 { // main.js al final, sin entrada en el registro
   const m = mods.get('main');
   bundleJs += `\n// ═══════ js/main.js (entrada) ═══════\n{\n`;
-  for (const d of m.deps) bundleJs += `const {${d.names}} = __m['${d.mod}'];\n`;
+  for (const d of m.deps) bundleJs += d.ns ? `const ${d.ns} = __m['${d.mod}'];\n` : `const {${d.names}} = __m['${d.mod}'];\n`;
   bundleJs += m.code + '\n}\n';
 }
 
@@ -69,7 +74,7 @@ const DATA_PATHS = [
   'data/balance.json', 'data/biomas.json', 'data/elementos.json', 'data/enemigos.json',
   'data/items.json', 'data/hechizos.json', 'data/compases.json', 'data/santuario.json',
   'data/progresion.json', 'data/esfera.json', 'data/sellos.json', 'data/textos_es.json',
-  'data/salas/piso1_plantillas.json', 'data/jefes.json',
+  'data/salas/piso1_plantillas.json', 'data/jefes.json', 'data/musica.json',
 ];
 const dataObj = {};
 for (const p of DATA_PATHS) dataObj[p] = JSON.parse(readFileSync(join(ROOT, p), 'utf8'));

@@ -1,6 +1,7 @@
 // GameState (meta persistente) + RunState (estado de la run) + SaveManager + AudioManager
 // Stubs funcionales: crecen en fases 6-10.
-import { DataDB } from './data_db.js';   // solo para el BPM por pista del reloj de beat (lectura)
+// DataDB (solo lectura) para el BPM por pista del reloj de beat y config de música reactiva.
+import { DataDB } from './data_db.js';
 
 export const GameState = {
   memoria: 0,

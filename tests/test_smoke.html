@@ -84,6 +84,16 @@ assert('balance.musica_reactiva presente y activable', DataDB.balance.musica_rea
   assert('grooveBell tolerante sin ctx / intensidad 0', ok);
 })();
 
+// B6 — PWA: manifest válido con iconos y rutas RELATIVAS (sirve en subruta de Pages)
+{
+  const mr = await fetch('../manifest.json').then(r => r.ok ? r.json() : null).catch(() => null);
+  assert('manifest.json existe y parsea', !!mr);
+  assert('manifest: name + start_url relativo + display standalone', !!mr && !!mr.name && !!mr.start_url && !mr.start_url.startsWith('/') && mr.display === 'standalone');
+  assert('manifest: iconos 192/512 + maskable', !!mr && Array.isArray(mr.icons) && mr.icons.some(i => i.sizes === '192x192') && mr.icons.some(i => i.sizes === '512x512') && mr.icons.some(i => /maskable/.test(i.purpose || '')));
+  const icoOk = await fetch('../assets/icons/icon-192.png').then(r => r.ok).catch(() => false);
+  assert('icono PWA 192 existe', icoOk === true);
+}
+
 // B1 — Guardar/reanudar run: roundtrip de SaveManager y determinismo de la torre
 (() => {
   SaveManager.clearRun();

@@ -40,12 +40,48 @@ const ctx = canvas.getContext('2d');
 ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
 ctx.setTransform(SS, 0, 0, SS, 0, 0);
 
+// --- Safe-area / notch (B6): los botones táctiles que pegan a los bordes se apartan de
+// la muesca y del indicador de inicio del iPhone. Se leen los env(safe-area-inset-*) con
+// una sonda DOM y se convierten a coords virtuales (descontando el letterbox del canvas
+// centrado). Sin muesca (escritorio/Android) los insets son 0 → los botones NO se mueven. ---
+let touchBtns = null;     // se cablea a TOUCH_BTNS_PLAY tras definirlos (más abajo)
+let _safeProbe = null;
+function safeInsets() {
+  try {
+    if (!_safeProbe) {
+      _safeProbe = document.createElement('div');
+      _safeProbe.style.cssText = 'position:fixed;top:0;left:0;width:0;height:0;visibility:hidden;pointer-events:none;'
+        + 'padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);';
+      document.body.appendChild(_safeProbe);
+    }
+    const cs = getComputedStyle(_safeProbe);
+    return { t: parseFloat(cs.paddingTop) || 0, r: parseFloat(cs.paddingRight) || 0, b: parseFloat(cs.paddingBottom) || 0, l: parseFloat(cs.paddingLeft) || 0 };
+  } catch { return { t: 0, r: 0, b: 0, l: 0 }; }
+}
+function applySafeArea(snap) {
+  if (!touchBtns) return;
+  const ins = safeInsets();
+  const s = snap || 1;
+  // El canvas va centrado (Math.min = contain): parte del inset cae sobre la barra de
+  // letterbox y no muerde el lienzo. Se descuenta esa banda antes de convertir a virtual.
+  const barX = Math.max(0, (window.innerWidth - VW * s) / 2);
+  const barY = Math.max(0, (window.innerHeight - VH * s) / 2);
+  const rV = Math.max(0, ins.r - barX) / s, lV = Math.max(0, ins.l - barX) / s;
+  const bV = Math.max(0, ins.b - barY) / s, tV = Math.max(0, ins.t - barY) / s;
+  for (const btn of touchBtns) {
+    let x = btn.bx, y = btn.by;
+    if (btn.bx > VW - 48) x = btn.bx - rV; else if (btn.bx < 48) x = btn.bx + lV; // pegado a dcha/izq
+    if (btn.by > VH - 72) y = btn.by - bV; else if (btn.by < 72) y = btn.by + tV; // pegado a abajo/arriba
+    btn.x = x; btn.y = y;
+  }
+}
 function resize() {
   const s = Math.min(window.innerWidth / VW, window.innerHeight / VH);
   // Móvil: escala fraccionaria para llenar la pantalla; escritorio: escala entera pixel-perfect
   const snap = MOBILE ? s : (s >= 1 ? Math.floor(s) : s);
   canvas.style.width = (VW * snap) + 'px';
   canvas.style.height = (VH * snap) + 'px';
+  applySafeArea(snap); // reubica los botones táctiles según la muesca (no-op sin insets)
 }
 window.addEventListener('resize', resize);
 resize();
@@ -111,6 +147,11 @@ const TOUCH_BTNS_PLAY = [
 const TOUCH_BTNS_PUEBLO = [TOUCH_BTNS_PLAY[5]];
 const TOUCH_BTNS_1MANO = [TOUCH_BTNS_PLAY[4], TOUCH_BTNS_PLAY[5]]; // solo pausa y ≡
 const TOUCH_BTNS_NONE = [];
+// Safe-area: guarda la posición BASE de diseño de cada botón y aplica el offset de muesca
+// ahora que ya existen (PUEBLO/1MANO comparten estos MISMOS objetos por índice → basta esto).
+for (const b of TOUCH_BTNS_PLAY) { b.bx = b.x; b.by = b.y; }
+touchBtns = TOUCH_BTNS_PLAY;
+resize();
 let floorMap = null;
 let cur = null;      // sala bajo los pies del jugador
 let mode = 'play';
