@@ -49,6 +49,24 @@ export function isDoorFront(tx, ty) {
 // sale en ESE bioma. Así cada bioma suma sus plantillas propias (obstáculos que casan con
 // su mecánica de zona) a las genéricas, y una run de 12 pisos no se repite tan pronto.
 const BIOMAS_ID = ['pendulos', 'archivo', 'invertida', 'truenos'];
+
+// D3: el campo `pisos` de cada enemigo se interpreta como RANGO de debut [min..max]
+// (los valores son ruidosos: [1,9] = "pisos 1 a 9", no "solo 1 y 9"). Escalona los
+// debuts: un enemigo con min alto no aparece antes de su piso.
+function enPiso(def, piso) {
+  const ps = def?.pisos;
+  if (!Array.isArray(ps) || !ps.length) return true;
+  return piso >= Math.min(...ps) && piso <= Math.max(...ps);
+}
+// Pool de enemigos del bioma, filtrado por el rango de piso (D3). Si el filtro dejara el
+// pool vacío (dato incompleto), cae al pool sin filtrar para no quedarse sin enemigos.
+export function poolBioma(biomaId, piso) {
+  const base = (DataDB.enemigos.pools_spawn['bioma_' + (biomaId ?? '')] ?? DataDB.enemigos.pools_spawn['piso1'])
+    .map(id => DataDB.enemigo(id)).filter(Boolean);
+  const filtered = base.filter(d => enPiso(d, piso));
+  return filtered.length ? filtered : base;
+}
+
 function pickTemplate(biomaId) {
   const all = DataDB.salas_piso1.plantillas;
   const esGenerica = p => !(p.pisos ?? []).some(x => BIOMAS_ID.includes(x));
@@ -335,8 +353,11 @@ export class Room {
       const c = { x: this.bounds.x + this.bounds.w / 2, y: this.bounds.y + this.bounds.h * 0.4 };
       const hpMult = 1 + (this.piso - 1) * DataDB.balance.run.escalado_hp_por_piso;
       const danoMult = 1 + (this.piso - 1) * (DataDB.balance.run.escalado_dano_por_piso ?? 0);
+      // D4: el jefe de RAID se reserva al ÚLTIMO piso de cada mundo (3/6/9/12); los pisos
+      // intermedios traen un MINIJEFE (campeón) para que la Torre no repita el mismo jefe 3×.
+      const esFinDeMundo = this.piso % 3 === 0;
       const raid = DataDB.jefes?.jefes?.[this.bioma?.id];
-      if (raid) {
+      if (esFinDeMundo && raid) {
         // Jefe de RAID (motor js/jefes.js): anclado, lanza mecánicas telegrafiadas
         this.pendingSpawns = [{
           id: raid.base ?? 'campanero', x: c.x, y: c.y,
@@ -347,11 +368,13 @@ export class Room {
             sprite: 'jefe_' + this.bioma.id, coste_dificultad: 0, danoMult, ancla: { x: c.x, y: c.y }
           }
         }];
-      } else {
+      } else if (esFinDeMundo) {
         // Legacy: jefe del bioma reutilizando un enemigo base (biomas.jefes_bioma)
         const jb = DataDB.biomas?.jefes_bioma?.[this.bioma?.id] ?? { base: 'campanero', nombre: 'Campanero Mayor', hp: 90, velocidad: 95, counter_chance: 0.5, r: 18 };
         const { base, ...ov } = jb;
         this.pendingSpawns = [{ id: base, x: c.x, y: c.y, overrides: { ...ov, hp: Math.round(jb.hp * hpMult), coste_dificultad: 0, jefe: true, danoMult } }];
+      } else {
+        this.pendingSpawns = this._spawnMinijefe(c, hpMult, danoMult); // D4: campeón + escoltas
       }
       this._seal(world);
     } else if (!this.cleared && this.spawnPts.length) {
@@ -372,9 +395,7 @@ export class Room {
 
   _rollSpawns() {
     const R = DataDB.balance.run;
-    const pool = (DataDB.enemigos.pools_spawn['bioma_' + (this.bioma?.id ?? '')] ?? DataDB.enemigos.pools_spawn['piso1'])
-      .map(id => DataDB.enemigo(id))
-      .filter(Boolean);
+    const pool = poolBioma(this.bioma?.id, this.piso); // D3: escalonado por rango de piso
     // Maldita: presupuesto doble. Desafío: reforzado (mult data-driven). Escalado por piso.
     const budMult = this.type === 'maldita' ? 2 : this.type === 'desafio' ? (DataDB.balance.desafio?.presupuesto_mult ?? 1.8) : 1;
     // Heat (C4): pactos apilables suben la dificultad por lever (densidad/hp/daño/velocidad/élite).
@@ -417,6 +438,36 @@ export class Room {
       const noElite = out.filter(o => !o.pairKey && !o.overrides.elite);
       const EL = DataDB.balance.elite;
       if (noElite.length && EL) noElite[Math.floor(Math.random() * noElite.length)].overrides.elite = (EL.rasgos ?? ['acorazado'])[Math.floor(Math.random() * (EL.rasgos?.length ?? 1))];
+    }
+    return out;
+  }
+
+  // D4: minijefe de piso intermedio = un CAMPEÓN (enemigo del bioma promocionado a élite
+  // reforzado, más grande y con nombre) + escoltas. No usa el motor de raid (no jefe_ancla,
+  // no director de mecánicas): es un clímax de piso más contenido que el jefe de mundo.
+  _spawnMinijefe(c, hpMult, danoMult) {
+    const MJ = DataDB.balance.minijefe ?? {};
+    const EL = DataDB.balance.elite ?? {};
+    const pool = poolBioma(this.bioma?.id, this.piso).filter(d => !d.gemelo && d.comportamiento !== 'reviver');
+    if (!pool.length) return [{ id: 'campanero', x: c.x, y: c.y, overrides: { nombre: 'Campeón', hp: Math.round(90 * hpMult), r: 20, jefe: false, minijefe: true, danoMult, coste_dificultad: 0 } }];
+    const champ = pick(pool);
+    const rasgo = (EL.rasgos ?? ['acorazado', 'veloz', 'iracundo'])[Math.floor(Math.random() * (EL.rasgos?.length ?? 3))];
+    const out = [{
+      id: champ.id, x: c.x, y: c.y,
+      overrides: {
+        nombre: 'Campeón · ' + (champ.nombre ?? champ.id),
+        hp: Math.round((champ.hp ?? 12) * hpMult * (MJ.hp_mult ?? 1.8)), // la clase Enemy aplica encima el ×hp_mult de élite
+        r: Math.round((champ.r ?? 10) * (MJ.r_mult ?? 1.35)),
+        elite: rasgo, minijefe: true, danoMult, coste_dificultad: 0
+      }
+    }];
+    // Escoltas: enemigos baratos del bioma que acompañan al campeón
+    const escPool = pool.filter(d => (d.coste_dificultad ?? 1) <= 3);
+    const nEsc = MJ.escolta ?? 2;
+    for (let i = 0; i < nEsc && escPool.length; i++) {
+      const d = pick(escPool);
+      const a = -Math.PI / 2 + (i - (nEsc - 1) / 2) * 0.95;
+      out.push({ id: d.id, x: c.x + Math.cos(a) * 74, y: c.y + Math.sin(a) * 46, overrides: { hp: Math.round((d.hp ?? 12) * hpMult), danoMult } });
     }
     return out;
   }
@@ -876,7 +927,7 @@ export function buildTower(piso = 1, seed = Date.now()) {
   const segs = [...rooms.values()]; // (para el bucle de roamers; conserva el nombre histórico)
   // 4. Vagabundos de las galerías (sueltos desde el principio, sin sello)
   const bio = biomaDe(piso);
-  const pool = (DataDB.enemigos.pools_spawn['bioma_' + (bio?.id ?? '')] ?? DataDB.enemigos.pools_spawn['piso1']).map(id => DataDB.enemigo(id)).filter(Boolean).filter(d => !d.gemelo && d.comportamiento !== 'reviver');
+  const pool = poolBioma(bio?.id, piso).filter(d => !d.gemelo && d.comportamiento !== 'reviver'); // D3: escalonado por piso
   const roamers = [];
   for (const r of segs) {
     if (r.type !== 'galeria') continue;

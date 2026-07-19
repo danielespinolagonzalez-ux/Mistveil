@@ -16,7 +16,7 @@
 import { DataDB } from '../js/data_db.js';
 import { Player, Enemy, TearPool, BulletPool } from '../js/entities.js';
 import { computeQuality, Cadencia } from '../js/cadencia.js';
-import { buildTestFloor, buildTower, Room, isDoorFront, TILE, RW, RH } from '../js/rooms.js';
+import { buildTestFloor, buildTower, Room, isDoorFront, poolBioma, TILE, RW, RH } from '../js/rooms.js';
 import { applyItem, applyItemEffects } from '../js/items.js';
 import { elementMult } from '../js/spells.js';
 import { EventBus } from '../js/event_bus.js';
@@ -189,6 +189,43 @@ assert('D1: todas las plantillas son 13×7 con símbolos legales', (() => {
     if (otras.has(id)) { ok = false; break; }
   }
   assert('D1: una sala de Péndulos no usa plantillas de otros biomas', ok);
+})();
+
+// Fase D — D3: escalonar debuts (pool de enemigos filtrado por rango de piso [min..max])
+(() => {
+  const tiene = (b, p, id) => poolBioma(b, p).some(d => d.id === id);
+  // cascabel_laton debuta en piso 2 → fuera del pool en piso 1, dentro en piso 3
+  assert('D3: enemigo de debut tardío fuera del pool en su piso previo',
+    !tiene('pendulos', 1, 'cascabel_laton') && tiene('pendulos', 3, 'cascabel_laton'));
+  assert('D3: enemigo básico (cera_andante) dentro del pool en piso 1', tiene('pendulos', 1, 'cera_andante'));
+  // Ningún piso 1..12 se queda sin enemigos (biomaDe: 1-3 pend, 4-6 arch, 7-9 inv, 10-12 tru)
+  const BIO = ['pendulos', 'pendulos', 'pendulos', 'archivo', 'archivo', 'archivo', 'invertida', 'invertida', 'invertida', 'truenos', 'truenos', 'truenos'];
+  assert('D3: ningún piso queda con el pool vacío', BIO.every((b, i) => poolBioma(b, i + 1).length > 0));
+})();
+
+// Fase D — D4: jefe de raid reservado a fin de mundo (3/6/9/12); minijefe en intermedios
+assert('D4: balance.minijefe define hp_mult/escolta', DataDB.balance.minijefe && DataDB.balance.minijefe.hp_mult > 1);
+(() => {
+  const rm = new Room(0, 0, 'jefe', 1); // piso 1 = intermedio (no múltiplo de 3)
+  const c = { x: rm.bounds.x + rm.bounds.w / 2, y: rm.bounds.y + rm.bounds.h * 0.4 };
+  const spawns = rm._spawnMinijefe(c, 1, 1);
+  const champ = spawns.find(s => s.overrides?.minijefe);
+  assert('D4: el minijefe es un campeón élite con nombre + escoltas',
+    !!champ && !!champ.overrides.elite && /Campe/.test(champ.overrides.nombre) && spawns.length >= 2);
+  // el campeón aguanta más que un enemigo normal del mismo id
+  const normal = new Enemy(champ.id, 0, 0);
+  const boss = new Enemy(champ.id, 0, 0, champ.overrides);
+  assert('D4: el campeón tiene mucha más vida que el enemigo base', boss.health.max > normal.health.max * 2);
+})();
+(() => {
+  // Integración: la sala de jefe prepara RAID en fin de mundo (piso 3) y MINIJEFE en intermedio (piso 1)
+  const stub = { enemies: [] };
+  const bossAt = piso => { const f = buildTower(piso, 4242); const b = [...f.rooms.values()].find(r => r.type === 'jefe'); b.enter(stub); return b; };
+  const b3 = bossAt(3), b1 = bossAt(1);
+  assert('D4: piso 3 (fin de mundo) prepara el jefe de RAID (jefe_ancla)',
+    b3.pendingSpawns.some(s => s.overrides?.comportamiento === 'jefe_ancla'));
+  assert('D4: piso 1 (intermedio) prepara MINIJEFE, no raid',
+    b1.pendingSpawns.some(s => s.overrides?.minijefe) && !b1.pendingSpawns.some(s => s.overrides?.comportamiento === 'jefe_ancla'));
 })();
 
 // Ampliación de OBJETOS + apariencia (cada reliquia con silueta distinta)

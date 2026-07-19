@@ -121,6 +121,12 @@
     "rango_por_nivel": 25,
     "rango_max": 3
   },
+  "minijefe": {
+    "_doc": "D4: en los pisos que NO son fin de mundo (no 3/6/9/12) la sala de jefe trae un CAMPEÓN (élite reforzado + escoltas) en vez del jefe de raid.",
+    "hp_mult": 1.8,
+    "r_mult": 1.35,
+    "escolta": 2
+  },
   "elite": {
     "prob_base": 0.06,
     "prob_por_piso": 0.014,
