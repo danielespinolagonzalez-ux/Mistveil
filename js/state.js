@@ -240,8 +240,7 @@ export const AudioManager = {
   // van en el bundle); si faltan o el autoplay está bloqueado, se mantiene el dron
   // procedural de arriba. El director de escena (main.js) pide la pista por evento. ----
   _musicUnlocked: false,
-  _trackEls: {},
-  _curTrack: null,
+  _trackEls: {},   // solo para el reproductor de reserva (HTMLAudio) si WebAudio falla
   _curId: null,
   _desiredId: null,
   _desiredOpts: null,
@@ -296,36 +295,140 @@ export const AudioManager = {
     } catch {}
   },
   unlockMusic() { this._musicUnlocked = true; this._desilenciarIOS(); if (this._desiredId) this.playTrack(this._desiredId, this._desiredOpts || {}); },
-  // Pide una pista de fondo. Garantiza UNA sola sonando: para las demás en el acto
-  // (no dependemos del async play().then, que en iOS puede no resolver y dejaba
-  // pistas apiladas → el bug de "las músicas se solapan").
+  // ---- Motor de música por WebAudio: BUCLE SIN COSTURA. Cada pista se decodifica a
+  // un AudioBuffer y, si va en loop, se le hornea un crossfade cola→cabeza en el punto
+  // que mejor casa (por correlación), de modo que el final funda con el principio; se
+  // reproduce con source.loop=true (bucle exacto, sin el hueco que el MP3 mete al
+  // reiniciar). Se recortan los silencios ANTES del crossfade, así el priming del MP3
+  // no rompe la costura. Suena por el canal media en iOS gracias al tag silencioso.
+  // Si WebAudio/decode falla, cae a <audio> loop (con costura, pero suena). ----
+  _musMaster: null, _musSrc: null, _musGain: null, _musFallbackEl: null,
+  _loopCache: {}, _loopOrder: [],
+  _musNode() {
+    this._ensure();
+    if (!this._musMaster) {
+      this._musMaster = this.ctx.createGain();
+      this._musMaster.connect(this.ctx.destination);
+    }
+    this._musMaster.gain.value = 0.85 * GameState.opciones.vol_musica; // refresca volumen
+    return this._musMaster;
+  },
+  _rampParam(param, to, secs) {
+    try {
+      const t = this.ctx.currentTime;
+      param.cancelScheduledValues(t); param.setValueAtTime(param.value, t);
+      param.linearRampToValueAtTime(to, t + Math.max(0.02, secs));
+    } catch {}
+  },
+  _stopMusicNow(fade) {
+    if (this._musSrc && this._musGain) {
+      const src = this._musSrc, g = this._musGain;
+      this._rampParam(g.gain, 0, fade);
+      try { src.stop(this.ctx.currentTime + fade + 0.06); } catch {}
+      this._musSrc = null; this._musGain = null;
+    }
+    if (this._musFallbackEl) { this._rampVol(this._musFallbackEl, 0, fade); this._musFallbackEl = null; }
+  },
+  // Pide una pista de fondo. Garantiza UNA sola sonando y hace crossfade desde la
+  // anterior; baja el dron procedural mientras suena la pista real.
   playTrack(id, opts = {}) {
     const loop = opts.loop !== false, fade = opts.fade ?? 1.4;
     this._desiredId = id; this._desiredOpts = opts;
     if (!this._musicUnlocked) return; // se aplicará en unlockMusic()
-    const same = this._trackEls[id];
-    if (this._curId === id && same && !same.paused) return; // ya suena la correcta
-    // Silencia y PARA cualquier otra pista ya mismo (síncrono).
-    for (const k in this._trackEls) {
-      const e = this._trackEls[k];
-      if (!e || k === id) continue;
-      if (e._rampTimer) { clearInterval(e._rampTimer); e._rampTimer = null; }
-      try { e.pause(); } catch {}
-    }
-    const vol = 0.85 * GameState.opciones.vol_musica;
-    let el = same;
-    if (!el) { el = new Audio(this.musicBase + id + '.mp3'); el.preload = 'auto'; this._trackEls[id] = el; }
-    el.loop = loop; el._playedOnce = true;
-    this._curTrack = el; this._curId = id;
-    if (el.paused) { el.volume = 0; try { el.currentTime = 0; } catch {} } // no reiniciar si ya sonaba
-    el.play().then(() => { this._duckAmbient(0, fade); this._rampVol(el, vol, fade); }).catch(() => {});
+    if (this._curId === id && (this._musSrc || this._musFallbackEl)) return; // ya suena la correcta
+    this._ensure(); // crea/reanuda el AudioContext antes de decodificar
+    this._stopMusicNow(fade);
+    this._curId = id;
+    this._getMusicBuffer(id, loop)
+      .then(buf => {
+        if (this._curId !== id || !buf) return; // la escena cambió mientras decodificaba
+        const c = this.ctx;
+        const src = c.createBufferSource(); src.buffer = buf; src.loop = loop;
+        const g = c.createGain(); g.gain.value = 0;
+        src.connect(g); g.connect(this._musNode());
+        src.start();
+        this._musSrc = src; this._musGain = g;
+        this._duckAmbient(0, fade);         // aparta el dron SOLO cuando suena la pista real
+        this._rampParam(g.gain, 1, fade);   // entra la pista
+      })
+      .catch(() => { if (this._curId === id) this._fallbackHtml(id, loop, fade); });
   },
   crossfadeTo(id, seg = 1.4) { this.playTrack(id, { fade: seg }); },
   stopMusic(fade = 1.0) {
-    this._desiredId = null;
-    if (this._curTrack) this._rampVol(this._curTrack, 0, fade);
-    this._curTrack = null; this._curId = null;
+    this._desiredId = null; this._curId = null;
+    this._stopMusicNow(fade);
     this._duckAmbient(0.9 * GameState.opciones.vol_musica, fade); // vuelve el dron
+  },
+  // Reproductor de reserva si WebAudio/decode no está disponible (bucle con costura).
+  _fallbackHtml(id, loop, fade) {
+    try {
+      let el = this._trackEls[id];
+      if (!el) { el = new Audio(this.musicBase + id + '.mp3'); el.preload = 'auto'; this._trackEls[id] = el; }
+      el.loop = loop; el.volume = 0; try { el.currentTime = 0; } catch {}
+      el.play().then(() => { this._duckAmbient(0, fade); this._rampVol(el, 0.85 * GameState.opciones.vol_musica, fade); }).catch(() => {});
+      this._musFallbackEl = el;
+    } catch {}
+  },
+  // Devuelve (promesa) el AudioBuffer de la pista; si es loop, ya con crossfade sin
+  // costura. Cachea hasta 3 buffers (LRU) para no re-decodificar al revisitar escena.
+  _getMusicBuffer(id, loop) {
+    if (this._loopCache[id]) {
+      this._loopOrder = this._loopOrder.filter(k => k !== id); this._loopOrder.push(id);
+      return Promise.resolve(this._loopCache[id]);
+    }
+    return fetch(this.musicBase + id + '.mp3')
+      .then(r => (r.ok ? r.arrayBuffer() : Promise.reject()))
+      .then(ab => new Promise((ok, no) => this.ctx.decodeAudioData(ab, ok, no)))
+      .then(dec => {
+        const buf = loop ? this._makeSeamlessLoop(dec) : dec;
+        this._loopCache[id] = buf; this._loopOrder.push(id);
+        while (this._loopOrder.length > 3) { const viejo = this._loopOrder.shift(); if (viejo !== id) delete this._loopCache[viejo]; }
+        return buf;
+      });
+  },
+  // Hornea un bucle sin costura: recorta silencios, busca el crossfade que mejor casa
+  // (cabeza≈cola) y funde cola→cabeza a potencia constante. Con source.loop=true sobre
+  // [0,dur], el final enlaza con el principio sin salto.
+  _makeSeamlessLoop(buf) {
+    try {
+      const sr = buf.sampleRate, ch = buf.numberOfChannels, n = buf.length;
+      const chans = [];
+      for (let c = 0; c < ch; c++) chans.push(buf.getChannelData(c));
+      // pico y recorte de silencios de los extremos (umbral: 2% del pico)
+      let peak = 1e-6;
+      for (let c = 0; c < ch; c++) { const d = chans[c]; for (let i = 0; i < n; i += 8) { const a = Math.abs(d[i]); if (a > peak) peak = a; } }
+      const thr = peak * 0.02;
+      const activo = (i) => { for (let c = 0; c < ch; c++) if (Math.abs(chans[c][i]) > thr) return true; return false; };
+      let s0 = 0, s1 = n - 1;
+      while (s0 < n - 1 && !activo(s0)) s0++;
+      while (s1 > s0 && !activo(s1)) s1--;
+      const N = s1 - s0 + 1;
+      if (N < sr * 2) return buf; // demasiado corto para crossfadear
+      // mono para el análisis de correlación cabeza/cola
+      const mono = new Float32Array(N);
+      for (let i = 0; i < N; i++) { let a = 0; for (let c = 0; c < ch; c++) a += chans[c][s0 + i]; mono[i] = a / ch; }
+      // elige el crossfade (en s) que minimiza la diferencia cabeza vs cola
+      let cands = [1.5, 2, 2.5, 3, 4, 5, 6].map(s => Math.floor(s * sr)).filter(x => x >= sr && x < N * 0.30);
+      if (!cands.length) cands = [Math.floor(Math.min(N * 0.25, sr * 3))];
+      let bestX = cands[0], bestCost = Infinity;
+      for (const X of cands) {
+        let num = 0, den = 1e-9;
+        for (let i = 0; i < X; i += 32) { const h = mono[i], t = mono[N - X + i], d = h - t; num += d * d; den += h * h + t * t; }
+        const cost = num / den;
+        if (cost < bestCost) { bestCost = cost; bestX = X; }
+      }
+      const X = bestX, L = N - X;
+      const out = this.ctx.createBuffer(ch, L, sr);
+      for (let c = 0; c < ch; c++) {
+        const src = chans[c], dst = out.getChannelData(c);
+        for (let i = 0; i < X; i++) {                 // crossfade [0,X): cabeza + cola (potencia cte.)
+          const t = i / X, fin = Math.sin(0.5 * Math.PI * t), fout = Math.cos(0.5 * Math.PI * t);
+          dst[i] = src[s0 + i] * fin + src[s0 + L + i] * fout;
+        }
+        for (let i = X; i < L; i++) dst[i] = src[s0 + i]; // cuerpo [X,L): tal cual
+      }
+      return out;
+    } catch { return buf; }
   },
   // One-shot (stingers/eventos): no interrumpe la música de fondo.
   sample(id, vol = 1) {
