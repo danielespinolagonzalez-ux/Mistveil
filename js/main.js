@@ -568,16 +568,24 @@ function drawBiomaExtras(t) {
     const x = SX(world.pet.x), y = SY(world.pet.y) - 4 + Math.sin(t * 6) * 1.5;
     ctx.fillStyle = 'rgba(0,0,0,0.3)';
     ctx.beginPath(); ctx.ellipse(SX(world.pet.x), SY(world.pet.y) + 4, 5, 2, 0, 0, 7); ctx.fill();
-    ctx.strokeStyle = '#6c6193'; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.moveTo(x - 2, y + 3); ctx.lineTo(x - 3, y + 7); ctx.moveTo(x + 2, y + 3); ctx.lineTo(x + 3, y + 7); ctx.stroke();
-    ctx.fillStyle = '#c9a24a';
-    for (let i = 0; i < 6; i++) {
-      const a = t * 2 + i * Math.PI / 3;
-      ctx.fillRect(x + Math.cos(a) * 5 - 1, y + Math.sin(a) * 5 - 1, 2.4, 2.4);
+    const petSpr = Sprites.get('tuerca_mascota');
+    if (petSpr) {
+      // sprite pintado: hereda el bob; el cuerpo lleva ya el engranaje, ojos y patas
+      const inf = Sprites.info('tuerca_mascota');
+      const dh = 18, dw = Math.round(inf.w * dh / inf.h);
+      ctx.drawImage(petSpr, Math.round(x - dw / 2), Math.round(y + 6 - dh), dw, dh);
+    } else {
+      ctx.strokeStyle = '#6c6193'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(x - 2, y + 3); ctx.lineTo(x - 3, y + 7); ctx.moveTo(x + 2, y + 3); ctx.lineTo(x + 3, y + 7); ctx.stroke();
+      ctx.fillStyle = '#c9a24a';
+      for (let i = 0; i < 6; i++) {
+        const a = t * 2 + i * Math.PI / 3;
+        ctx.fillRect(x + Math.cos(a) * 5 - 1, y + Math.sin(a) * 5 - 1, 2.4, 2.4);
+      }
+      ctx.beginPath(); ctx.arc(x, y, 4.4, 0, 7); ctx.fill();
+      ctx.fillStyle = '#0b0819';
+      ctx.beginPath(); ctx.arc(x, y, 1.8, 0, 7); ctx.fill();
     }
-    ctx.beginPath(); ctx.arc(x, y, 4.4, 0, 7); ctx.fill();
-    ctx.fillStyle = '#0b0819';
-    ctx.beginPath(); ctx.arc(x, y, 1.8, 0, 7); ctx.fill();
   }
 }
 
@@ -3250,21 +3258,36 @@ const ECO_COL = { golpe: '#ffd54f', ritmo: '#ffd54f', dash: '#8fa2ff', arte: '#b
 const ECO_TXT = { golpe: 'golpe', ritmo: '♪', dash: 'dash', arte: 'ARTE', ignicion: '¡IGNICIÓN!' };
 // ---------- Pantalla de título ----------
 function drawTitle(t) {
-  ctx.fillStyle = '#0b0819'; ctx.fillRect(0, 0, VW, VH);
-  // péndulo de fondo
-  const a = Math.sin(t * 0.9) * 0.35;
-  ctx.strokeStyle = 'rgba(90,79,160,0.35)'; ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.moveTo(VW / 2, -8);
-  ctx.lineTo(VW / 2 + Math.sin(a) * 150, 130 + Math.cos(a) * 20); ctx.stroke();
-  ctx.fillStyle = 'rgba(201,162,74,0.5)';
-  ctx.beginPath(); ctx.arc(VW / 2 + Math.sin(a) * 150, 132 + Math.cos(a) * 20, 10, 0, 7); ctx.fill();
-  // esfera de reloj tenue
-  ctx.strokeStyle = 'rgba(90,79,160,0.25)'; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.arc(VW / 2, VH / 2 + 10, 120, 0, 7); ctx.stroke();
-  for (let i = 0; i < 12; i++) {
-    const h = i / 12 * Math.PI * 2;
-    ctx.fillStyle = 'rgba(141,130,173,0.35)';
-    ctx.fillRect(VW / 2 + Math.cos(h) * 112 - 1, VH / 2 + 10 + Math.sin(h) * 112 - 1, 2, 2);
+  const port = Sprites.get('portada_titulo');
+  if (port) {
+    // Portada pintada: cubre la pantalla manteniendo el aspecto (cover) y una
+    // veladura vertical para que el título y el prompt se lean sobre la pintura.
+    const inf = Sprites.info('portada_titulo');
+    const scale = Math.max(VW / inf.w, VH / inf.h);
+    const dw = inf.w * scale, dh = inf.h * scale;
+    ctx.drawImage(port, (VW - dw) / 2, (VH - dh) / 2, dw, dh);
+    const g = ctx.createLinearGradient(0, 0, 0, VH);
+    g.addColorStop(0, 'rgba(11,8,25,0.5)');
+    g.addColorStop(0.45, 'rgba(11,8,25,0.05)');
+    g.addColorStop(1, 'rgba(11,8,25,0.8)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, VW, VH);
+  } else {
+    ctx.fillStyle = '#0b0819'; ctx.fillRect(0, 0, VW, VH);
+    // péndulo de fondo (fallback procedural sin portada)
+    const a = Math.sin(t * 0.9) * 0.35;
+    ctx.strokeStyle = 'rgba(90,79,160,0.35)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(VW / 2, -8);
+    ctx.lineTo(VW / 2 + Math.sin(a) * 150, 130 + Math.cos(a) * 20); ctx.stroke();
+    ctx.fillStyle = 'rgba(201,162,74,0.5)';
+    ctx.beginPath(); ctx.arc(VW / 2 + Math.sin(a) * 150, 132 + Math.cos(a) * 20, 10, 0, 7); ctx.fill();
+    // esfera de reloj tenue
+    ctx.strokeStyle = 'rgba(90,79,160,0.25)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(VW / 2, VH / 2 + 10, 120, 0, 7); ctx.stroke();
+    for (let i = 0; i < 12; i++) {
+      const h = i / 12 * Math.PI * 2;
+      ctx.fillStyle = 'rgba(141,130,173,0.35)';
+      ctx.fillRect(VW / 2 + Math.cos(h) * 112 - 1, VH / 2 + 10 + Math.sin(h) * 112 - 1, 2, 2);
+    }
   }
   font(26); ctx.textAlign = 'center';
   ctx.fillStyle = '#ffd54f';

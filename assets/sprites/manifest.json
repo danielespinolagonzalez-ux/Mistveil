@@ -313,5 +313,16 @@
   "w": 99,
   "h": 100,
   "face": "left"
+ },
+ "portada_titulo": {
+  "w": 1024,
+  "h": 585,
+  "tipo": "textura",
+  "ext": "jpg"
+ },
+ "tuerca_mascota": {
+  "w": 38,
+  "h": 48,
+  "face": "right"
  }
 }

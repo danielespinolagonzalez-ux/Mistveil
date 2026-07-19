@@ -92,7 +92,8 @@
       "clase": "pet companion",
       "targetH": 48,
       "face": "right",
-      "sujeto": "Tuerca, a tiny adorable pet: a single brass gear with two big warm glowing eyes and stubby little feet, curious expression"
+      "sujeto": "Tuerca, a tiny adorable pet: a single brass gear with two big warm glowing eyes and stubby little feet, curious expression",
+      "estado": "hecho"
     },
     {
       "id": "enemigo_cera_andante",
@@ -320,7 +321,9 @@
       "clase": "npc",
       "targetH": 68,
       "face": "right",
-      "sujeto": "Ferran, an elderly kind master clockmaker: leather apron, jeweler's loupe on his forehead, patched brass hands"
+      "sujeto": "Ferran, an elderly kind master clockmaker: leather apron, jeweler's loupe on his forehead, patched brass hands",
+      "estado": "descartado",
+      "nota": "no es una entidad real del juego (contrato del gremio / reemplazado por npc_puerta)"
     },
     {
       "id": "npc_margo",
@@ -355,7 +358,9 @@
       "clase": "npc",
       "targetH": 72,
       "face": "right",
-      "sujeto": "a shrine statue of Temperance: a praying figure of marble and brass holding a stilled pendulum"
+      "sujeto": "a shrine statue of Temperance: a praying figure of marble and brass holding a stilled pendulum",
+      "estado": "descartado",
+      "nota": "no es una entidad real del juego (contrato del gremio / reemplazado por npc_puerta)"
     },
     {
       "id": "npc_virtuoso",
@@ -363,7 +368,9 @@
       "clase": "npc",
       "targetH": 72,
       "face": "right",
-      "sujeto": "a shrine statue of Virtuosity: a dancing figure of marble and brass with small bells"
+      "sujeto": "a shrine statue of Virtuosity: a dancing figure of marble and brass with small bells",
+      "estado": "descartado",
+      "nota": "no es una entidad real del juego (contrato del gremio / reemplazado por npc_puerta)"
     },
     {
       "id": "npc_eco_bronce",
@@ -371,7 +378,9 @@
       "clase": "npc",
       "targetH": 60,
       "face": "right",
-      "sujeto": "the Bronze Echo: an ancient singing bronze bust, mouth open, subtle carved sound waves"
+      "sujeto": "the Bronze Echo: an ancient singing bronze bust, mouth open, subtle carved sound waves",
+      "estado": "descartado",
+      "nota": "no es una entidad real del juego (contrato del gremio / reemplazado por npc_puerta)"
     },
     {
       "id": "prop_puerta_reloj",
@@ -380,7 +389,8 @@
       "targetH": 120,
       "face": "right",
       "sujeto": "the Clock Gate: a monumental double door with an inlaid clock face, roman numerals, gold on dark oak",
-      "nota": "sustituido por npc_puerta (id real del código del pueblo)"
+      "nota": "no es una entidad real del juego (contrato del gremio / reemplazado por npc_puerta)",
+      "estado": "descartado"
     },
     {
       "id": "retrato_pip",
@@ -397,7 +407,9 @@
       "clase": "dialogue portrait bust",
       "targetH": 160,
       "face": "left",
-      "sujeto": "bust portrait of Ferran the elderly master clockmaker, jeweler's loupe, kind tired eyes, shoulders-up, three-quarter view looking slightly left"
+      "sujeto": "bust portrait of Ferran the elderly master clockmaker, jeweler's loupe, kind tired eyes, shoulders-up, three-quarter view looking slightly left",
+      "estado": "descartado",
+      "nota": "no es una entidad real del juego (contrato del gremio / reemplazado por npc_puerta)"
     },
     {
       "id": "retrato_margo",
@@ -432,7 +444,9 @@
       "clase": "dialogue portrait bust",
       "targetH": 160,
       "face": "left",
-      "sujeto": "bust portrait of the Temperance shrine statue, marble and brass, serene closed eyes"
+      "sujeto": "bust portrait of the Temperance shrine statue, marble and brass, serene closed eyes",
+      "estado": "descartado",
+      "nota": "no es una entidad real del juego (contrato del gremio / reemplazado por npc_puerta)"
     },
     {
       "id": "retrato_virtuoso",
@@ -440,7 +454,9 @@
       "clase": "dialogue portrait bust",
       "targetH": 160,
       "face": "left",
-      "sujeto": "bust portrait of the Virtuosity shrine statue, marble and brass, joyful mid-song expression"
+      "sujeto": "bust portrait of the Virtuosity shrine statue, marble and brass, joyful mid-song expression",
+      "estado": "descartado",
+      "nota": "no es una entidad real del juego (contrato del gremio / reemplazado por npc_puerta)"
     },
     {
       "id": "retrato_eco",
@@ -448,7 +464,9 @@
       "clase": "dialogue portrait bust",
       "targetH": 160,
       "face": "left",
-      "sujeto": "bust portrait of the Bronze Echo singing bust, ancient patina, mouth open in song"
+      "sujeto": "bust portrait of the Bronze Echo singing bust, ancient patina, mouth open in song",
+      "estado": "descartado",
+      "nota": "no es una entidad real del juego (contrato del gremio / reemplazado por npc_puerta)"
     },
     {
       "id": "prop_pendulo_colgante",
@@ -626,8 +644,11 @@
     },
     {
       "id": "portada_titulo",
-      "tipo": "pantalla",
-      "sujeto": "the Mistveil Clock-Tower rising through golden mist at dusk, monumental and melancholic, tiny Pip from behind before the gate, romanticist small-figure-before-the-sublime composition, clear space in upper third for a title, 16:9"
+      "tipo": "textura",
+      "sujeto": "the Mistveil Clock-Tower rising through golden mist at dusk, monumental and melancholic, tiny Pip from behind before the gate, romanticist small-figure-before-the-sublime composition, clear space in upper third for a title, 16:9",
+      "formato": "jpeg",
+      "maxDim": 1024,
+      "estado": "hecho"
     },
     {
       "id": "boton_llama",
