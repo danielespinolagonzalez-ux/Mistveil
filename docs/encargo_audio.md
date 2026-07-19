@@ -180,6 +180,17 @@ latencia cero → seguir sintetizados).
 2. Recortar silencios. `assets/audio/sfx/<id>.ogg`.
 3. Integrar en `AudioManager.sample('<id>')` con fallback a `sfx('<id>')` (beep).
 
+**Stingers cortos con el generador de MÚSICA** (mínimo 10 s) — truco validado: se
+pide el golpe "en los primeros ~2 s y luego silencio", y se **recorta** al trozo útil.
+`ffmpeg` no viene en el sandbox pero se consigue por pip sin apt:
+`pip install imageio-ffmpeg` → `imageio_ffmpeg.get_ffmpeg_exe()`. Localizar el sonido
+con `silencedetect` y cortar con fundido:
+```
+ffmpeg -ss <inicio> -i in.mp3 -t 3.0 -af "afade=t=in:st=0:d=0.04,afade=t=out:st=2.4:d=0.6" -y sting.mp3
+```
+Así salieron `sting_ignicion` y `sting_piso` (~3 s, ~48 KB). Para SFX de verdad,
+igualmente mejor ElevenLabs (§8).
+
 **Build**
 - `build_artifact.mjs`: opción de embeber los OGG en base64 (build "con audio") o
   saltarlos (build ligera). Documentar el peso resultante.
