@@ -11,21 +11,31 @@ integración con **red de seguridad** sobre el `AudioManager` que ya existe.
 
 ---
 
-## 0. ¿Se puede generar con Magnific? **No**
+## 0. Herramientas para generar el audio
 
-**Magnific es una herramienta de IMAGEN** (upscaling, relight, "reimagine",
-generación de imágenes). **No genera audio de ningún tipo.** Para música/SFX hay
-que usar un generador de audio. Opciones reales:
+> **Corrección** (respecto a lo que dije primero): el **producto clásico de Magnific**
+> es de imagen (upscaling/relight/reimagine), pero el **conector de esta sesión**
+> (plataforma Magnific/Freepik) **sí genera audio**: música por prompt (motores Google
+> Lyria y ElevenLabs) y TTS. Ya lo usé para las dos pruebas de estilo.
+
+Opciones reales:
 
 | Vía | Qué hace | Notas |
 |---|---|---|
-| **Conector de audio de la sesión** (`audio_music_generate`, `audio_tts`) | Música y voz por prompt | Disponible en este chat; ideal para un primer pase rápido de loops ambientales. |
-| **Suno / Udio** | Música por prompt (canción/loop) | La mejor calidad musical hoy; export a wav/mp3, luego se recorta el loop. |
-| **ElevenLabs (SFX / SoundFX)** | Efectos de sonido por prompt | Muy bueno para SFX cortos one-shot. |
+| **Conector de audio de la sesión** (`audio_music_generate`, `audio_tts`) | Música (Lyria / **ElevenLabs**) y voz por prompt | Usado para el pase de validación (`elevenlabs-music-generation-v2`, instrumental, 40 s). Devuelve MP3 192 kbps 48 kHz. |
+| **ElevenLabs MCP** (auto-alojado, §8) | `text_to_sound_effects`, `text_to_speech`, voces | Lo mejor para **SFX** one-shot y voces; requiere tu API key. |
+| **Suno / Udio** | Música por prompt | Alternativa musical; export wav/mp3 y se recorta el loop. |
 | **Síntesis procedural (lo actual)** | WebAudio en `state.js` | **Se queda** para los SFX rítmicos de Cadencia (latencia cero) y como fallback. |
 
 Recomendación: **híbrido** (ver §2). Música ambiental = loops generados; SFX de
 ritmo = seguir sintetizados; SFX one-shot = muestras generadas opcionales.
+
+> ⚠️ **Filtro de ToS (aprendido en las pruebas)**: los generadores **rechazan los
+> prompts que nombran artistas/franquicias reales** ("Uematsu", "Final Fantasy",
+> "FFXIV", "Legend of Dragoon"…). Hay que describir el **estilo/época** sin nombres
+> propios: p. ej. *"PS1-era orchestral warmth"*, *"late-90s / early-2000s RPG
+> soundtrack"*, *"melancholic gothic-clockwork dark fantasy"*. Las plantillas de §6
+> ya están corregidas para esto.
 
 ---
 
@@ -181,15 +191,17 @@ errores, y una pasada a oído en escritorio + iPhone (volúmenes `vol_musica`/`v
 
 ## 6. Prompts base (plantillas en inglés)
 
-**Plantilla MÚSICA** — sustituir `{MOOD}`, `{INSTR}`, `{KEY}`, `{BPM}`:
+**Plantilla MÚSICA** — sustituir `{MOOD}`, `{INSTR}`, `{KEY}`, `{BPM}`. **Sin nombres
+propios** (ver aviso de ToS en §0): la fusión Uematsu×Soken×Dragoon se expresa por
+la ÉPOCA y las texturas, no por los nombres.
 ```
-Instrumental video game music, a {MOOD} seamless loop in the combined style of
-Nobuo Uematsu (Final Fantasy), Masayoshi Soken (FFXIV) and Takeo Miratsu (The Legend
-of Dragoon): {INSTR}. Melancholic gothic-clockwork dark fantasy, {KEY} minor,
-around {BPM} BPM, emotive memorable melody, PS1-era orchestral warmth with modern
-clarity, tasteful reverb. Seamless loop, consistent tempo, no abrupt ending, no
-speech, no sound effects.
+An instrumental video game {MOOD} track, a seamless loop featuring {INSTR}. The mood
+is melancholic gothic-clockwork dark fantasy in {KEY} minor at around {BPM} BPM, with
+an emotive, memorable melody. Evoke the orchestral warmth of late-90s / early-2000s
+JRPG soundtracks (PS1-era) with modern clarity and tasteful reverb. Seamless loop,
+consistent tempo, no abrupt ending, no speech, no sound effects.
 ```
+*(Validado: este formato pasa el filtro; el que nombraba compositores fue rechazado.)*
 Ejemplos rellenos:
 - `mus_titulo`: MOOD=*sublime and melancholic yet hopeful*, INSTR=*solo celesta and
   harp stating a wistful main theme over soft strings and distant choir*, KEY=*D*, BPM=72.
