@@ -97,7 +97,15 @@
     "drop_tomo_pct": 8,
     "oro_min": 1,
     "oro_max": 4,
-    "dificultad_por_piso": 2.5
+    "dificultad_por_piso": 2.5,
+    "laberinto_ancho_max": 3,
+    "laberinto_camino_base": 5,
+    "laberinto_camino_max": 9,
+    "laberinto_ramas_base": 2,
+    "laberinto_ramas_var": 3,
+    "laberinto_bucles_max": 2,
+    "evento_prob": 0,
+    "desafio_prob": 0
   },
   "salas": {
     "transition_s": 0.5,

@@ -722,59 +722,115 @@ const DIRS = [[0, -1], [0, 1], [1, 0], [-1, 0]];
 // (El generador de rejilla tipo Isaac que vivía aquí se retiró en la fase R0.5:
 // la Torre vertical de buildTower es el modo canónico. Historia en git.)
 
-// ---------- La Torre: piso vertical continuo (sustituye al layout Isaac) ----------
-// Segmentos apilados en una columna: cámaras (se sellan al entrar) y galerías
-// (vagabundos sueltos, sin sellos). Tesoro/tienda/maldita como alcobas laterales.
+// ---------- La Torre: piso LABERÍNTICO que desciende ----------
+// Grafo 2D ramificado: un camino principal que baja serpenteando (inicio→jefe) del que
+// cuelgan ramas/callejones (salas especiales) y algún bucle. Determinista por semilla en
+// TOPOLOGÍA (solo usa rnd sembrado para posiciones/tipos/aristas; los interiores de Room
+// usan Math.random, sin afectar la forma). El resto del juego ya soporta rejilla 2D:
+// puertas n/s/e/w, at()/neighbor(), minimapa, cámara por bbox y clampPlayer por 4 lados.
 export function buildTower(piso = 1, seed = Date.now()) {
   const rnd = mulberry32((seed ^ (piso * 104729)) >>> 0);
-  const hpMult = (1 + (piso - 1) * DataDB.balance.run.escalado_hp_por_piso)
+  const R = DataDB.balance.run;
+  const hpMult = (1 + (piso - 1) * R.escalado_hp_por_piso)
     * (GameState.cuerdaTensa ? 1.25 : 1); // modo Cuerda Tensa (Santuario)
-  const nSeg = Math.min(9, 5 + piso + Math.floor(rnd() * 2));
+  const pickR = (arr) => arr[Math.floor(rnd() * arr.length)];
+  const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1));[a[i], a[j]] = [a[j], a[i]]; } return a; };
 
-  // 1. Tipos de segmento (decididos antes de crear las salas)
-  const types = [];
-  for (let i = 0; i < nSeg; i++) {
-    if (i === 0) types.push('inicial');
-    else if (i === nSeg - 1) types.push('jefe');
-    else types.push(rnd() < 0.45 ? 'galeria' : 'camara');
+  // ---- FASE 1: trazar el laberinto (celdas + aristas de puerta), tipos aparte ----
+  const MAXW = R.laberinto_ancho_max ?? 3;   // columnas a cada lado del inicio
+  const K = (x, y) => x + ',' + y;
+  const cells = new Map();                    // key -> {gx,gy}
+  const edges = new Set();                    // "a|b" con a<b (arista = puerta)
+  const has = (x, y) => cells.has(K(x, y));
+  const put = (x, y) => { if (!has(x, y)) cells.set(K(x, y), { gx: x, gy: y }); return K(x, y); };
+  const eKey = (ax, ay, bx, by) => { const a = K(ax, ay), b = K(bx, by); return a < b ? a + '|' + b : b + '|' + a; };
+  const link = (ax, ay, bx, by) => edges.add(eKey(ax, ay, bx, by));
+  const free = (x, y) => !has(x, y) && x >= -MAXW && x <= MAXW && y >= 0; // gy≥0: nada por encima del inicio
+
+  // Camino principal: paseo aleatorio que DESCIENDE (peso al sur) con vaivén lateral.
+  put(0, 0);
+  const pathLen = Math.min(R.laberinto_camino_max ?? 9, (R.laberinto_camino_base ?? 5) + piso + Math.floor(rnd() * 2));
+  let cx = 0, cy = 0;
+  const mainPath = [[0, 0]];
+  let guard = 0;
+  while (mainPath.length < pathLen && guard++ < pathLen * 6) {
+    const cand = [];
+    if (free(cx, cy + 1)) cand.push([cx, cy + 1], [cx, cy + 1], [cx, cy + 1]); // bajar ×3
+    if (free(cx - 1, cy)) cand.push([cx - 1, cy]);
+    if (free(cx + 1, cy)) cand.push([cx + 1, cy]);
+    if (!cand.length) { if (free(cx, cy + 1)) cand.push([cx, cy + 1]); else break; }
+    const [nx, ny] = cand[Math.floor(rnd() * cand.length)];
+    put(nx, ny); link(cx, cy, nx, ny); mainPath.push([nx, ny]); cx = nx; cy = ny;
   }
-  // Garantías: al menos 2 cámaras y 1 galería en el tramo medio
-  const mid = types.slice(1, -1);
-  if (mid.filter(t => t === 'camara').length < 2) { types[1] = 'camara'; types[nSeg - 2] = 'camara'; }
-  if (!types.slice(1, -1).includes('galeria') && nSeg > 4) types[2] = 'galeria';
+  const bossCell = mainPath[mainPath.length - 1];
+  const startK = K(0, 0), bossK = K(bossCell[0], bossCell[1]);
 
-  const COL = 1;
+  // Ramas: brotan de nodos del camino (no inicio/jefe) hacia celdas libres, 1-2 de largo.
+  const deadEnds = []; // puntas de rama (keys) → candidatas a sala especial
+  const nBranch = (R.laberinto_ramas_base ?? 2) + Math.floor(rnd() * ((R.laberinto_ramas_var ?? 3) + 1));
+  for (let bi = 0; bi < nBranch; bi++) {
+    const mid = mainPath.slice(1, -1);
+    if (!mid.length) break;
+    let [bx, by] = mid[Math.floor(rnd() * mid.length)];
+    const largo = 1 + (rnd() < 0.4 ? 1 : 0);
+    let last = null;
+    for (let s = 0; s < largo; s++) {
+      const opts = [[bx, by + 1], [bx - 1, by], [bx + 1, by], [bx, by - 1]].filter(([nx, ny]) => free(nx, ny));
+      if (!opts.length) break;
+      const [nx, ny] = opts[Math.floor(rnd() * opts.length)];
+      put(nx, ny); link(bx, by, nx, ny); bx = nx; by = ny; last = K(nx, ny);
+    }
+    if (last) deadEnds.push(last);
+  }
+  // Brota una alcoba nueva de cualquier celda con hueco (garantiza plazas para especiales).
+  const sprout = () => {
+    for (const c of shuffle([...cells.values()])) {
+      if (K(c.gx, c.gy) === bossK) continue;
+      const opts = [[c.gx, c.gy + 1], [c.gx - 1, c.gy], [c.gx + 1, c.gy], [c.gx, c.gy - 1]].filter(([nx, ny]) => free(nx, ny));
+      if (opts.length) { const [nx, ny] = opts[Math.floor(rnd() * opts.length)]; put(nx, ny); link(c.gx, c.gy, nx, ny); return K(nx, ny); }
+    }
+    return null;
+  };
+
+  // ---- FASE 2: tipos. Tesoro/tienda GARANTIZADOS; luego opcionales, en puntas de rama ----
+  const specials = ['tesoro', 'tienda'];
+  if (GameState.tiene('llave_del_sotano') || rnd() < 0.6) specials.push('maldita');
+  if (rnd() < 0.6) specials.push(pickR(['fundicion', 'metronomo', 'apuestas']));
+  if (rnd() < (R.evento_prob ?? 0.5)) specials.push('evento');
+  if (rnd() < (R.desafio_prob ?? 0.35)) specials.push('desafio');
+  while (deadEnds.length < specials.length) { const k = sprout(); if (!k) break; deadEnds.push(k); }
+  shuffle(deadEnds);
+  const typeOf = new Map([[startK, 'inicial'], [bossK, 'jefe']]);
+  for (let i = 0; i < specials.length && i < deadEnds.length; i++) {
+    if (deadEnds[i] === startK || deadEnds[i] === bossK) continue;
+    typeOf.set(deadEnds[i], specials[i]);
+  }
+  // Bucles: conecta parejas adyacentes sin arista (maze con ciclos), sin tocar inicio/jefe.
+  const nLoops = Math.floor(rnd() * ((R.laberinto_bucles_max ?? 2) + 1));
+  for (let li = 0; li < nLoops; li++) {
+    const c = pickR([...cells.values()]);
+    if (K(c.gx, c.gy) === startK || K(c.gx, c.gy) === bossK) continue;
+    const adj = [[c.gx, c.gy + 1], [c.gx, c.gy - 1], [c.gx - 1, c.gy], [c.gx + 1, c.gy]]
+      .filter(([nx, ny]) => has(nx, ny) && K(nx, ny) !== bossK && !edges.has(eKey(c.gx, c.gy, nx, ny)));
+    if (adj.length) { const [nx, ny] = adj[Math.floor(rnd() * adj.length)]; link(c.gx, c.gy, nx, ny); }
+  }
+  // El resto de celdas: cámara de combate o galería de vagabundos.
+  for (const k of cells.keys()) if (!typeOf.has(k)) typeOf.set(k, rnd() < 0.4 ? 'galeria' : 'camara');
+
+  // ---- FASE 3: construir las Room y cablear puertas (objeto compartido por arista) ----
   const rooms = new Map();
-  const segs = [];
-  for (let i = 0; i < nSeg; i++) {
-    const r = new Room(COL, i, types[i], piso);
-    rooms.set(COL + ',' + i, r);
-    segs.push(r);
-  }
-  // 2. Cadena vertical
-  for (let i = 0; i < nSeg - 1; i++) {
+  for (const c of cells.values()) rooms.set(K(c.gx, c.gy), new Room(c.gx, c.gy, typeOf.get(K(c.gx, c.gy)) ?? 'camara', piso));
+  for (const e of edges) {
+    const [ak, bk] = e.split('|');
+    const ra = rooms.get(ak), rb = rooms.get(bk); if (!ra || !rb) continue;
+    const [ax, ay] = ak.split(',').map(Number), [bx, by] = bk.split(',').map(Number);
     const d = { open: true };
-    segs[i].doors.s = d;
-    segs[i + 1].doors.n = d;
+    if (bx === ax + 1) { ra.doors.e = d; rb.doors.w = d; }
+    else if (bx === ax - 1) { ra.doors.w = d; rb.doors.e = d; }
+    else if (by === ay + 1) { ra.doors.s = d; rb.doors.n = d; }
+    else { ra.doors.n = d; rb.doors.s = d; }
   }
-  // 3. Alcobas laterales: tesoro y tienda garantizadas, maldita 60% (100% con la Llave del sótano)
-  const alcoveTypes = ['tesoro', 'tienda'];
-  if (GameState.tiene('llave_del_sotano') || rnd() < 0.6) alcoveTypes.push('maldita');
-  // Cámara especial del gremio: fundición / metrónomo / apuestas (60%)
-  if (rnd() < 0.6) alcoveTypes.push(pick(['fundicion', 'metronomo', 'apuestas']));
-  const midIdx = [];
-  for (let i = 1; i < nSeg - 1; i++) midIdx.push(i);
-  for (const at of alcoveTypes) {
-    if (!midIdx.length) break;
-    const idx = midIdx.splice(Math.floor(rnd() * midIdx.length), 1)[0];
-    const side = rnd() < 0.5 ? -1 : 1;
-    const gx = COL + side;
-    const alc = new Room(gx, idx, at, piso);
-    rooms.set(gx + ',' + idx, alc);
-    const d = { open: true };
-    if (side === 1) { segs[idx].doors.e = d; alc.doors.w = d; }
-    else { segs[idx].doors.w = d; alc.doors.e = d; }
-  }
+  const segs = [...rooms.values()]; // (para el bucle de roamers; conserva el nombre histórico)
   // 4. Vagabundos de las galerías (sueltos desde el principio, sin sello)
   const bio = biomaDe(piso);
   const pool = (DataDB.enemigos.pools_spawn['bioma_' + (bio?.id ?? '')] ?? DataDB.enemigos.pools_spawn['piso1']).map(id => DataDB.enemigo(id)).filter(Boolean).filter(d => !d.gemelo && d.comportamiento !== 'reviver');
@@ -803,7 +859,7 @@ export function buildTower(piso = 1, seed = Date.now()) {
   }
   return {
     rooms, piso, roamers,
-    current: segs[0],
+    current: rooms.get(startK),
     bbox: { x: minX, y: minY, w: maxX - minX, h: maxY - minY },
     at(gx, gy) { return rooms.get(gx + ',' + gy) ?? null; },
     neighbor(room, dir) {

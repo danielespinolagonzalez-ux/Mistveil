@@ -508,18 +508,36 @@ import('../js/rooms.js').then(async ({ buildTower }) => {
     for (const need of ['jefe', 'tesoro', 'tienda', 'inicial']) {
       if (!types.includes(need)) { ok = false; fallos.push(i + ':sin_' + need); }
     }
-    // Cadena vertical conexa: cada segmento de la columna comparte puerta con el siguiente
-    const col = rooms.filter(r => r.gx === 1).sort((a, b) => a.gy - b.gy);
-    if (col[0].type !== 'inicial' || col[col.length - 1].type !== 'jefe') { ok = false; fallos.push(i + ':orden'); }
-    for (let j = 0; j < col.length - 1; j++) {
-      if (!col[j].doors.s || col[j].doors.s !== col[j + 1].doors.n) { ok = false; fallos.push(i + ':cadena' + j); }
+    // Laberinto CONEXO: BFS desde 'inicial' por las puertas debe alcanzar TODAS las salas
+    // (anti-softlock real; sustituye a la vieja comprobación de columna vertical).
+    const startR = rooms.find(r => r.type === 'inicial');
+    if (!startR || f.current !== startR) { ok = false; fallos.push(i + ':inicial'); }
+    else {
+      const DIRV = { n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0] };
+      const seen = new Set([startR.gx + ',' + startR.gy]), q = [startR];
+      while (q.length) {
+        const r = q.shift();
+        for (const dir of ['n', 's', 'e', 'w']) {
+          if (!r.doors[dir]) continue;
+          const [dx, dy] = DIRV[dir], nk = (r.gx + dx) + ',' + (r.gy + dy);
+          if (f.rooms.has(nk) && !seen.has(nk)) { seen.add(nk); q.push(f.rooms.get(nk)); }
+        }
+      }
+      if (seen.size !== rooms.length) { ok = false; fallos.push(i + ':inconexo' + seen.size + '/' + rooms.length); }
+      // El jefe debe ser alcanzable desde el inicio
+      const boss = rooms.find(r => r.type === 'jefe');
+      if (!boss || !seen.has(boss.gx + ',' + boss.gy)) { ok = false; fallos.push(i + ':jefe_inalcanzable'); }
     }
-    // Las alcobas cuelgan de un segmento de la columna
+    // Puertas SIMÉTRICAS: si A tiene puerta hacia B, B tiene la puerta recíproca (mismo objeto)
     for (const r of rooms) {
-      if (r.gx !== 1 && !(r.doors.e || r.doors.w)) { ok = false; fallos.push(i + ':alcoba'); }
+      for (const [dir, opp, dx, dy] of [['n', 's', 0, -1], ['s', 'n', 0, 1], ['e', 'w', 1, 0], ['w', 'e', -1, 0]]) {
+        if (!r.doors[dir]) continue;
+        const nb = f.rooms.get((r.gx + dx) + ',' + (r.gy + dy));
+        if (!nb || nb.doors[opp] !== r.doors[dir]) { ok = false; fallos.push(i + ':puerta_asim'); }
+      }
     }
   }
-  assert('60 torres generadas: inicial→jefe conexo, tesoro/tienda presentes' + (fallos.length ? ' [' + fallos.slice(0, 3) + ']' : ''), ok);
+  assert('60 torres LABERÍNTICAS: grafo conexo inicio→jefe, puertas simétricas, tesoro/tienda' + (fallos.length ? ' [' + fallos.slice(0, 3) + ']' : ''), ok);
   // Zona nueva — La Bóveda de Truenos (pisos 10-12) y su mecánica de descargas
   const f10 = buildTower(10, 999);
   const bioma10 = [...f10.rooms.values()][0].bioma;
