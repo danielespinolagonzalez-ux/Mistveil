@@ -1,6 +1,58 @@
 # ROADMAP — Mistveil (base HTML+JS, reiniciado 2026-07-17)
 Claude Code: trabaja las fases EN ORDEN salvo indicación de Daniel. No avances de fase sin cumplir su **criterio de aceptación**. Marca `[x]` al completar; añade subtareas si hace falta; **nunca borres tareas**. El plan nace del estado real del kit (ver ESTADO.md): el juego ya es jugable de punta a punta — esto es completar, robustecer y publicar.
 
+## AUDITORÍA 2026-07 — Reordenación por fases A–E (petición de Daniel)
+Auditoría por 9 analistas comparando Mistveil con el género (Hades, Dead Cells, Isaac, Gungeon, Crypt of the NecroDancer, Hi-Fi Rush, Metal: Hellsinger, Vampire Survivors, Slay the Spire, roguelites móviles). **Informe completo en [`docs/auditoria_2026-07.md`](docs/auditoria_2026-07.md).** Notas de madurez: combate 8/10 · identidad rítmica cumplida 4/10 · build/endgame 4/10 · narrativa 3/10 · producto móvil 5/10 · UX/opciones 3/10. Hilo transversal: *casi toda carencia es UI/contenido/reglas sobre motor ya construido.* Estas fases **reordenan por impacto**; se cruzan con las R-tareas de abajo (no se borra nada).
+
+### Fase A — Cerrar la promesa de RITMO (lo que más diferencia) · EN CURSO
+- [ ] A1 Reloj de beat global en `AudioManager` (reusar la lógica del Metrónomo) con BPM por pista; anclar `ring_contract_ms` y las ventanas de Cadencia a subdivisiones del beat (carencia #1, crítica).
+- [ ] A2 SFX de golpe **en escala** que ascienden con `hitIndex` (arpegio que culmina en el finisher) + variación de tono ±semitonos en tear/hit (anti-ametralladora) (carencia #8, bajo).
+- [ ] A3 **Juice del disparo**: micro-hit-stop 2-3 frames + chispazo en el impacto teñido por elemento; escalar hit-stop con good/kill (hoy solo en perfect) (carencia #8, bajo).
+- [ ] A4 Latido visual tenue del HUD/engranajes al pulso para "coger el ritmo" antes de atacar (ancla móvil).
+- [ ] A5 Música reactiva a la racha (capa procedural de campanas `bell()` que sube con perfects/allPerfect).
+
+**Criterio A:** golpear a compás con la música se nota (audio + recompensa); el disparo impacta; el HUD late.
+
+### Fase B — Plataforma móvil comercializable (retención y justicia) · prerrequisito de lanzar
+- [ ] B1 **Serializar `RunState`** (piso/oro/SP/items/compás/posición; la semilla regenera geometría) → guardar y reanudar a mitad (carencia #2, crítica).
+- [ ] B2 **Pantalla de Opciones + Pausa completa** como contenedor: sliders de volumen música/SFX, esquema de control, y "Modo Metrónomo Suave" reusando `window_scale`/`ventanaMult` (carencia #3, crítica).
+- [ ] B3 **Calibración de latencia** (offset en opciones que desplaza la ventana; reusar la Cámara del Metrónomo como UI) (carencia #4, crítica).
+- [ ] B4 Export/import de guardado por código copiar/pegar contra el desalojo ITP de iOS (carencia #9, bajo; enlaza R5.3).
+- [ ] B5 Acumulador de **paso fijo** para la lógica de Cadencia + timestamp de input (carencia #11).
+- [ ] B6 **PWA** (manifest + service worker de precache + icono de Pip) y fuente VT323 local; safe-area/notch en el layout de botones (carencia #16; enlaza R5.1/R5.2).
+
+**Criterio B:** un desconocido termina una run a ratos en su iPhone sin perder progreso y con el ritmo justo.
+
+### Fase C — Profundidad de build y endgame (rejugabilidad)
+- [ ] C1 Ampliar a ~50-60 reliquias (sobre todo JSON) que modulen ritmo/compás/SP, no solo +daño; algunas que escalen con desempeño rítmico (payoff de build) (carencias #5 y #10).
+- [ ] C2 Pedestal de tesoro **"elige 1 de 2-3"** reusando `rollItem` (carencia #10, localizado).
+- [ ] C3 **Motor de sinergias** sobre los tags existentes (p. ej. 3 items `cadencia` desbloquean un efecto) (carencia #5).
+- [ ] C4 **Sistema Heat** data-driven (`data/pactos.json`): condiciones apilables con niveles y +Memoria por tramo, reusando el andamio de Cuerda Tensa (carencia #6, crítica).
+- [ ] C5 Activar los 6 sellos restantes con selector (cruza R2.5); rangos múltiples en el Santuario y un sumidero tardío para engranajes/Memoria.
+
+**Criterio C:** dos runs se juegan distinto, la build "despega", y "ya gané" pasa a "gané a nivel N, ahora N+1".
+
+### Fase D — Ancho de contenido de la Torre (cruza R3)
+- [ ] D1 ≥4 plantillas de sala **por bioma** con obstáculos que incorporen su mecánica de zona (= R3.1, carencia #7).
+- [ ] D2 Modificador de **elite/campeón** de spawn que reusa los 19 enemigos (más HP/aura/recompensa; "elite afinado" que exija combo perfecto) (carencia #13, bajo).
+- [ ] D3 Filtrar el pool de spawn por el campo `pisos` existente para escalonar debuts al descender (carencia #13, bajo).
+- [ ] D4 Reservar el jefe de raid al último piso del mundo (3/6/9/12) + minijefes intermedios; jefes por fase (= R3.2).
+- [ ] D5 1-2 salas-evento nuevas alineadas con Cadencia (arena contra reloj; secreta que premia la sincronía).
+
+**Criterio D:** una run de 12 pisos no empieza a repetirse hacia el piso 5-6.
+
+### Fase E — Alma: narrativa, códice y dirección visual (cruza R3.4/R4.0)
+- [ ] E1 Extraer `js/escenas.js` (escena pintada) ANTES de escribir (= R4.0) y mover el guion de `pueblo.js` a `textos_es.json` (saldar la deuda de la regla 5).
+- [ ] E2 Escribir el arco del "alma prestada" repartido en los 3 biomas + intro de encuadre y victoria REAL (= R3.4) que pague el misterio (carencia #12).
+- [ ] E3 2 líneas por jefe (intro + derrota) y flavor-lore a enemigos/items; caracterizar rivales del Redoble (carencia #12, alto retorno por poco texto).
+- [ ] E4 **Códice/bestiario** diegético en la pestaña CRÓNICA existente + tooltips/hold-press para items y siglas del HUD (carencia #14).
+- [ ] E5 Post-proceso barato en canvas (bloom en perfect/Ignición, viñeta con tinte por bioma) + toggle de screenshake/flash y `prefers-reduced-motion`; diferenciar el anillo de contraataque por forma/glifo, no solo color (carencia #15).
+- [ ] E6 Dailies locales (semilla derivada de la fecha + puntuación) e itch.io con divulgación de IA (cruza R5.5).
+
+**Criterio E:** el cimiento temático tiene edificio; el frame se siente "dirigido"; hay accesibilidad de release.
+
+---
+
 ## Fase R0 — Afinación (bugs y huecos detectados en el mapeo)
 - [x] R0.1 Implementar `orbit_shoot` en tiempo real (la `polilla_del_polvo` hoy se queda quieta y muda; en El Redoble sí funciona). Orbitar al jugador + disparo con su `cadencia_s`.
 - [x] R0.2 Aplicar `run.escalado_dano_por_piso` (definido en balance, hoy huérfano) al daño de contacto/proyectil enemigo por piso — o retirarlo del JSON si Daniel prefiere no escalar daño.
