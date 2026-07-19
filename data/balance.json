@@ -329,5 +329,13 @@
     "buff_dano_mult": 1.25,
     "buff_speed_mult": 1.12,
     "perdida_al_recibir": 45
+  },
+  "musica_reactiva": {
+    "activa": true,
+    "umbral_frac": 0.25,
+    "gain_max": 0.05,
+    "cada_n_beats": 2,
+    "buff_octava": true,
+    "notas": [220, 246.94, 293.66, 329.63, 392, 440]
   }
 }

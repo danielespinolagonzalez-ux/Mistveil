@@ -347,6 +347,59 @@ export const AudioManager = {
     const pulse = Math.max(0, 1 - phase * 3.2);
     return { active: true, bpm: this._musBpm, phase, beat: b, pulse };
   },
+  // Instante ctx.currentTime del beat índice b (para programar audio EN el beat, sin
+  // jitter de frame). Si no hay pista con BPM, devuelve el "ahora" (o 0 sin ctx).
+  beatTime(b) {
+    if (!this._musBpm) return this.ctx ? this.ctx.currentTime : 0;
+    return this._musStartTime + this._musBeatOffset + b * (60 / this._musBpm);
+  },
+  // --- A5: música REACTIVA a la racha. Capa de campanas armónicas que sube con el
+  // desempeño rítmico (grooveFrac) y se apaga sola al decaer. Cuelga de un sub-bus bajo
+  // el bus de música (respeta el volumen y NO pisa la pista). El motor de música NO se
+  // toca; esto solo AÑADE voces programadas en el beat (ver main: driver por borde). ---
+  _reactMaster: null,
+  // Ganancia de la capa según la fracción de racha (0..1). PURA y testeable: 0 bajo el
+  // umbral, sube monótona hasta gain_max en racha plena (curva cuadrática = arranca suave).
+  reactiveGain(gf, cfg) {
+    const umbral = cfg?.umbral_frac ?? 0.25, gmax = cfg?.gain_max ?? 0.05;
+    if (!(gf > umbral)) return 0;
+    const k = (gf - umbral) / (1 - umbral);
+    return gmax * k * k;
+  },
+  _reactNode() {
+    this._ensure();
+    if (!this._reactMaster) {
+      this._reactMaster = this.ctx.createGain();
+      this._reactMaster.gain.value = 0.8;
+      this._reactMaster.connect(this._musNode()); // bajo el bus de música → hereda vol_musica
+    }
+    return this._reactMaster;
+  },
+  // Programa UNA campana reactiva en atTime (ctx time del beat). intensity = grooveFrac.
+  // buffed (racha en buff) añade una octava. Silencio si intensity está bajo el umbral o
+  // no hay ctx (se conduce solo cuando suena una pista con BPM, ver main).
+  grooveBell(atTime, intensity, buffed, cfg) {
+    try {
+      if (!this.ctx) return;
+      const g0 = this.reactiveGain(intensity, cfg);
+      if (g0 <= 0.0002) return;
+      const c = this.ctx, t = Math.max(c.currentTime, atTime || c.currentTime);
+      const notas = (cfg?.notas && cfg.notas.length) ? cfg.notas : [220, 246.94, 293.66, 329.63, 392, 440];
+      const freq = notas[Math.floor(t * 2) % notas.length]; // nota estable por beat (no aleatoria por-frame)
+      const g = c.createGain();
+      g.gain.setValueAtTime(g0, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 3.0);
+      const parciales = [[1, 1], [2.76, 0.35], [5.4, 0.12]];
+      if (buffed && (cfg?.buff_octava ?? true)) parciales.push([2, 0.4]); // octava al estar en racha plena
+      for (const [m, w] of parciales) {
+        const o = c.createOscillator(); o.type = 'sine'; o.frequency.value = freq * m;
+        const og = c.createGain(); og.gain.value = w;
+        o.connect(og); og.connect(g);
+        o.start(t); o.stop(t + 3.1);
+      }
+      g.connect(this._reactNode());
+    } catch { /* audio no disponible */ }
+  },
   _musNode() {
     this._ensure();
     if (!this._musMaster) {

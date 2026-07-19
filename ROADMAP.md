@@ -4,12 +4,12 @@ Claude Code: trabaja las fases EN ORDEN salvo indicación de Daniel. No avances 
 ## AUDITORÍA 2026-07 — Reordenación por fases A–E (petición de Daniel)
 Auditoría por 9 analistas comparando Mistveil con el género (Hades, Dead Cells, Isaac, Gungeon, Crypt of the NecroDancer, Hi-Fi Rush, Metal: Hellsinger, Vampire Survivors, Slay the Spire, roguelites móviles). **Informe completo en [`docs/auditoria_2026-07.md`](docs/auditoria_2026-07.md).** Notas de madurez: combate 8/10 · identidad rítmica cumplida 4/10 · build/endgame 4/10 · narrativa 3/10 · producto móvil 5/10 · UX/opciones 3/10. Hilo transversal: *casi toda carencia es UI/contenido/reglas sobre motor ya construido.* Estas fases **reordenan por impacto**; se cruzan con las R-tareas de abajo (no se borra nada).
 
-### Fase A — Cerrar la promesa de RITMO (lo que más diferencia) · EN CURSO
+### Fase A — Cerrar la promesa de RITMO (lo que más diferencia) · ✅ COMPLETA (A1–A5)
 - [x] A1 Reloj de beat global en `AudioManager` (`beatClock()`) con BPM por pista medido offline (`data/musica.json`); latido visual del HUD (marco SP + pip del compás) y halo del anillo de Cadencia al pulso; tic-tac ambiental callado bajo pista real. **Pendiente por diseño** (riesgo sobre el feel testeado): anclar `ring_contract_ms`/ventanas de Cadencia a subdivisiones del beat (A4 ambicioso, a validar con Daniel jugando).
 - [x] A2 SFX de golpe **en escala** que ascienden con `hitIndex` (arpegio, `cadencia.js` con `{pitch}`) + variación de tono ±semitonos en tear (`entities.js`, `_playSample` con `playbackRate`).
 - [x] A3 **Juice del disparo**: micro-hit-stop + chispazo direccional teñido por elemento en el impacto de la lágrima + shake; hit-stop extra al rematar (`main.js` impacto de tear).
 - [x] A4 Latido visual del HUD al pulso (hecho junto a A1: marco SP + pip del compás + halo del anillo de Cadencia, alimentados por `beatInfo`/`beatClock`).
-- [ ] A5 Música reactiva a la racha (capa procedural de campanas `bell()` que sube con perfects/allPerfect).
+- [x] A5 Música reactiva a la racha: capa procedural de campanas (`grooveBell`) enganchada al `beatClock` (suena EN el beat), intensidad = `grooveFrac` (perfects/racha) con octava extra en buff; sub-bus propio bajo la música (respeta volumen, no pisa la pista); data-driven (`balance.musica_reactiva`), se apaga sola al decaer el groove.
 
 **Criterio A:** golpear a compás con la música se nota (audio + recompensa); el disparo impacta; el HUD late.
 

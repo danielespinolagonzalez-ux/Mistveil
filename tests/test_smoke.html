@@ -65,6 +65,25 @@ assert('beatClock inactivo sin pista sonando', AudioManager.beatClock().active =
   A.ctx = guardado.ctx; A._musSrc = guardado.src; A._musStartTime = guardado.t0; A._musBpm = guardado.bpm; A._musBeatOffset = guardado.off;
 })();
 
+// A5 — Música reactiva: helpers puros (beatTime, reactiveGain) + grooveBell defensivo
+assert('balance.musica_reactiva presente y activable', DataDB.balance.musica_reactiva?.activa !== undefined && Array.isArray(DataDB.balance.musica_reactiva?.notas));
+(() => {
+  const A = AudioManager;
+  const g = { bpm: A._musBpm, t0: A._musStartTime, off: A._musBeatOffset };
+  A._musBpm = 120; A._musStartTime = 0; A._musBeatOffset = 0;
+  assert('beatTime(0) = offset del primer beat', Math.abs(A.beatTime(0) - 0) < 1e-9);
+  assert('beatTime(3) = 3 beats a 120 BPM (1.5 s)', Math.abs(A.beatTime(3) - 1.5) < 1e-9);
+  A._musBpm = g.bpm; A._musStartTime = g.t0; A._musBeatOffset = g.off;
+  const cfg = { umbral_frac: 0.25, gain_max: 0.05 };
+  assert('reactiveGain 0 bajo el umbral', A.reactiveGain(0.1, cfg) === 0 && A.reactiveGain(0.25, cfg) === 0);
+  assert('reactiveGain sube monótona hasta gain_max', A.reactiveGain(0.6, cfg) > 0 && A.reactiveGain(0.6, cfg) < A.reactiveGain(1, cfg) && Math.abs(A.reactiveGain(1, cfg) - 0.05) < 1e-9);
+  // grooveBell no debe lanzar ni crear voces sin ctx / con intensidad nula
+  const gctx = A.ctx; A.ctx = null;
+  let ok = true; try { A.grooveBell(0, 0.8, false, cfg); A.grooveBell(1, 0, true, cfg); } catch { ok = false; }
+  A.ctx = gctx;
+  assert('grooveBell tolerante sin ctx / intensidad 0', ok);
+})();
+
 // B1 — Guardar/reanudar run: roundtrip de SaveManager y determinismo de la torre
 (() => {
   SaveManager.clearRun();

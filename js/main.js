@@ -117,6 +117,7 @@ let mode = 'play';
 let pauseIdx = 0;        // foco del menú de pausa (navegable por toque/mando/teclado)
 let musicaActual = null; // pista de música pedida ahora mismo (el director solo cambia al variar)
 let beatInfo = { active: false, pulse: 0, phase: 0, beat: 0 }; // reloj de beat de la pista (latido HUD)
+let lastMusBeat = -1; // último índice de beat en el que sonó la capa reactiva (A5)
 let showDebug = false;
 let fps = 60, fpsAcc = 0, fpsN = 0;
 let flashMsg = '', flashT = 0, flashSub = '';
@@ -1420,6 +1421,19 @@ function update(dt) {
   // Reloj de beat: una lectura por frame (sample-accurate desde el AudioContext). Solo
   // alimenta el latido visual del HUD; el input de Cadencia NO depende de esto.
   beatInfo = AudioManager.beatClock();
+  // A5 — Música reactiva a la racha: en cada beat NUEVO de la pista, si el groove está
+  // alto, programa una campana EN el próximo beat (sample-accurate). Se apaga sola cuando
+  // el groove decae. Polling del bucle (NO EventBus.on: el bus no tiene off, fugaría).
+  if (beatInfo.active && beatInfo.beat !== lastMusBeat) {
+    lastMusBeat = beatInfo.beat;
+    const rc = DataDB.balance.musica_reactiva;
+    if (rc?.activa && world.player && mode === 'play' && beatInfo.beat % (rc.cada_n_beats ?? 2) === 0) {
+      const gf = world.player.grooveFrac ?? 0;
+      if (gf >= (rc.umbral_frac ?? 0.25)) {
+        AudioManager.grooveBell(AudioManager.beatTime(beatInfo.beat + 1), gf, world.player.grooveBuffed, rc);
+      }
+    }
+  }
   // Feedback de pulsación: un "tick" suave al tocar CUALQUIER botón táctil (el
   // pulso visual y la vibración ya los da input.js; esto añade el eco sonoro).
   if (Input.touchState().enabled) {
