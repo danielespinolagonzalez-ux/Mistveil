@@ -37,5 +37,12 @@
     { "ids": ["manecilla_rota", "eco_del_reloj"], "nombre": "Doble campanada", "regla": "el golpe extra tambien cuenta como finisher" },
     { "ids": ["rescoldo_perpetuo", "bateria_de_almas"], "nombre": "Alma incandescente", "regla": "quemar carga aun mas rapido la Ignicion" },
     { "ids": ["muelle_tenso", "aceite_negro"], "nombre": "Estela negra", "regla": "el dash frecuente deja mas rastro" }
+  ],
+  "conjuntos": [
+    { "tag": "cadencia", "umbral": 3, "nombre": "Maestría del Compás", "desc": "3 reliquias de Cadencia: ventanas más anchas y más Espíritu.", "efectos": [ { "tipo": "cadencia_mod", "param": "window_scale", "mult": 1.15 }, { "tipo": "ignicion_mod", "param": "sp_gain", "mult": 1.12 } ] },
+    { "tag": "lagrimas", "umbral": 3, "nombre": "Torrente de Tinta", "desc": "3 reliquias de Lágrimas: disparas más rápido.", "efectos": [ { "tipo": "stat", "stat": "tear_rate_per_s", "mult": 1.2 } ] },
+    { "tag": "ignicion", "umbral": 3, "nombre": "Alma Incandescente", "desc": "3 reliquias de Ignición: la Ignición dura más.", "efectos": [ { "tipo": "ignicion_mod", "param": "duration_s", "add": 3 } ] },
+    { "tag": "movilidad", "umbral": 3, "nombre": "Viento del Reloj", "desc": "3 reliquias de Movilidad: más veloz y dash más frecuente.", "efectos": [ { "tipo": "stat", "stat": "move_speed", "mult": 1.1 }, { "tipo": "stat", "stat": "dash_cooldown_s", "mult": 0.82 } ] },
+    { "tag": "stats", "umbral": 4, "nombre": "Autómata Pulido", "desc": "4 reliquias de Constitución: +1 corazón máximo.", "efectos": [ { "tipo": "stat", "stat": "max_hp", "add": 1 } ] }
   ]
 }

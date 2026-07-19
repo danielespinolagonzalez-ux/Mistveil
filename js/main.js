@@ -835,6 +835,7 @@ function buildSnapshot() {
     if (r.looted) e.l = 1;
     if (r.pedestal?.taken) e.pt = 1;
     if (r.pedestal2?.taken) e.p2 = 1;
+    if (r.pedestal3?.taken) e.p3 = 1;
     if (r.stock) e.st = r.stock.map(s => (s.taken ? 1 : 0));
     if (r.altars?.length) e.al = r.altars.map(a => (a.used ? 1 : 0));
     if (Object.keys(e).length > 1) rooms.push(e); // solo salas con algo que restaurar
@@ -892,6 +893,7 @@ function restoreSnapshot(snap) {
     if (e.l) r.looted = true;
     if (e.pt && r.pedestal) r.pedestal.taken = true;
     if (e.p2 && r.pedestal2) r.pedestal2.taken = true;
+    if (e.p3 && r.pedestal3) r.pedestal3.taken = true;
     if (e.st && r.stock) e.st.forEach((v, i) => { if (v && r.stock[i]) r.stock[i].taken = true; });
     if (e.al && r.altars) e.al.forEach((v, i) => { if (v && r.altars[i]) r.altars[i].used = true; });
   }
@@ -1373,6 +1375,7 @@ EventBus.on('armor_absorbed', (p) => {
 });
 EventBus.on('item_equipado', (it) => flash(it.nombre, it.descripcion));
 EventBus.on('sinergia_activada', (syn) => flash('SINERGIA: ' + syn.nombre, syn.regla));
+EventBus.on('conjunto_activado', (c) => { flash('CONJUNTO: ' + c.nombre, c.desc ?? ''); AudioManager.sfx('tome'); FX.addShake(1.5); });
 EventBus.on('hechizo_lanzado', (h, x, y) => {
   if (world.player) world.player.castT = 0.34; // pose de Arte mientras canaliza (visual)
   // A4 — cada Arte tiene su firma dibujada, reconocible de un vistazo
@@ -2122,13 +2125,14 @@ function update(dt) {
         if (s.hintCd > 0) s.hintCd -= dt;
       }
     }
-    // Pedestales (1 o 2 con Páginas perdidas — coger uno retira el otro, R1.5)
-    for (const pd of [room.pedestal, room.pedestal2]) {
-      if (!pd || pd.taken) continue;
+    // Pedestales (C2): elección de 2-3 reliquias — coger una retira las demás.
+    const peds = [room.pedestal, room.pedestal2, room.pedestal3].filter(Boolean);
+    for (const pd of peds) {
+      if (pd.taken) continue;
       if (Math.hypot(p.x - pd.x, p.y - pd.y) < 16 + p.r) {
         pd.taken = true;
-        const otro = pd === room.pedestal ? room.pedestal2 : room.pedestal;
-        if (otro && !otro.taken) { otro.taken = true; flash('La otra reliquia se desvanece...'); }
+        const otros = peds.filter(o => o !== pd && !o.taken);
+        if (otros.length) { for (const o of otros) o.taken = true; flash('Eliges una...', 'las demás se desvanecen'); }
         const it = DataDB.item(pd.itemId);
         if (it) applyItem(it, p);
       }
@@ -2810,8 +2814,9 @@ function drawLight(t, rooms) {
       hole(cs.x, cs.y, 105 * fl, 0.85);
     });
     if (room.trapdoor) hole(SX(room.trapdoor.x), SY(room.trapdoor.y), 50, 0.6);
-    if (room.pedestal && !room.pedestal.taken) hole(SX(room.pedestal.x), SY(room.pedestal.y) - 20, 55, 0.6);
-    if (room.pedestal2 && !room.pedestal2.taken) hole(SX(room.pedestal2.x), SY(room.pedestal2.y) - 20, 55, 0.6);
+    for (const pd of [room.pedestal, room.pedestal2, room.pedestal3]) {
+      if (pd && !pd.taken) hole(SX(pd.x), SY(pd.y) - 20, 55, 0.6);
+    }
     if (room.stock) for (const s of room.stock) if (!s.taken) hole(SX(s.x), SY(s.y) - 10, 40, 0.5);
   }
   ctx.drawImage(lightCanvas, 0, 0);
@@ -4559,8 +4564,9 @@ function render() {
   for (const room of rooms) {
     for (const r of room.rocks) sortables.push({ y: r.y + r.h, draw: () => drawRock(r) });
     for (const w of room.wax) sortables.push({ y: w.y + w.h, draw: () => drawWaxBlock(w, maxWaxHp) });
-    if (room.pedestal) sortables.push({ y: room.pedestal.y + 10, draw: () => drawPedestalObj(room, t, room.pedestal) });
-    if (room.pedestal2) sortables.push({ y: room.pedestal2.y + 10, draw: () => drawPedestalObj(room, t, room.pedestal2) });
+    for (const pd of [room.pedestal, room.pedestal2, room.pedestal3]) {
+      if (pd) sortables.push({ y: pd.y + 10, draw: () => drawPedestalObj(room, t, pd) });
+    }
     if (room.stock) for (const s of room.stock) sortables.push({ y: s.y + 8, draw: () => drawShopItem(s, t) });
   }
   // Familiares de reliquia (van con el jugador, no con una sala)

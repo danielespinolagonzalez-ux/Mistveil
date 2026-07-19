@@ -196,6 +196,27 @@ assert('eventos ampliados (≥7)', DataDB.eventos.eventos.length >= 7);
   assert('los 4 enemigos nuevos están en algún pool de bioma', enPool);
 })();
 
+// Fase C — C2 (pedestal elige 1 de 2-3) + C3 (conjuntos/set-bonus por etiqueta)
+(() => {
+  const saved = [...RunState.items]; RunState.items.length = 0; // pool limpio para rollItem
+  const rt = new Room(1, 1, 'tesoro', 3);
+  const peds = [rt.pedestal, rt.pedestal2, rt.pedestal3].filter(Boolean);
+  assert('C2: el tesoro ofrece ≥2 reliquias a elegir', peds.length >= 2 && peds.every(pd => pd.itemId));
+  RunState.items.length = 0; RunState.items.push(...saved);
+})();
+assert('C3: items.json define conjuntos (set-bonus por tag)', Array.isArray(DataDB.items.conjuntos) && DataDB.items.conjuntos.length >= 3);
+(() => {
+  const saved = [...RunState.items]; RunState.items.length = 0;
+  const pc = new Player(0, 0);
+  applyItem(DataDB.item('cera_caliente'), pc);   // lagrimas (no toca tear_rate)
+  applyItem(DataDB.item('lagrimas_espejo'), pc); // lagrimas (no toca tear_rate)
+  const r0 = pc.stats.tear_rate_per_s;
+  applyItem(DataDB.item('tinta_viva'), pc);      // 3ª de lagrimas → activa "Torrente de Tinta"
+  assert('C3: el conjunto se activa al reunir 3 de una etiqueta', pc.mods.conjuntos.includes('lagrimas:3'));
+  assert('C3: el conjunto aplica su efecto (tear_rate ×1.2)', pc.stats.tear_rate_per_s > r0 * 1.15);
+  RunState.items.length = 0; RunState.items.push(...saved);
+})();
+
 // Player existe y responde a la física
 const room = { x: 0, y: 0, w: 416, h: 224 };
 const roomCtx = {

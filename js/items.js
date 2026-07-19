@@ -10,9 +10,9 @@ export function applyItem(itemDef, player) {
   RunState.items.push(itemDef.id);
   return applyItemEffects(itemDef, player);
 }
-// Solo los efectos (sin registrar el item): lo usa la Fundición al reconstruir mods
-export function applyItemEffects(itemDef, player) {
-  for (const ef of itemDef.efectos) {
+// Aplica una lista de efectos[] al jugador (lo usan items Y conjuntos/set-bonus C3).
+export function aplicarEfectos(efectos, player, origen = 'item') {
+  for (const ef of efectos) {
     switch (ef.tipo) {
       case 'stat': {
         const m = player.mods;
@@ -35,7 +35,7 @@ export function applyItemEffects(itemDef, player) {
       case 'ignicion_mod':
         if (ef.param === 'sp_gain') player.mods.spGainMult *= (ef.mult ?? 1);
         else if (ef.param === 'duration_s') player.mods.ignicionDurAdd += (ef.add ?? 0);
-        else player.mods.pendientes.push(itemDef.id + ':' + ef.param);
+        else player.mods.pendientes.push(origen + ':' + ef.param);
         break;
       case 'on_event':
         switch (ef.accion) {
@@ -66,7 +66,7 @@ export function applyItemEffects(itemDef, player) {
             player.mods.extraChoice = Math.max(player.mods.extraChoice, ef.opciones ?? 2);
             break;
           default:
-            player.mods.pendientes.push(itemDef.id + ':' + ef.accion); // desconocido: queda registrado
+            player.mods.pendientes.push(origen + ':' + ef.accion); // desconocido: queda registrado
         }
         break;
       case 'familiar':
@@ -78,14 +78,32 @@ export function applyItemEffects(itemDef, player) {
         RunState.activoSalas = ef.cooldown_salas;
         break;
       default:
-        player.mods.pendientes.push(itemDef.id + ':' + ef.tipo); // desconocido: queda registrado
+        player.mods.pendientes.push(origen + ':' + ef.tipo); // desconocido: queda registrado
     }
   }
-  // Sinergias declaradas cuyo par está completo
+}
+
+// Aplica los efectos de UN item + recalcula sinergias, conjuntos (set-bonus C3) y stats.
+// Lo usa la Fundición al reconstruir mods (por eso no registra el item en RunState).
+export function applyItemEffects(itemDef, player) {
+  aplicarEfectos(itemDef.efectos, player, itemDef.id);
+  // Sinergias declaradas cuyo par está completo (pares con nombre; efecto = flavor + display)
   for (const syn of DataDB.items.sinergias ?? []) {
     if (syn.ids.every(id => RunState.items.includes(id)) && !player.mods.sinergias.includes(syn.nombre)) {
       player.mods.sinergias.push(syn.nombre);
       EventBus.emit('sinergia_activada', syn);
+    }
+  }
+  // Conjuntos / set-bonus (C3): al reunir N reliquias de una MISMA etiqueta se desbloquea un
+  // efecto de conjunto (reusa el formato de efectos). Una sola vez por umbral cruzado.
+  player.mods.conjuntos ??= [];
+  for (const c of DataDB.items.conjuntos ?? []) {
+    const key = c.tag + ':' + c.umbral;
+    const cuenta = RunState.items.filter(id => DataDB.item(id)?.tags?.includes(c.tag)).length;
+    if (cuenta >= c.umbral && !player.mods.conjuntos.includes(key)) {
+      player.mods.conjuntos.push(key);
+      aplicarEfectos(c.efectos ?? [], player, 'conjunto:' + c.tag);
+      EventBus.emit('conjunto_activado', c);
     }
   }
   player.recomputeStats();

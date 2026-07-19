@@ -87,7 +87,7 @@ export class Player {
       finisherShock: null, parryFreezeS: 0,
       familiares: [], activo: null,
       revealMap: false, dashTrail: null, extraChoice: 0,
-      sinergias: [], pendientes: []
+      sinergias: [], conjuntos: [], pendientes: []
     };
   }
   get b() { return this.stats; } // compatibilidad: stats efectivos (base × items)

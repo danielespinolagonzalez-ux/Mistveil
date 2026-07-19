@@ -25,8 +25,8 @@ Auditoría por 9 analistas comparando Mistveil con el género (Hades, Dead Cells
 
 ### Fase C — Profundidad de build y endgame (rejugabilidad)
 - [ ] C1 Ampliar a ~50-60 reliquias (sobre todo JSON) que modulen ritmo/compás/SP, no solo +daño; algunas que escalen con desempeño rítmico (payoff de build) (carencias #5 y #10).
-- [ ] C2 Pedestal de tesoro **"elige 1 de 2-3"** reusando `rollItem` (carencia #10, localizado).
-- [ ] C3 **Motor de sinergias** sobre los tags existentes (p. ej. 3 items `cadencia` desbloquean un efecto) (carencia #5).
+- [x] C2 Pedestal de tesoro **"elige 1 de 2-3"**: el tesoro SIEMPRE ofrece 2 reliquias (3 con Páginas perdidas); coger una desvanece las demás. Reusa `rollItem`; persistencia B1 (pedestal3). Misma cantidad de botín, con decisión de build.
+- [x] C3 **Motor de conjuntos/set-bonus** por etiqueta (`items.conjuntos`): reunir N reliquias de un mismo tag (3 cadencia/lágrimas/ignición/movilidad, 4 stats) desbloquea un efecto de conjunto (reusa el formato de efectos de item). Detección una-vez-por-umbral, flash al activar. `aplicarEfectos` factorizado para items Y conjuntos.
 - [ ] C4 **Sistema Heat** data-driven (`data/pactos.json`): condiciones apilables con niveles y +Memoria por tramo, reusando el andamio de Cuerda Tensa (carencia #6, crítica).
 - [ ] C5 Activar los 6 sellos restantes con selector (cruza R2.5); rangos múltiples en el Santuario y un sumidero tardío para engranajes/Memoria.
 

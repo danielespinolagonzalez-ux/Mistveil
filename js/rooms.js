@@ -172,21 +172,19 @@ export class Room {
         this.altars.push({ kind: 'evento', evId: ev.id, glifo: ev.glifo, color: ev.color, x: this.bounds.x + this.bounds.w / 2, y: this.bounds.y + this.bounds.h / 2, used: false });
       }
     }
-    // Sala del tesoro: pedestal con una reliquia del pool 'tesoro'.
-    // Con Páginas perdidas (extra_choice, R1.5) ofrece DOS y eliges una.
-    this.pedestal = null;
-    this.pedestal2 = null;
+    // Sala del tesoro (C2): SIEMPRE ofrece una ELECCIÓN de 2 reliquias; eliges una y las
+    // otras se desvanecen (misma cantidad de botín, pero con decisión de build). Con
+    // Páginas perdidas (extra_choice, R1.5) ofrece 3.
+    this.pedestal = null; this.pedestal2 = null; this.pedestal3 = null;
     if (type === 'tesoro') {
-      const it = rollItem('tesoro');
+      const n = 2 + (RunState.items.includes('paginas_perdidas') ? 1 : 0);
+      const usados = new Set(), elegidos = [];
+      for (let i = 0; i < n; i++) { const it = rollItem('tesoro'); if (it && !usados.has(it.id)) { usados.add(it.id); elegidos.push(it); } }
       const cx = this.bounds.x + this.bounds.w / 2, cy = this.bounds.y + this.bounds.h / 2 - 4;
-      this.pedestal = it ? { x: cx, y: cy, itemId: it.id, taken: false } : null;
-      if (it && RunState.items.includes('paginas_perdidas')) {
-        const it2 = rollItem('tesoro');
-        if (it2 && it2.id !== it.id) {
-          this.pedestal.x = cx - 44;
-          this.pedestal2 = { x: cx + 44, y: cy, itemId: it2.id, taken: false };
-        }
-      }
+      const sep = elegidos.length >= 3 ? 60 : 46;
+      const x0 = cx - (elegidos.length - 1) * sep / 2;
+      const slots = ['pedestal', 'pedestal2', 'pedestal3'];
+      elegidos.forEach((it, i) => { this[slots[i]] = { x: x0 + i * sep, y: cy, itemId: it.id, taken: false }; });
     }
     // Tienda: 3 productos con precio (4 con la Estantería de Margo)
     this.stock = null;
