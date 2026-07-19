@@ -28,6 +28,7 @@ import { selloDef, obtenerSello, rasgoCuraPorSp, finisherElemental, selloStatPas
 import { pickAzar, aplicarEvento } from '../js/eventos.js';
 import { drawItemIcon } from '../js/item_icons.js';
 import { Pactos, calcHeat, calcMemoriaMult, calcEfecto, nivelClamp } from '../js/pactos.js';
+import { FX } from '../js/fx.js';
 
 const out = document.getElementById('out');
 let failed = 0;
@@ -559,6 +560,17 @@ assert('E3: cada jefe de raid tiene intro/derrota/lore',
   SaveManager.load();
   assert('E4: el bestiario se persiste (guardar/cargar)', GameState.bestiario.includes('cera_andante'));
   GameState.bestiario = prev; SaveManager.save();
+})();
+// E5 — accesibilidad: toggles de sacudidas/destellos + gate de FX.shakeMult
+assert('E5: opciones incluye toggles de screenshake y flash',
+  'screenshake' in GameState.opciones && 'flash' in GameState.opciones);
+(() => {
+  const pm = FX.shakeMult, ps = FX.shake;
+  FX.shake = 0; FX.shakeMult = 0; FX.addShake(5);
+  assert('E5: shakeMult=0 desactiva las sacudidas de pantalla', FX.shake === 0);
+  FX.shakeMult = 1; FX.addShake(3);
+  assert('E5: shakeMult=1 permite las sacudidas', FX.shake > 0);
+  FX.shakeMult = pm; FX.shake = ps;
 })();
 
 // R1 — Reliquias completas: los 6 efectos antes "pendientes" ya se interpretan

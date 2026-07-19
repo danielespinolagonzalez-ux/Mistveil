@@ -64,6 +64,30 @@ export function slider(g, font, spec) {
   return { x: bx, y, w: bw, h }; // barra (para tocar/arrastrar)
 }
 
+// Interruptor on/off etiquetado (accesibilidad E5). Mismo lenguaje visual que slider:
+// etiqueta a la izquierda, estado a la derecha con píldora + texto sí/no. La posición
+// del pomo (no solo el color) marca el estado → legible con daltonismo.
+export function toggle(g, font, spec) {
+  let { x, y, w, h = UI.BTN_H, label = '', on = true, foco = false, valTxt = '', t = 0 } = spec;
+  h = Math.max(h, UI.TAP_MIN);
+  g.save();
+  rrect(g, x, y, w, h, UI.R); g.fillStyle = TONOS.normal.fill; g.fill();
+  g.lineWidth = foco ? 3 : 1.5; g.strokeStyle = foco ? '#fff' : TONOS.normal.border; g.stroke();
+  if (foco) { g.setLineDash([5, 5]); g.lineWidth = 2; g.strokeStyle = `rgba(255,247,180,${0.5 + 0.4 * Math.sin(t * 8)})`; rrect(g, x - 3, y - 3, w + 6, h + 6, UI.R + 2); g.stroke(); g.setLineDash([]); }
+  g.fillStyle = TONOS.normal.text; g.textBaseline = 'middle'; g.textAlign = 'left';
+  font(UI_SIZE.nota); g.fillText(label, x + 12, y + h / 2);
+  // Píldora deslizante a la derecha; el pomo se apoya a un lado según el estado.
+  const pw = 40, ph = Math.min(18, h - 14), px = x + w - pw - 12, py = y + (h - ph) / 2;
+  rrect(g, px, py, pw, ph, ph / 2); g.fillStyle = on ? '#ffd54f' : 'rgba(0,0,0,0.42)'; g.fill();
+  const kr = ph / 2 - 2, kx = on ? px + pw - kr - 3 : px + kr + 3;
+  g.beginPath(); g.arc(kx, py + ph / 2, kr, 0, 7); g.fillStyle = on ? '#2a1c10' : '#8a7bb0'; g.fill();
+  // Texto sí/no a la izquierda de la píldora (mismo hueco que valTxt del slider).
+  g.textAlign = 'right'; g.fillStyle = on ? '#ffe9c9' : '#9a92b5'; font(UI_SIZE.nota);
+  g.fillText(valTxt, px - 10, y + h / 2);
+  g.restore();
+  return { x, y, w, h };
+}
+
 // Panel/caja de fondo con doble borde (look de menu_equipo._panel / reloj_batalla._panel).
 export function panel(g, x, y, w, h, opts = {}) {
   const { titulo = '', font = null } = opts;

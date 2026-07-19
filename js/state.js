@@ -3,6 +3,12 @@
 // DataDB (solo lectura) para el BPM por pista del reloj de beat y config de música reactiva.
 import { DataDB } from './data_db.js';
 
+// E5: ¿el sistema pide movimiento reducido? (accesibilidad; guardado para entornos sin window)
+function _prefiereMenosMovimiento() {
+  try { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }
+  catch { return false; }
+}
+
 export const GameState = {
   memoria: 0,
   desbloqueos: [],
@@ -16,7 +22,9 @@ export const GameState = {
   bestiario: [],                // E4: ids de enemigos derrotados (para el códice/bestiario)
   flags: {},                    // narrativa/pueblo (hermanos_memoria, ate_idx...)
   stats: { runs: 0, muertes: 0, victorias: 0 },
-  opciones: { escala_ventanas: 1.0, vol_musica: 1.0, vol_sfx: 1.0, esquema_control: 'raton', latencia_ms: 0 },
+  // E5 accesibilidad: sacudidas y destellos ON por defecto, salvo que el sistema pida
+  // movimiento reducido (prefers-reduced-motion) → arrancan OFF (el usuario puede cambiarlo).
+  opciones: { escala_ventanas: 1.0, vol_musica: 1.0, vol_sfx: 1.0, esquema_control: 'raton', latencia_ms: 0, screenshake: !_prefiereMenosMovimiento(), flash: !_prefiereMenosMovimiento() },
   tiene(id) { return this.desbloqueos.includes(id); }
 };
 

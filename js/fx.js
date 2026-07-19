@@ -2,6 +2,7 @@
 export const FX = {
   parts: [],
   shake: 0,
+  shakeMult: 1, // E5 (accesibilidad): 0 desactiva las sacudidas de pantalla
 
   burst(x, y, { n = 8, color = '#fff', speed = 90, life = 0.5, size = 2, gravity = 0, glow = false, spread = Math.PI * 2, dir = 0 } = {}) {
     for (let i = 0; i < n; i++) {
@@ -18,7 +19,7 @@ export const FX = {
     if (this.parts.length > 400) this.parts.splice(0, this.parts.length - 400);
   },
 
-  addShake(amount) { this.shake = Math.min(6, this.shake + amount); },
+  addShake(amount) { this.shake = Math.min(6, this.shake + amount * this.shakeMult); },
 
   update(dt) {
     if (this.shake > 0) this.shake = Math.max(0, this.shake - dt * 14);

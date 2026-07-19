@@ -171,6 +171,7 @@ let freezeT = 0;   // péndulo quieto
 let slowmoT = 0, slowmoFactor = 1, slowmoBlue = false; // arena del tiempo (dorado) y bullet-time G5 (azul)
 let nearmissCd = 0; // anti-spam del bullet-time por esquivar por los pelos
 let ignicionFlashT = 0; // fogonazo dorado del estallido de Ignición
+let perfectGlowT = 0;   // E5: bloom sutil al clavar un perfecto
 let hitStopT = 0;  // micro-pausa en golpes perfectos (juice)
 let pendingUpgrades = null; // 3 mejoras ofrecidas al descender
 let upgradeIdx = 0;         // foco de la carta de mejora (toque/mando/teclado)
@@ -1342,7 +1343,7 @@ EventBus.on('cadencia_hit', ({ x, y, quality, dmg, finisher, hitIndex }) => {
   pushPopup(x, y - 22, conf.txt, conf.col, quality === 'perfect' ? 11 : 9);
   if (dmg > 0) pushPopup(x + 10, y - 10, String(dmg), '#f4f0e6');
   FX.burst(x, y, { n: conf.n, color: conf.col, speed: 90, life: 0.4, size: 2, glow: quality === 'perfect' });
-  if (quality === 'perfect') { FX.addShake(1); hitStopT = Math.max(hitStopT, 0.045); }
+  if (quality === 'perfect') { FX.addShake(1); hitStopT = Math.max(hitStopT, 0.045); perfectGlowT = 0.22; } // E5: bloom del perfecto
   // Groove/racha (G7c): encadenar buenos golpes sube la barra
   const gg = DataDB.balance.groove;
   if (gg && world.player) world.player.addGroove(quality === 'perfect' ? gg.por_perfect : quality === 'good' ? gg.por_good : 0);
@@ -1550,6 +1551,7 @@ function musicaEscena() {
 
 function update(dt) {
   if (Input.f5Pressed()) DataDB.reload();
+  FX.shakeMult = GameState.opciones.screenshake === false ? 0 : 1; // E5: gate de sacudidas
   // Mando (MFi/Xbox/PS) recién conectado: pasa a twin-stick, esconde el táctil y
   // avisa. Volver a tocar la pantalla reactiva el control táctil (lo último manda).
   if (Input.padJustConnected()) {
@@ -1600,6 +1602,7 @@ function update(dt) {
 
   if (hurtFlashT > 0) hurtFlashT -= dt;
   if (ignicionFlashT > 0) ignicionFlashT -= dt;
+  if (perfectGlowT > 0) perfectGlowT -= dt;
   if (mode === 'dead' || mode === 'victory') {
     FX.update(dt);
     const tap = Input.touchState().enabled && Input.justCode('TouchTap');
@@ -4658,18 +4661,30 @@ function optItems() {
     { type: 'slider', label: 'Calibración de latencia', get: () => ((o.latencia_ms ?? 0) + 120) / 240,
       set: v => { o.latencia_ms = Math.round((v * 240 - 120) / 5) * 5; },
       valTxt: () => { const l = o.latencia_ms ?? 0; return (l > 0 ? '+' : '') + l + ' ms'; } },
+    // E5 (accesibilidad): sacudidas y destellos de pantalla (fotosensibilidad / mareo)
+    { type: 'toggle', label: 'Sacudidas de pantalla',
+      act: () => { o.screenshake = o.screenshake === false; AudioManager.sfx('ui_tap'); },
+      on: () => o.screenshake !== false, valTxt: () => o.screenshake === false ? 'No' : 'Sí' },
+    { type: 'toggle', label: 'Destellos de pantalla',
+      act: () => { o.flash = o.flash === false; AudioManager.sfx('ui_tap'); },
+      on: () => o.flash !== false, valTxt: () => o.flash === false ? 'No' : 'Sí' },
   ];
   if (Input.touchState().enabled) items.push({
     type: 'toggle', label: 'Control táctil',
     act: () => { const nuevo = Input.scheme() === 'una_mano' ? 'raton' : 'una_mano'; Input.setScheme(nuevo); o.esquema_control = nuevo; },
-    valTxt: () => Input.scheme() === 'una_mano' ? 'Una Mano' : 'Dos pulgares',
+    on: () => Input.scheme() === 'una_mano', valTxt: () => Input.scheme() === 'una_mano' ? 'Una Mano' : 'Dos pulgares',
   });
   items.push({ type: 'button', label: 'Volver', tono: 'primary', act: () => salirOpciones() });
   return items;
 }
 function optRect(i) {
-  const w = Math.min(VW - 80, 420), h = 44, gap = 5;
-  return { x: Math.round((VW - w) / 2), y: 52 + i * (h + gap), w, h };
+  // Layout adaptable: reparte todas las filas entre el título y la glyphBar sin desbordar
+  // (con los toggles de accesibilidad de E5 ya son 7-8 filas y no cabían fijas a 44px).
+  const n = optItems().length;
+  const w = Math.min(VW - 80, 420), top = 46, bottom = VH - 26; // deja hueco a la glyphBar
+  const step = Math.min(49, (bottom - top) / n);
+  const h = Math.min(44, step - 4);
+  return { x: Math.round((VW - w) / 2), y: Math.round(top + i * step), w, h };
 }
 function salirOpciones() { SaveManager.save(); mode = 'paused'; }
 function updateOpciones() {
@@ -4703,6 +4718,7 @@ function drawOpciones(t) {
   for (let i = 0; i < n; i++) {
     const r = optRect(i), it = items[i], foco = i === optIdx;
     if (it.type === 'slider') UIK.slider(ctx, font, { ...r, label: it.label, value: it.get(), valTxt: it.valTxt(), foco, t });
+    else if (it.type === 'toggle') UIK.toggle(ctx, font, { ...r, label: it.label, on: it.on ? it.on() : true, valTxt: it.valTxt(), foco, t });
     else UIK.boton(ctx, font, { ...r, label: it.label, sub: it.valTxt ? it.valTxt() : '', tono: it.tono, foco, t });
   }
   UIK.glyphBar(ctx, font, Input, [{ k: 'nav', txt: 'elegir' }, { k: 'confirm', txt: 'ajustar' }, { k: 'cancel', txt: 'volver' }], VW, VH);
@@ -4895,6 +4911,32 @@ function render() {
   }
   drawMist(t, 1);
   ctx.drawImage(vignette, 0, 0);
+  // E5 (accesibilidad): con "Destellos" apagado, los fogonazos de pantalla completa se
+  // atenúan mucho (fotosensibilidad) pero no desaparecen del todo (siguen dando feedback).
+  const flashK = GameState.opciones.flash === false ? 0.18 : 1;
+  // E5: viñeta TEÑIDA POR BIOMA — el borde oscuro toma el matiz del bioma (delta tint) para
+  // que cada zona "sepa" distinta sin recargar (péndulos ámbar, archivo azul, invertida rojo,
+  // truenos violeta). Barato: un solo radial encima de la viñeta base.
+  const bt = floorMap?.current?.bioma?.tint;
+  if (bt && mode === 'play') {
+    const cl = v => Math.max(0, Math.min(255, v)) | 0;
+    const g = ctx.createRadialGradient(VW / 2, VH / 2, VH * 0.44, VW / 2, VH / 2, VH * 0.92);
+    g.addColorStop(0, 'rgba(0,0,0,0)');
+    g.addColorStop(1, `rgba(${cl(22 + bt[0] * 2)},${cl(14 + bt[1] * 2)},${cl(32 + bt[2] * 2)},0.30)`);
+    ctx.fillStyle = g; ctx.fillRect(0, 0, VW, VH);
+  }
+  // E5: bloom sutil al clavar un PERFECTO — un realce dorado del centro que se disuelve rápido
+  // (aditivo, gate por "Destellos" para fotosensibilidad). Refuerza el "sí" del ritmo perfecto.
+  if (perfectGlowT > 0 && mode === 'play') {
+    ctx.save();
+    ctx.globalCompositeOperation = 'screen';
+    const k = perfectGlowT / 0.22;
+    const g = ctx.createRadialGradient(VW / 2, VH / 2, 0, VW / 2, VH / 2, VH * 0.7);
+    g.addColorStop(0, `rgba(255,232,168,${0.13 * k * flashK})`);
+    g.addColorStop(1, 'rgba(255,232,168,0)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, VW, VH);
+    ctx.restore();
+  }
   if (world.player?.ignicionT > 0) {
     // Borde llameante que late al compás + caldeo dorado de toda la escena
     const g = ctx.createRadialGradient(VW / 2, VH / 2, VH * 0.32, VW / 2, VH / 2, VH * 0.75);
@@ -4912,7 +4954,7 @@ function render() {
   if (ignicionFlashT > 0) {
     // Fogonazo del Acto 1: blanco dorado que se disuelve
     const k = ignicionFlashT / 0.7;
-    ctx.fillStyle = `rgba(255,240,205,${0.55 * k * k})`;
+    ctx.fillStyle = `rgba(255,240,205,${0.55 * k * k * flashK})`;
     ctx.fillRect(0, 0, VW, VH);
   }
   if (freezeT > 0) {
@@ -4928,7 +4970,7 @@ function render() {
     const k = hurtFlashT / 0.35;
     const g = ctx.createRadialGradient(VW / 2, VH / 2, VH * 0.3, VW / 2, VH / 2, VH * 0.72);
     g.addColorStop(0, 'rgba(216,69,79,0)');
-    g.addColorStop(1, `rgba(216,69,79,${0.3 * k})`);
+    g.addColorStop(1, `rgba(216,69,79,${0.3 * k * Math.max(0.4, flashK)})`); // el daño mantiene algo de aviso
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, VW, VH);
   }

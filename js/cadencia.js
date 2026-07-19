@@ -412,12 +412,21 @@ export class Cadencia {
       ctx.globalAlpha = 1;
     }
 
-    // Aviso de counter: icono de parry
+    // Aviso de counter (anillo ROJO). E5 (accesibilidad daltónica): se distingue también por
+    // FORMA, no solo por color — púas hacia dentro alrededor del aro + glifo de parada.
     if (this.counter) {
-      ctx.font = '18px Gelica, serif';
-      ctx.textAlign = 'center';
       ctx.fillStyle = '#ff3b30';
-      ctx.fillText('¡E!', x, y - outerR - 6);
+      const spikes = 8;
+      for (let i = 0; i < spikes; i++) {
+        const a = (i / spikes) * Math.PI * 2, ox = Math.cos(a), oy = Math.sin(a);
+        ctx.beginPath();
+        ctx.moveTo(x + ox * (outerR + 6), y + oy * (outerR + 6));       // punta exterior
+        ctx.lineTo(x + ox * outerR - oy * 3, y + oy * outerR + ox * 3); // base
+        ctx.lineTo(x + ox * outerR + oy * 3, y + oy * outerR - ox * 3);
+        ctx.closePath(); ctx.fill();
+      }
+      ctx.font = '15px Gelica, serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#ff3b30';
+      ctx.fillText('◈ ¡E!', x, y - outerR - 9);
     }
 
     // Pips del combo
