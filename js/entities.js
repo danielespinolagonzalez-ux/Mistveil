@@ -87,6 +87,7 @@ export class Player {
       finisherShock: null, parryFreezeS: 0,
       familiares: [], activo: null,
       revealMap: false, dashTrail: null, extraChoice: 0,
+      grooveDano: 0, grooveVel: 0, grooveTearRate: 0, // C1: reliquias que escalan con la racha (payoff rítmico)
       sinergias: [], conjuntos: [], pendientes: []
     };
   }
@@ -118,12 +119,14 @@ export class Player {
       s.tear_damage *= I.damage_mult;
       s.melee_damage *= I.damage_mult;
     }
-    // Groove/racha (G7c): con la barra alta, Pip pega y corre más (recompensa la agresividad)
+    // Groove/racha (G7c): con la barra alta, Pip pega y corre más (recompensa la agresividad).
+    // C1: las reliquias de "payoff rítmico" (groove_buff) SÓLO rinden mientras la racha está alta.
     if (this.grooveBuffed) {
       const G = DataDB.balance.groove;
-      s.move_speed *= (G?.buff_speed_mult ?? 1);
-      s.tear_damage *= (G?.buff_dano_mult ?? 1);
-      s.melee_damage *= (G?.buff_dano_mult ?? 1);
+      s.move_speed *= (G?.buff_speed_mult ?? 1) * (1 + (this.mods.grooveVel ?? 0));
+      s.tear_damage *= (G?.buff_dano_mult ?? 1) * (1 + (this.mods.grooveDano ?? 0));
+      s.melee_damage *= (G?.buff_dano_mult ?? 1) * (1 + (this.mods.grooveDano ?? 0));
+      s.tear_rate_per_s *= (1 + (this.mods.grooveTearRate ?? 0));
     }
     this.stats = s;
     if (this.health) {

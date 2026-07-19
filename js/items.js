@@ -69,6 +69,12 @@ export function aplicarEfectos(efectos, player, origen = 'item') {
             player.mods.pendientes.push(origen + ':' + ef.accion); // desconocido: queda registrado
         }
         break;
+      case 'groove_buff': {
+        // C1 — payoff rítmico: el bono SOLO aplica con la racha (groove) alta. stat: dano|vel|tear_rate.
+        const key = ef.stat === 'vel' ? 'grooveVel' : ef.stat === 'tear_rate' ? 'grooveTearRate' : 'grooveDano';
+        player.mods[key] = (player.mods[key] ?? 0) + (ef.mult ?? 0);
+        break;
+      }
       case 'familiar':
         player.mods.familiares.push(ef.id);
         break;

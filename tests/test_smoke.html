@@ -168,8 +168,21 @@ assert('cada evento tiene id, glifo y color', DataDB.eventos.eventos.every(e => 
 })();
 
 // Ampliación de OBJETOS + apariencia (cada reliquia con silueta distinta)
-assert('roster de reliquias ampliado (≥30)', DataDB.items.items.length >= 30);
+assert('roster de reliquias ampliado (≥50)', DataDB.items.items.length >= 50); // C1: ~50-60
 assert('toda reliquia tiene icono_forma (silueta propia)', DataDB.items.items.every(i => typeof i.icono_forma === 'string'));
+assert('C1: sinergias ampliadas (≥6)', (DataDB.items.sinergias?.length ?? 0) >= 6);
+// C1 — payoff rítmico: las reliquias groove_buff SOLO rinden con la racha (groove) alta.
+(() => {
+  const saved = [...RunState.items]; RunState.items.length = 0;
+  const pA = new Player(0, 0); const base = pA.stats.tear_damage;
+  applyItem(DataDB.item('corazon_metronomo'), pA); // groove_buff dano +0.35
+  assert('C1: groove_buff NO aplica sin la racha alta', Math.abs(pA.stats.tear_damage - base) < 1e-6);
+  pA.grooveBuffed = true; pA.recomputeStats();
+  RunState.items.length = 0;
+  const pB = new Player(0, 0); pB.grooveBuffed = true; pB.recomputeStats(); // racha alta, sin reliquia
+  assert('C1: groove_buff añade daño extra con la racha alta', pA.stats.tear_damage > pB.stats.tear_damage);
+  RunState.items.length = 0; RunState.items.push(...saved);
+})();
 (() => {
   const pit = new Player(0, 0);
   const r0 = pit.stats.tear_range_px;
