@@ -127,6 +127,16 @@
     "r_mult": 1.35,
     "escolta": 2
   },
+  "sincronia": {
+    "_doc": "D5: Cámara de Sincronía — sala reforzada cuyo BONUS depende de PERFECTOS de Cadencia clavados durante el combate (no del tiempo). Premia el ritmo, el corazón del juego.",
+    "prob": 0.3,
+    "presupuesto_mult": 1.4,
+    "objetivo_base": 4,
+    "objetivo_por_piso": 0.35,
+    "bonus_oro": 16,
+    "bonus_sp": 30,
+    "bonus_corazon_pct": 40
+  },
   "elite": {
     "prob_base": 0.06,
     "prob_por_piso": 0.014,

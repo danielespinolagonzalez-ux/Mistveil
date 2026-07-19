@@ -156,7 +156,11 @@ export class Room {
     this.reto = null;
     if (type === 'desafio') {
       const D = DataDB.balance.desafio ?? {};
-      this.reto = { activo: false, t: 0, limite: (D.tiempo_base_s ?? 22) + (piso - 1) * (D.tiempo_por_piso_s ?? 1.5), ganado: false };
+      this.reto = { modo: 'tiempo', activo: false, t: 0, limite: (D.tiempo_base_s ?? 22) + (piso - 1) * (D.tiempo_por_piso_s ?? 1.5), ganado: false };
+    } else if (type === 'sincronia') {
+      // D5: Cámara de Sincronía — el BONUS depende de PERFECTOS clavados, no del tiempo.
+      const S = DataDB.balance.sincronia ?? {};
+      this.reto = { modo: 'sincronia', activo: false, objetivo: Math.round((S.objetivo_base ?? 4) + (piso - 1) * (S.objetivo_por_piso ?? 0.35)), perfectsInicio: 0, ganado: false };
     }
     // La Sala de Péndulos: las galerías tienen un péndulo que barre el centro
     if (this.bioma?.pendulo && type === 'galeria') {
@@ -164,7 +168,7 @@ export class Room {
     }
 
     this._walls = null;
-    if (['normal', 'camara', 'galeria', 'maldita', 'desafio'].includes(type)) this._applyTemplate(pickTemplate(this.bioma?.id), Math.random() < 0.5);
+    if (['normal', 'camara', 'galeria', 'maldita', 'desafio', 'sincronia'].includes(type)) this._applyTemplate(pickTemplate(this.bioma?.id), Math.random() < 0.5);
     // El Archivo Anegado: charcos de tinta que frenan (el fuego los seca)
     if (this.bioma?.tinta && ['camara', 'galeria', 'normal'].includes(type)) {
       const tc = this.bioma.tinta;
@@ -379,8 +383,13 @@ export class Room {
       this._seal(world);
     } else if (!this.cleared && this.spawnPts.length) {
       this.pendingSpawns = this._rollSpawns();
-      if (this.pendingSpawns.length) { this._seal(world); if (this.reto) this.reto.activo = true; } // arranca el reloj del reto
-      else this.cleared = true;
+      if (this.pendingSpawns.length) {
+        this._seal(world);
+        if (this.reto) {
+          this.reto.activo = true; // arranca el reto (reloj del desafío / contador de sincronía)
+          if (this.reto.modo === 'sincronia') this.reto.perfectsInicio = RunState.floorStats?.perfects ?? 0;
+        }
+      } else this.cleared = true;
     }
     return first;
   }
@@ -397,7 +406,7 @@ export class Room {
     const R = DataDB.balance.run;
     const pool = poolBioma(this.bioma?.id, this.piso); // D3: escalonado por rango de piso
     // Maldita: presupuesto doble. Desafío: reforzado (mult data-driven). Escalado por piso.
-    const budMult = this.type === 'maldita' ? 2 : this.type === 'desafio' ? (DataDB.balance.desafio?.presupuesto_mult ?? 1.8) : 1;
+    const budMult = this.type === 'maldita' ? 2 : this.type === 'desafio' ? (DataDB.balance.desafio?.presupuesto_mult ?? 1.8) : this.type === 'sincronia' ? (DataDB.balance.sincronia?.presupuesto_mult ?? 1.4) : 1;
     // Heat (C4): pactos apilables suben la dificultad por lever (densidad/hp/daño/velocidad/élite).
     const pactoDensidad = Pactos.efecto('densidad');   // Enjambre
     const pactoVel = Pactos.efecto('velocidad_enemigo'); // Cacería
@@ -474,7 +483,7 @@ export class Room {
 
   update(dt, world) {
     // Reloj del desafío: corre mientras la sala está sellada (en combate). No bloquea nada.
-    if (this.reto?.activo && this.sealed && this.spawnTimer <= 0) this.reto.t += dt;
+    if (this.reto?.modo === 'tiempo' && this.reto.activo && this.sealed && this.spawnTimer <= 0) this.reto.t += dt;
     if (this.spawnTimer > 0) {
       this.spawnTimer -= dt;
       if (this.spawnTimer <= 0 && this.pendingSpawns.length) {
@@ -892,6 +901,7 @@ export function buildTower(piso = 1, seed = Date.now()) {
   if (rnd() < 0.6) specials.push(pickR(['fundicion', 'metronomo', 'apuestas']));
   if (rnd() < (R.evento_prob ?? 0.5)) specials.push('evento');
   if (rnd() < (R.desafio_prob ?? 0.35)) specials.push('desafio');
+  if (rnd() < (DataDB.balance.sincronia?.prob ?? 0.3)) specials.push('sincronia'); // D5: Cámara de Sincronía
   while (deadEnds.length < specials.length) { const k = sprout(); if (!k) break; deadEnds.push(k); }
   shuffle(deadEnds);
   const typeOf = new Map([[startK, 'inicial'], [bossK, 'jefe']]);

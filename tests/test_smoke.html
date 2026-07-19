@@ -228,6 +228,22 @@ assert('D4: balance.minijefe define hp_mult/escolta', DataDB.balance.minijefe &&
     b1.pendingSpawns.some(s => s.overrides?.minijefe) && !b1.pendingSpawns.some(s => s.overrides?.comportamiento === 'jefe_ancla'));
 })();
 
+// Fase D — D5: Cámara de Sincronía (bonus por PERFECTOS de Cadencia, no por tiempo)
+assert('D5: balance.sincronia define objetivo/bonus', DataDB.balance.sincronia && DataDB.balance.sincronia.objetivo_base >= 1);
+(() => {
+  const rs = new Room(1, 1, 'sincronia', 3);
+  assert('D5: la sala de sincronía es de combate con reto por perfectos',
+    rs.cleared === false && rs.spawnPts.length > 0 && rs.reto?.modo === 'sincronia' && rs.reto.objetivo > 0);
+  // enter() activa el reto y captura los perfectos iniciales (para medir el delta al limpiar)
+  RunState.resetFloorStats(); RunState.floorStats.perfects = 5;
+  rs.enter({ enemies: [] });
+  assert('D5: enter() activa el reto de sincronía y fija perfectsInicio',
+    rs.reto.activo === true && rs.reto.perfectsInicio === 5);
+  // el reto de sincronía NO corre por tiempo (no tiene límite ni tick de reloj)
+  rs.update(0.5, { enemies: [], tears: { spawn() {} }, bullets: { spawn() {} } });
+  assert('D5: el reto de sincronía no corre por tiempo', rs.reto.t === undefined || rs.reto.limite === undefined);
+})();
+
 // Ampliación de OBJETOS + apariencia (cada reliquia con silueta distinta)
 assert('roster de reliquias ampliado (≥50)', DataDB.items.items.length >= 50); // C1: ~50-60
 assert('toda reliquia tiene icono_forma (silueta propia)', DataDB.items.items.every(i => typeof i.icono_forma === 'string'));

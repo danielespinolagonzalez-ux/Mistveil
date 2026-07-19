@@ -34,10 +34,10 @@ Auditoría por 9 analistas comparando Mistveil con el género (Hades, Dead Cells
 
 ### Fase D — Ancho de contenido de la Torre (cruza R3)
 - [x] D1 ≥4 plantillas de sala **por bioma** con obstáculos que incorporen su mecánica de zona (= R3.1, carencia #7). `pickTemplate(bioma)` filtra por bioma (activa el campo `pisos`, antes ignorado): las genéricas valen en todos, las de bioma solo en el suyo. +16 plantillas temáticas (9→25): Péndulos=columnas/pilares, Archivo=estanterías+charcos de tinta, Invertida=engranajes de cera en diagonal, Truenos=rejilla/arena para las descargas. Cada bioma pasa de 9 a 13 candidatas.
-- [ ] D2 Modificador de **elite/campeón** de spawn que reusa los 19 enemigos (más HP/aura/recompensa; "elite afinado" que exija combo perfecto) (carencia #13, bajo).
+- [x] D2 Modificador de **elite/campeón** de spawn que reusa los 19 enemigos (más HP/aura/recompensa; "elite afinado" que exija combo perfecto) (carencia #13, bajo). Sistema ÉLITE (Fase C: acorazado/veloz/iracundo, +vida/aura/botín) + CAMPEÓN minijefe (D4). Pendiente opcional: la variante "élite afinado que exija combo perfecto".
 - [x] D3 Filtrar el pool de spawn por el campo `pisos` existente para escalonar debuts al descender (carencia #13, bajo). `poolBioma(bioma, piso)` interpreta `pisos` como RANGO [min..max] (los datos eran ruidosos: [1,9] = pisos 1-9) y filtra el pool; fallback si quedara vacío. Los enemigos debutan a su profundidad, no todos de golpe.
 - [x] D4 Reservar el jefe de raid al último piso del mundo (3/6/9/12) + minijefes intermedios; jefes por fase (= R3.2). La sala de jefe spawnea el jefe de RAID solo si `piso % 3 === 0`; en los pisos intermedios spawnea un **MINIJEFE** = campeón (enemigo del bioma promocionado a élite reforzado + nombre + escoltas), sin director de raid. Así la Torre no repite el mismo jefe 3× por mundo.
-- [ ] D5 1-2 salas-evento nuevas alineadas con Cadencia (arena contra reloj; secreta que premia la sincronía).
+- [x] D5 1-2 salas-evento nuevas alineadas con Cadencia (arena contra reloj; secreta que premia la sincronía). **Cámara de Sincronía** (`sincronia`): sala reforzada cuyo BONUS depende de los **PERFECTOS de Cadencia** clavados durante el combate (no del tiempo, a diferencia del desafío) — premia el ritmo, el corazón del juego. Medidor de sincronía en el HUD, flash de entrada, icono de minimapa; reusa el andamio de la sala-desafío (`reto` con `modo:'sincronia'`). Bonus: oro + Espíritu + opción de corazón. `balance.sincronia` (F5).
 
 **Criterio D:** una run de 12 pisos no empieza a repetirse hacia el piso 5-6.
 

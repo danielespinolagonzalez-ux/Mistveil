@@ -748,6 +748,7 @@ function onEnterRoom(room, first) {
   if (first && room.type === 'apuestas') flash('El Reloj de Apuestas', 'El Gremio paga a los intachables');
   if (first && room.type === 'evento') { const ev = DataDB.eventos?.eventos?.find(e => e.id === room.altars?.[0]?.evId); flash(ev?.nombre ?? 'Un altar aguarda', ev?.desc ?? 'Acércate y decide'); }
   if (first && room.type === 'desafio') flash('EL DESAFÍO DEL COMPÁS', 'Límpiala a tiempo para el bonus · un minijefe acecha');
+  if (first && room.type === 'sincronia') flash('CÁMARA DE SINCRONÍA', 'Clava ' + (room.reto?.objetivo ?? 4) + ' PERFECTOS de Cadencia para el premio');
   if (first) {
     for (const s of room.pickupSpots) if (Math.random() < 0.5) spawnPickup('coin', s.x, s.y, false);
   }
@@ -1262,7 +1263,23 @@ EventBus.on('room_cleared', (room) => {
   }
   // Desafío: siempre suelta una reliquia; si además lo limpiaste A TIEMPO, BONUS (oro +
   // opción de corazón). El reloj solo decide el bonus, nunca el paso (la puerta ya abrió).
-  if (room.reto) {
+  if (room.reto && room.reto.modo === 'sincronia') {
+    // D5: Cámara de Sincronía — el BONUS depende de los PERFECTOS clavados durante el combate.
+    room.reto.activo = false;
+    const S = DataDB.balance.sincronia ?? {};
+    const logrados = Math.max(0, (RunState.floorStats?.perfects ?? 0) - room.reto.perfectsInicio);
+    const it = rollItem('tesoro'); if (it) spawnPickup('item:' + it.id, cx, cy - 14);
+    if (logrados >= room.reto.objetivo) {
+      room.reto.ganado = true;
+      RunState.oro += (S.bonus_oro ?? 16);
+      RunState.sp = Math.min(DataDB.balance.ignicion.sp_max, RunState.sp + (S.bonus_sp ?? 30));
+      AudioManager.sfx('clear'); FX.addShake(2.5);
+      if (Math.random() * 100 < (S.bonus_corazon_pct ?? 40)) spawnPickup('heart', cx, cy + 20);
+      flash('¡SINCRONÍA CLAVADA!', logrados + '/' + room.reto.objetivo + ' perfectos · +' + (S.bonus_oro ?? 16) + ' oro y Espíritu');
+    } else {
+      flash('Sincronía incompleta', logrados + '/' + room.reto.objetivo + ' perfectos · sin bonus');
+    }
+  } else if (room.reto) {
     room.reto.activo = false;
     const D = DataDB.balance.desafio ?? {};
     const it = rollItem('tesoro'); if (it) spawnPickup('item:' + it.id, cx, cy - 14);
@@ -3720,14 +3737,26 @@ function drawHUD(t) {
   // Reloj del DESAFÍO: barra de cuenta atrás mientras la sala-reto está en combate. Si se
   // agota, el reto sigue (se limpia matando a todos), solo se pierde el bonus → se pone rojo.
   if (cur?.reto?.activo && cur.sealed) {
-    const rt = cur.reto, rest = Math.max(0, rt.limite - rt.t), k = Math.max(0, Math.min(1, rest / rt.limite));
-    const bw = 120, bx = (VW - bw) / 2, by = 52;
-    ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(bx, by, bw, 5);
-    ctx.fillStyle = k > 0 ? (k < 0.25 ? (Math.floor(t * 8) % 2 ? '#ff5a4f' : '#ffb547') : '#7ee8e0') : '#6c6193';
-    ctx.fillRect(bx, by, Math.round(bw * k), 5);
-    ctx.strokeStyle = 'rgba(126,232,224,0.6)'; ctx.lineWidth = 1; ctx.strokeRect(bx - 0.5, by - 0.5, bw + 1, 6);
-    font(7); ctx.textAlign = 'center'; ctx.fillStyle = k > 0 ? '#cfeeea' : '#ff8a7a';
-    ctx.fillText(k > 0 ? ('BONUS EN ' + rest.toFixed(1) + 's') : 'BONUS PERDIDO — ¡acaba con ellos!', VW / 2, by - 3);
+    const rt = cur.reto, bw = 120, bx = (VW - bw) / 2, by = 52;
+    if (rt.modo === 'sincronia') {
+      // D5: medidor de SINCRONÍA — se llena con cada perfecto clavado en el combate.
+      const logrados = Math.max(0, (RunState.floorStats?.perfects ?? 0) - rt.perfectsInicio);
+      const k = Math.max(0, Math.min(1, logrados / rt.objetivo)), hecho = logrados >= rt.objetivo;
+      ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(bx, by, bw, 5);
+      ctx.fillStyle = hecho ? '#ffd54f' : '#b98ff0';
+      ctx.fillRect(bx, by, Math.round(bw * k), 5);
+      ctx.strokeStyle = 'rgba(185,143,240,0.6)'; ctx.lineWidth = 1; ctx.strokeRect(bx - 0.5, by - 0.5, bw + 1, 6);
+      font(7); ctx.textAlign = 'center'; ctx.fillStyle = hecho ? '#ffe9a8' : '#d8c9ff';
+      ctx.fillText(hecho ? ('¡SINCRONÍA LOGRADA! · ' + logrados + ' perfectos') : ('SINCRONÍA  ' + logrados + '/' + rt.objetivo + ' perfectos'), VW / 2, by - 3);
+    } else {
+      const rest = Math.max(0, rt.limite - rt.t), k = Math.max(0, Math.min(1, rest / rt.limite));
+      ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(bx, by, bw, 5);
+      ctx.fillStyle = k > 0 ? (k < 0.25 ? (Math.floor(t * 8) % 2 ? '#ff5a4f' : '#ffb547') : '#7ee8e0') : '#6c6193';
+      ctx.fillRect(bx, by, Math.round(bw * k), 5);
+      ctx.strokeStyle = 'rgba(126,232,224,0.6)'; ctx.lineWidth = 1; ctx.strokeRect(bx - 0.5, by - 0.5, bw + 1, 6);
+      font(7); ctx.textAlign = 'center'; ctx.fillStyle = k > 0 ? '#cfeeea' : '#ff8a7a';
+      ctx.fillText(k > 0 ? ('BONUS EN ' + rest.toFixed(1) + 's') : 'BONUS PERDIDO — ¡acaba con ellos!', VW / 2, by - 3);
+    }
   }
 
   // Arte equipada + reliquias: en su propia zona (x≥152), lejos del ¡F!/¡RACHA!
@@ -3856,7 +3885,7 @@ function drawMinimap() {
   // abajo y antes se metía debajo de esos botones).
   const padR = Input.touchState().enabled ? 38 : 12;
   const ox = VW - padR - (maxGx - minGx + 1) * (CW + GAP), oy = 24;
-  const ICON = { tesoro: '#e8c565', tienda: '#7ec98f', jefe: '#e05a4f', maldita: '#b678e8', evento: '#d9a441', desafio: '#7ee8e0' };
+  const ICON = { tesoro: '#e8c565', tienda: '#7ec98f', jefe: '#e05a4f', maldita: '#b678e8', evento: '#d9a441', desafio: '#7ee8e0', sincronia: '#b98ff0' };
   for (const [k, vis] of known) {
     const [gx, gy] = k.split(',').map(Number);
     const room = floorMap.rooms.get(k);
