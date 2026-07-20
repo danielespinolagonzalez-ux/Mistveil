@@ -590,5 +590,20 @@
   "w": 30,
   "h": 60,
   "face": "right"
+ },
+ "prop_cajas": {
+  "w": 43,
+  "h": 52,
+  "face": "right"
+ },
+ "prop_fuente": {
+  "w": 72,
+  "h": 72,
+  "face": "right"
+ },
+ "prop_puesto": {
+  "w": 66,
+  "h": 72,
+  "face": "right"
  }
 }

@@ -583,14 +583,28 @@ export function drawMotas(g, camX, VW, VH, t) {
   }
 }
 
-// ---- Fuente-oclusor de primer plano: Pip pasa POR DETRÁS (y-sort en main.js) ----
+// ---- Props-oclusores de primer plano: Pip pasa POR DETRÁS (y-sort en main.js) ----
 export function propsCiudad() {
   const P = plaza();
-  return [{ kind: 'fuente', x: P.x + 496, y: P.y + 176 }];
+  return [
+    { kind: 'fuente', x: P.x + 496, y: P.y + 176 },
+    { kind: 'puesto', x: P.x + 160, y: P.y + 208 },
+    { kind: 'cajas', x: P.x + 404, y: P.y + 212 },
+  ];
 }
+const PROP_H = { fuente: 46, puesto: 50, cajas: 34 }; // altura en pantalla del prop pintado
 export function drawProp(g, prop, SX, SY, t) {
-  if (prop.kind !== 'fuente') return;
   const x = SX(prop.x), y = SY(prop.y);
+  // F4/CIUDAD-5: prop pintado (con sombra de contacto). Fallback por código solo la fuente.
+  const spr = Sprites.get('prop_' + prop.kind);
+  if (spr) {
+    const inf = Sprites.info('prop_' + prop.kind);
+    const dh = PROP_H[prop.kind] ?? 40, dw = Math.round(inf.w * dh / inf.h);
+    g.fillStyle = 'rgba(0,0,0,0.28)'; g.beginPath(); g.ellipse(x, y + 3, dw * 0.42, dh * 0.13, 0, 0, 7); g.fill();
+    g.drawImage(spr, Math.round(x - dw / 2), Math.round(y - dh + 6), dw, dh);
+    return;
+  }
+  if (prop.kind !== 'fuente') return; // puesto/cajas sin fallback (decorativos)
   // sombra
   g.fillStyle = 'rgba(0,0,0,0.30)'; g.beginPath(); g.ellipse(x, y + 6, 28, 8, 0, 0, 7); g.fill();
   // pilón de piedra

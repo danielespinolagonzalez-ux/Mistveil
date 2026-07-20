@@ -649,6 +649,24 @@
       "estado": "hecho"
     },
     {
+      "id": "prop_fuente",
+      "tipo": "sprite", "clase": "prop", "targetH": 72, "face": "right",
+      "sujeto": "F4/CIUDAD-5: fuente de relojería (engranajes en vez de agua) — oclusor de primer plano de Cuerdaqueda",
+      "estado": "hecho"
+    },
+    {
+      "id": "prop_puesto",
+      "tipo": "sprite", "clase": "prop", "targetH": 72, "face": "right",
+      "sujeto": "F4/CIUDAD-5: puesto de mercado con toldo y cajones de engranajes",
+      "estado": "hecho"
+    },
+    {
+      "id": "prop_cajas",
+      "tipo": "sprite", "clase": "prop", "targetH": 52, "face": "right",
+      "sujeto": "F4/CIUDAD-5: pila de cajas de madera y barril con cuerda y cogs",
+      "estado": "hecho"
+    },
+    {
       "id": "vecino_fragua",
       "tipo": "sprite", "clase": "townsfolk character", "targetH": 60, "face": "right",
       "sujeto": "F4/CIUDAD-3: Yelmo la herrera de brazos de latón paseando (cuerpo entero, top-down)",
