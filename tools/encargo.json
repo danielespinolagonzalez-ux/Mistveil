@@ -679,6 +679,12 @@
       "estado": "hecho"
     },
     {
+      "id": "cautivo",
+      "tipo": "sprite", "clase": "caged prisoner prop", "targetH": 104, "face": "right",
+      "sujeto": "F4/CIUDAD-6: vecino cautivo tras jaula de engranajes con candado-engranaje (celdas de rescate de la Torre); neutro para teñir el aura del distrito por código",
+      "estado": "hecho"
+    },
+    {
       "id": "prop_fuente",
       "tipo": "sprite", "clase": "prop", "targetH": 72, "face": "right",
       "sujeto": "F4/CIUDAD-5: fuente de relojería (engranajes en vez de agua) — oclusor de primer plano de Cuerdaqueda",

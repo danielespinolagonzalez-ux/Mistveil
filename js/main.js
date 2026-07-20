@@ -829,19 +829,47 @@ function drawBiomaExtras(t) {
     const cx = SX(room.cautivo.x), cy = SY(room.cautivo.y);
     const dcol = DataDB.ciudad?.distritos?.find(d => d.id === room.cautivo.id)?.acento ?? '#8a86a0';
     const listo = room.cleared;
-    ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(cx, cy + 11, 12, 4, 0, 0, 7); ctx.fill();
-    // figura encapuchada gris
-    ctx.fillStyle = '#454060';
-    ctx.beginPath(); ctx.moveTo(cx - 8, cy + 11); ctx.quadraticCurveTo(cx - 9, cy - 13, cx, cy - 16); ctx.quadraticCurveTo(cx + 9, cy - 13, cx + 8, cy + 11); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = '#2a2740'; ctx.beginPath(); ctx.arc(cx, cy - 12, 5, 0, 7); ctx.fill();
-    ctx.globalAlpha = listo ? 0.95 : 0.4; ctx.fillStyle = dcol;
-    ctx.beginPath(); ctx.arc(cx - 2, cy - 12, 1, 0, 7); ctx.arc(cx + 2, cy - 12, 1, 0, 7); ctx.fill();
-    ctx.globalAlpha = 1;
-    // reja de engranajes: barrotes + ruedas dentadas (se difuminan al limpiar la sala)
-    ctx.strokeStyle = `rgba(150,140,180,${listo ? 0.3 : 0.85})`; ctx.lineWidth = 2;
-    for (const bx of [-10, -3, 4, 11]) { ctx.beginPath(); ctx.moveTo(cx + bx, cy - 20); ctx.lineTo(cx + bx, cy + 9); ctx.stroke(); }
-    ctx.fillStyle = `rgba(120,110,150,${listo ? 0.35 : 0.75})`;
-    for (const gx of [cx - 8, cx + 8]) { ctx.beginPath(); ctx.arc(gx, cy - 20, 3, 0, 7); ctx.fill(); ctx.beginPath(); ctx.arc(gx, cy + 9, 3, 0, 7); ctx.fill(); }
+    const spr = Sprites.get('cautivo');
+    if (spr) {
+      // F4/CIUDAD-6: jaula de engranajes PINTADA con el vecino preso y su candado-engranaje.
+      // Al limpiar la celda (listo), un AURA del color del distrito palpita alrededor y el
+      // candado prende: telegrafía de "ya puedes romper el cerrojo AL COMPÁS".
+      const inf = Sprites.info('cautivo');
+      const dh = 56, dw = Math.round(inf.w * dh / inf.h);
+      const bx = Math.round(cx - dw / 2), by = Math.round(cy + 11 - dh); // ancla por la base
+      ctx.fillStyle = 'rgba(0,0,0,0.32)'; ctx.beginPath(); ctx.ellipse(cx, cy + 11, dw * 0.32, 4, 0, 0, 7); ctx.fill();
+      if (listo) {
+        // aura tras la jaula (halo del color del distrito, palpitante) vía shadowBlur → sin rgba de hex
+        const pulso = 0.55 + Math.sin(t * 4) * 0.35;
+        ctx.save();
+        ctx.shadowColor = dcol; ctx.shadowBlur = 20;
+        ctx.globalAlpha = 0.5 * pulso; ctx.fillStyle = dcol;
+        ctx.beginPath(); ctx.arc(cx, cy - dh * 0.42, dw * 0.26, 0, 7); ctx.fill();
+        ctx.restore();
+      }
+      ctx.drawImage(spr, bx, by, dw, dh);
+      if (listo) {
+        // el candado-engranaje (parte baja-central de la lámina) brilla: "rompe el cerrojo"
+        const lx = cx, ly = cy + 11 - dh * 0.33, pulso = 0.6 + Math.sin(t * 4 + 1) * 0.4;
+        ctx.save(); ctx.shadowColor = dcol; ctx.shadowBlur = 10;
+        ctx.globalAlpha = 0.9 * pulso; ctx.fillStyle = dcol;
+        ctx.beginPath(); ctx.arc(lx, ly, 2, 0, 7); ctx.fill();
+        ctx.restore();
+      }
+    } else {
+      // Fallback por código (F1): figura gris tras reja de engranajes; ojos+reja telegrafían listo.
+      ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(cx, cy + 11, 12, 4, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#454060';
+      ctx.beginPath(); ctx.moveTo(cx - 8, cy + 11); ctx.quadraticCurveTo(cx - 9, cy - 13, cx, cy - 16); ctx.quadraticCurveTo(cx + 9, cy - 13, cx + 8, cy + 11); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#2a2740'; ctx.beginPath(); ctx.arc(cx, cy - 12, 5, 0, 7); ctx.fill();
+      ctx.globalAlpha = listo ? 0.95 : 0.4; ctx.fillStyle = dcol;
+      ctx.beginPath(); ctx.arc(cx - 2, cy - 12, 1, 0, 7); ctx.arc(cx + 2, cy - 12, 1, 0, 7); ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = `rgba(150,140,180,${listo ? 0.3 : 0.85})`; ctx.lineWidth = 2;
+      for (const barx of [-10, -3, 4, 11]) { ctx.beginPath(); ctx.moveTo(cx + barx, cy - 20); ctx.lineTo(cx + barx, cy + 9); ctx.stroke(); }
+      ctx.fillStyle = `rgba(120,110,150,${listo ? 0.35 : 0.75})`;
+      for (const gx of [cx - 8, cx + 8]) { ctx.beginPath(); ctx.arc(gx, cy - 20, 3, 0, 7); ctx.fill(); ctx.beginPath(); ctx.arc(gx, cy + 9, 3, 0, 7); ctx.fill(); }
+    }
   }
   // Tuerca
   if (world.pet) {

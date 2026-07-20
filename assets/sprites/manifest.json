@@ -630,5 +630,10 @@
   "w": 79,
   "h": 120,
   "face": "right"
+ },
+ "cautivo": {
+  "w": 93,
+  "h": 104,
+  "face": "right"
  }
 }

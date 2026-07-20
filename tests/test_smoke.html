@@ -650,6 +650,9 @@ assert('F1: rescates.json define ≥5 cautivos con barrio/pisos/cerrojo',
   const fach = ['fragua', 'hermanos', 'botica', 'conservatorio', 'atalaya'];
   assert('F4/CIUDAD-2: los 5 distritos rescatables tienen fachada pintada con dimensiones',
     !!man && fach.every(id => man['fachada_' + id] && man['fachada_' + id].w > 0 && man['fachada_' + id].h > 0));
+  // F4/CIUDAD-6: el cautivo pintado (jaula de engranajes) existe en el manifest
+  assert('F4/CIUDAD-6: el cautivo pintado tiene sprite con dimensiones',
+    !!man && !!man['cautivo'] && man['cautivo'].w > 0 && man['cautivo'].h > 0);
 }
 // F3 — servicios de los distritos rescatados (Fragua→Forja, Botica, Conservatorio, Atalaya)
 (() => {
