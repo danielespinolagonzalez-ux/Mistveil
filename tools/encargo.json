@@ -649,6 +649,42 @@
       "estado": "hecho"
     },
     {
+      "id": "vecino_fragua",
+      "tipo": "sprite", "clase": "townsfolk character", "targetH": 60, "face": "right",
+      "sujeto": "F4/CIUDAD-3: Yelmo la herrera de brazos de latón paseando (cuerpo entero, top-down)",
+      "estado": "hecho"
+    },
+    {
+      "id": "vecino_botica",
+      "tipo": "sprite", "clase": "townsfolk character", "targetH": 60, "face": "right",
+      "sujeto": "F4/CIUDAD-3: Nébula la cerera encapuchada con vela paseando (cuerpo entero, top-down)",
+      "estado": "hecho"
+    },
+    {
+      "id": "vecino_conservatorio",
+      "tipo": "sprite", "clase": "townsfolk character", "targetH": 60, "face": "right",
+      "sujeto": "F4/CIUDAD-3: Sostenido el lutier con lira-campana paseando (cuerpo entero, top-down)",
+      "estado": "hecho"
+    },
+    {
+      "id": "vecino_atalaya",
+      "tipo": "sprite", "clase": "townsfolk character", "targetH": 60, "face": "right",
+      "sujeto": "F4/CIUDAD-3: Alondra la vigía con catalejo y mapa paseando (cuerpo entero, top-down)",
+      "estado": "hecho"
+    },
+    {
+      "id": "vecino_a",
+      "tipo": "sprite", "clase": "townsfolk character", "targetH": 60, "face": "right",
+      "sujeto": "F4/CIUDAD-3: vecino genérico de Cuerdaqueda, capa con engranajes (cuerpo entero, top-down)",
+      "estado": "hecho"
+    },
+    {
+      "id": "vecino_b",
+      "tipo": "sprite", "clase": "townsfolk character", "targetH": 60, "face": "right",
+      "sujeto": "F4/CIUDAD-3: vecino genérico de Cuerdaqueda, capa de engranajes al hombro (cuerpo entero, top-down)",
+      "estado": "hecho"
+    },
+    {
       "id": "fondo_ciudad",
       "tipo": "textura",
       "formato": "jpeg",

@@ -4,6 +4,7 @@
 // diálogo; aquí viven los distritos (posición, desbloqueo, diálogos, dibujo ruina/viva).
 import { DataDB } from './data_db.js';
 import { GameState, RunState, SaveManager, AudioManager } from './state.js';
+import { Sprites } from './sprites.js';
 
 const t9 = k => DataDB.texto(k);
 
@@ -616,20 +617,28 @@ let _vecinos = null;
 function _nuevoVecino(x, y, col, speed, nino = false) {
   return { x, homeX: x, y, col, speed: speed * 14, dir: Math.random() < 0.5 ? -1 : 1, rango: 34 + Math.random() * 46, t: Math.random() * 6, nino, pausa: Math.random() * 1.5 };
 }
+const RESCATABLES = ['fragua', 'botica', 'conservatorio', 'atalaya'];
 export function poblarVecinos() {
   const P = plaza();
   const T = DataDB.ciudad?.terrazas ?? { baja: 196, media: 132, alta: 74 };
   const v = [];
-  // Un vecino junto a cada distrito VIVO (menos la Puerta), del color de su acento.
+  // Los 4 vecinos RESCATADOS pasean por su calle COMO ELLOS MISMOS (sprite pintado).
+  // Margo/Vesper/etc. "están en su puesto" (estación + retrato), no vagan.
   for (const d of distritos()) {
-    if (!d.vivo || d.emblema === 'puerta') continue;
-    v.push(_nuevoVecino(d.x + 20, d.y + 6, d.acento, 0.6 + (d.id.charCodeAt(0) % 5) * 0.06));
+    if (!d.vivo || !RESCATABLES.includes(d.id)) continue;
+    const n = _nuevoVecino(d.x + 20, d.y + 6, d.acento, 0.6 + (d.id.charCodeAt(0) % 5) * 0.06);
+    n.sprite = d.id; // vecino_<id>
+    v.push(n);
   }
   // Paseantes genéricos por la terraza media (más cuantos más rescatados → la villa bulle).
   const nStroll = Math.min(4, 1 + (GameState.rescatados?.length ?? 0));
   const grises = ['#cfc6e8', '#b0a6c8', '#d8cfa0', '#a8b0d0'];
-  for (let i = 0; i < nStroll; i++) v.push(_nuevoVecino(P.x + 240 + i * 150, P.y + T.media + 26, grises[i % grises.length], 0.55));
-  // Niños + Tuerca cuando la villa se anima (≥3 rescatados): corretean por la plaza baja.
+  for (let i = 0; i < nStroll; i++) {
+    const n = _nuevoVecino(P.x + 240 + i * 150, P.y + T.media + 26, grises[i % grises.length], 0.55);
+    n.sprite = i % 2 === 0 ? 'a' : 'b';
+    v.push(n);
+  }
+  // Niños cuando la villa se anima (≥3 rescatados): corretean por la plaza baja (blob de código).
   if ((GameState.rescatados?.length ?? 0) >= 3) {
     for (let i = 0; i < 2; i++) v.push(_nuevoVecino(P.x + 320 + i * 70, P.y + T.baja + 4, '#ffd9a0', 1.5, true));
   }
@@ -651,9 +660,20 @@ export function drawVecino(g, v, SX, SY, t) {
   const s = v.nino ? 0.72 : 1;
   const andando = v.pausa <= 0;
   const bob = andando ? Math.abs(Math.sin(v.t * 6)) * 2 : 0;
-  const lean = andando ? v.dir * 0.6 : 0;
   g.fillStyle = 'rgba(0,0,0,0.25)'; g.beginPath(); g.ellipse(x, y + 2, 6 * s, 2.4 * s, 0, 0, 7); g.fill();
-  // cuerpo (capa) con leve inclinación hacia donde camina
+  // F4/CIUDAD-3: sprite pintado del vecino (volteado según la dirección). Fallback: blob de código.
+  const spr = v.sprite ? Sprites.get('vecino_' + v.sprite) : null;
+  if (spr) {
+    const inf = Sprites.info('vecino_' + v.sprite);
+    const dh = v.nino ? 24 : 32, dw = Math.round(inf.w * dh / inf.h);
+    g.save();
+    if (v.dir < 0) { g.scale(-1, 1); g.drawImage(spr, -x - dw / 2, y - dh + 4 - bob, dw, dh); }
+    else g.drawImage(spr, x - dw / 2, y - dh + 4 - bob, dw, dh);
+    g.restore();
+    return;
+  }
+  // Fallback por código (F2): figura encapuchada
+  const lean = andando ? v.dir * 0.6 : 0;
   g.save(); g.translate(x, y - bob); g.rotate(lean * 0.04);
   g.fillStyle = v.col;
   g.beginPath(); g.moveTo(-5 * s, 0); g.quadraticCurveTo(-6 * s, -12 * s, 0, -15 * s); g.quadraticCurveTo(6 * s, -12 * s, 5 * s, 0); g.closePath(); g.fill();

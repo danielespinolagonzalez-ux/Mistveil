@@ -560,5 +560,35 @@
   "w": 119,
   "h": 160,
   "face": "left"
+ },
+ "vecino_a": {
+  "w": 27,
+  "h": 60,
+  "face": "right"
+ },
+ "vecino_atalaya": {
+  "w": 35,
+  "h": 60,
+  "face": "right"
+ },
+ "vecino_b": {
+  "w": 22,
+  "h": 60,
+  "face": "right"
+ },
+ "vecino_botica": {
+  "w": 38,
+  "h": 60,
+  "face": "right"
+ },
+ "vecino_conservatorio": {
+  "w": 35,
+  "h": 60,
+  "face": "right"
+ },
+ "vecino_fragua": {
+  "w": 30,
+  "h": 60,
+  "face": "right"
  }
 }

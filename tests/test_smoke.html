@@ -635,10 +635,12 @@ assert('F1: rescates.json define ≥5 cautivos con barrio/pisos/cerrojo',
   const prev = GameState.rescatados.slice();
   GameState.rescatados = [];
   poblarVecinos(); const nBase = ciudadVecinos().length;
-  assert('F2: hay vecinos paseando por la villa viva', nBase >= 4);
+  assert('F2: hay vecinos paseando por la villa (paseantes)', nBase >= 1);
   GameState.rescatados = ['hermanos', 'fragua', 'botica'];
   poblarVecinos(); const nMas = ciudadVecinos().length;
-  assert('F2: más rescatados → más vecinos (la villa bulle)', nMas > nBase);
+  assert('F2: más rescatados → más vecinos (los rescatados pasean + más paseantes)', nMas > nBase);
+  // F4/CIUDAD-3: el vecino rescatado pasea con su sprite pintado (vecino_<id>)
+  assert('F4/CIUDAD-3: el rescatado pasea con su sprite pintado', ciudadVecinos().some(v => v.sprite === 'fragua'));
   GameState.rescatados = prev; poblarVecinos();
 })();
 // F3 — servicios de los distritos rescatados (Fragua→Forja, Botica, Conservatorio, Atalaya)
