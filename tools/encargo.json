@@ -649,6 +649,36 @@
       "estado": "hecho"
     },
     {
+      "id": "fachada_fragua",
+      "tipo": "sprite", "clase": "building facade", "targetH": 120, "face": "right",
+      "sujeto": "F4/CIUDAD-2: fachada de La Fragua de Cuerda (arco de piedra, fragua, yunque)",
+      "estado": "hecho"
+    },
+    {
+      "id": "fachada_hermanos",
+      "tipo": "sprite", "clase": "building facade", "targetH": 120, "face": "right",
+      "sujeto": "F4/CIUDAD-2: fachada de La Contaduría de los hermanos (madera y latón, ábacos, letrero de libro)",
+      "estado": "hecho"
+    },
+    {
+      "id": "fachada_botica",
+      "tipo": "sprite", "clase": "building facade", "targetH": 120, "face": "right",
+      "sujeto": "F4/CIUDAD-2: fachada de La Botica de Cera (frascos turquesa, cera goteante, hierbas colgadas)",
+      "estado": "hecho"
+    },
+    {
+      "id": "fachada_conservatorio",
+      "tipo": "sprite", "clase": "building facade", "targetH": 120, "face": "right",
+      "sujeto": "F4/CIUDAD-2: fachada de El Conservatorio (rosetón, campanas y laúdes de relojería colgando)",
+      "estado": "hecho"
+    },
+    {
+      "id": "fachada_atalaya",
+      "tipo": "sprite", "clase": "building facade", "targetH": 140, "face": "right",
+      "sujeto": "F4/CIUDAD-2: fachada de La Atalaya (torre de piedra esbelta, catalejo, farol azul en la cima)",
+      "estado": "hecho"
+    },
+    {
       "id": "prop_fuente",
       "tipo": "sprite", "clase": "prop", "targetH": 72, "face": "right",
       "sujeto": "F4/CIUDAD-5: fuente de relojería (engranajes en vez de agua) — oclusor de primer plano de Cuerdaqueda",

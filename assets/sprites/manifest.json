@@ -605,5 +605,30 @@
   "w": 66,
   "h": 72,
   "face": "right"
+ },
+ "fachada_fragua": {
+  "w": 120,
+  "h": 120,
+  "face": "right"
+ },
+ "fachada_atalaya": {
+  "w": 43,
+  "h": 140,
+  "face": "right"
+ },
+ "fachada_botica": {
+  "w": 101,
+  "h": 120,
+  "face": "right"
+ },
+ "fachada_conservatorio": {
+  "w": 114,
+  "h": 120,
+  "face": "right"
+ },
+ "fachada_hermanos": {
+  "w": 79,
+  "h": 120,
+  "face": "right"
  }
 }

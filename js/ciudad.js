@@ -407,6 +407,18 @@ export function drawDistrito(g, d, SX, SY, t, near = false) {
     return;
   }
 
+  // VIVO: si el distrito tiene FACHADA pintada, ese es su edificio recién encendido; el
+  // farol cuelga por delante. Solo la muestran los distritos con arte propio (rescatables);
+  // el resto conserva el farol suelto sobre el backdrop. Fallback natural: get() → null.
+  const fa = Sprites.get('fachada_' + d.id);
+  if (fa) {
+    const inf = Sprites.info('fachada_' + d.id);
+    const s = 0.66; // escala fija sobre la lámina: cada edificio conserva su proporción
+    const fw = Math.round(inf.w * s), fh = Math.round(inf.h * s);
+    _glow(g, x, y - fh * 0.5, fw * 0.6, col, 0.05 + foco * 0.10 + pulso * 0.03);
+    g.drawImage(fa, Math.round(x - fw / 2), Math.round(y - fh + 4), fw, fh);
+  }
+
   // VIVO: farol de hierro colgando un emblema (mismo lenguaje para todos).
   const sway = Math.sin(t * 1.5 + d.x * 0.13) * 0.9;
   _glow(g, x + 6, y - 24, 26 + foco * 8, col, 0.10 + foco * 0.16 + pulso * 0.03);

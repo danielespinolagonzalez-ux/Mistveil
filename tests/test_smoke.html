@@ -643,6 +643,14 @@ assert('F1: rescates.json define ≥5 cautivos con barrio/pisos/cerrojo',
   assert('F4/CIUDAD-3: el rescatado pasea con su sprite pintado', ciudadVecinos().some(v => v.sprite === 'fragua'));
   GameState.rescatados = prev; poblarVecinos();
 })();
+// F4/CIUDAD-2 — cada distrito RESCATABLE tiene su fachada pintada (edificio que se enciende).
+{
+  const man = await fetch('../assets/sprites/manifest.json').then(r => r.ok ? r.json() : null).catch(() => null);
+  assert('F4/CIUDAD-2: manifest de sprites parsea', !!man);
+  const fach = ['fragua', 'hermanos', 'botica', 'conservatorio', 'atalaya'];
+  assert('F4/CIUDAD-2: los 5 distritos rescatables tienen fachada pintada con dimensiones',
+    !!man && fach.every(id => man['fachada_' + id] && man['fachada_' + id].w > 0 && man['fachada_' + id].h > 0));
+}
 // F3 — servicios de los distritos rescatados (Fragua→Forja, Botica, Conservatorio, Atalaya)
 (() => {
   const prevR = GameState.rescatados.slice(), prevM = GameState.memoria;
