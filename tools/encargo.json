@@ -439,6 +439,42 @@
       "estado": "hecho"
     },
     {
+      "id": "retrato_fragua",
+      "tipo": "sprite",
+      "clase": "dialogue portrait bust",
+      "targetH": 160,
+      "face": "left",
+      "sujeto": "F4/CIUDAD-4: bust portrait of Yelmo the seal-forge blacksmith woman, brass mechanical arms, soot-smudged face, holding a glowing brass seal, gruff and warm",
+      "estado": "hecho"
+    },
+    {
+      "id": "retrato_botica",
+      "tipo": "sprite",
+      "clase": "dialogue portrait bust",
+      "targetH": 160,
+      "face": "left",
+      "sujeto": "F4/CIUDAD-4: bust portrait of Nébula the hooded chandler-apothecary, wax-stained blue robes, cupping a lit candle that lights her face, serene and mysterious",
+      "estado": "hecho"
+    },
+    {
+      "id": "retrato_conservatorio",
+      "tipo": "sprite",
+      "clase": "dialogue portrait bust",
+      "targetH": 160,
+      "face": "left",
+      "sujeto": "F4/CIUDAD-4: bust portrait of Sostenido the clockwork luthier, one finger missing, a brass bell-lyre on his shoulder, tuning-fork earring, tender precise smile",
+      "estado": "hecho"
+    },
+    {
+      "id": "retrato_atalaya",
+      "tipo": "sprite",
+      "clase": "dialogue portrait bust",
+      "targetH": 160,
+      "face": "left",
+      "sujeto": "F4/CIUDAD-4: bust portrait of Alondra the watchwoman-cartographer, sharp wary eyes, brass spyglass at neck, rolled map on shoulder, hood back",
+      "estado": "hecho"
+    },
+    {
       "id": "retrato_templanza",
       "tipo": "sprite",
       "clase": "dialogue portrait bust",

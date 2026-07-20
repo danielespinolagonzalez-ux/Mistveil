@@ -540,5 +540,25 @@
   "h": 512,
   "tipo": "textura",
   "ext": "jpg"
+ },
+ "retrato_atalaya": {
+  "w": 113,
+  "h": 160,
+  "face": "left"
+ },
+ "retrato_botica": {
+  "w": 120,
+  "h": 160,
+  "face": "left"
+ },
+ "retrato_conservatorio": {
+  "w": 119,
+  "h": 160,
+  "face": "left"
+ },
+ "retrato_fragua": {
+  "w": 119,
+  "h": 160,
+  "face": "left"
  }
 }
